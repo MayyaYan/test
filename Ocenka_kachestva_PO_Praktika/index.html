@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Оценка качества ПО — практическая работа</title>
+<style>
+/* Рабочая тетрадь аудитора: листы-вкладки, бумажная тема. Основной кегль 22 pt. */
+:root{
+  --ink:#1F2340; --muted:#4A4F6E; --ind:#3B3FB6; --ind-soft:#E8E9FA; --paper:#F6F2E9; --sheet:#FFFFFF; --line:#DCD3BF;
+  --ok:#1E7B4F; --ok-soft:#E2F3E9; --bad:#B3261E; --bad-soft:#FBE7E5; --mid:#8A5A00; --mid-soft:#FFF1D2; --amber:#E0A21B;
+  --f:"Segoe UI","Roboto","Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{font-size:22pt}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--f);line-height:1.4}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:4px solid var(--amber);outline-offset:2px}
+[hidden]{display:none!important}
+h1,h2,h3,h4{line-height:1.2;margin:0 0 .5rem}
+h1{font-size:1.45rem}
+h2{font-size:1.3rem;color:var(--ind)}
+h3{font-size:1.1rem}
+h4{font-size:1rem}
+p{margin:0 0 .6rem}
+
+.wb{max-width:1700px;margin:0 auto;padding:.7rem 1.1rem 1.4rem}
+.wb-head{display:flex;justify-content:space-between;align-items:flex-end;gap:1rem;margin-bottom:.7rem}
+.wb-k{margin:0 0 .2rem;color:var(--muted)}
+.wb-score{flex:none;background:var(--ink);color:#fff;border-radius:16px;padding:.35rem .9rem;text-align:center}
+.wb-score span{display:block;color:#C7CAF0}
+.wb-score b{font-size:1.3rem;white-space:nowrap}
+
+/* вкладки-закладки */
+.tabs{display:flex;flex-wrap:wrap;gap:.2rem;padding-left:.2rem}
+.tabs button{background:#E9E1CF;border:2px solid var(--line);border-bottom:0;border-radius:14px 14px 0 0;padding:.3rem .55rem;color:var(--muted);font-weight:600}
+.tabs button[aria-selected="true"]{background:var(--sheet);color:var(--ind);border-color:var(--ind);border-top-width:6px;position:relative;top:2px}
+.tabs button.done::after{content:" ✓";color:var(--ok)}
+
+.sheet{background:var(--sheet);border:2px solid var(--ind);border-radius:0 20px 20px 20px;padding:1rem 1.3rem 1.1rem;box-shadow:0 10px 0 -4px #E5DCC7}
+.task{background:var(--ind-soft);border-left:8px solid var(--ind);border-radius:0 12px 12px 0;padding:.45rem .8rem}
+
+/* кейс */
+.case{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:1.3rem;align-items:center;margin-bottom:.8rem}
+.case-ill svg{width:100%;height:auto;display:block}
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:.6rem;margin-bottom:.7rem}
+.pl{border:2px solid var(--line);border-radius:16px;padding:.5rem .7rem;display:flex;flex-direction:column;gap:.2rem;background:#FFFDF8}
+.pl span{width:1.8rem;height:1.8rem;border-radius:50%;background:var(--ind);color:#fff;display:grid;place-items:center;font-weight:700}
+.pl p{flex:1;margin:0}
+.pl em{font-style:normal;color:var(--mid);font-weight:700}
+.rule{border-top:2px dashed var(--line);padding-top:.5rem}
+
+/* таблицы */
+.tbl-wrap{margin:.6rem 0}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:var(--ink);color:#fff;text-align:left;padding:.35rem .6rem}
+.tbl td{border-bottom:2px solid #ECE6D8;padding:.4rem .6rem;vertical-align:top}
+.tbl td.n{width:2.6rem;font-weight:700;color:var(--ind)}
+#reqT td:last-child{width:36%}
+#stdT td:last-child{width:52%}
+.tbl tr.ok td{background:var(--ok-soft)}
+.tbl tr.bad td{background:var(--bad-soft)}
+select,input[type="text"],textarea{width:100%;border:2px solid #B9BCDD;border-radius:10px;padding:.2rem .4rem;background:#fff}
+select:disabled,input:disabled{opacity:1;background:#F3F3F7;color:var(--ink)}
+.right{margin-top:.3rem;color:var(--ok);font-weight:700}
+
+/* журнал и метрики */
+.log{border:2px solid var(--line);border-radius:16px;background:#FFFDF8;padding:.5rem .9rem;margin:.6rem 0}
+.log-h{font-weight:700;color:var(--mid)}
+.log ul{margin:0;padding-left:1.2rem}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem}
+.met{border:2px solid var(--line);border-radius:16px;padding:.6rem .8rem;display:flex;flex-direction:column;gap:.35rem}
+.met p{margin:0}
+.formula{font-family:Consolas,"Courier New",monospace;background:var(--ink);color:#fff;border-radius:10px;padding:.25rem .55rem;overflow-wrap:anywhere}
+.fd,.req{color:var(--muted)}
+.req{font-weight:700;color:var(--ink)}
+.mrow{display:flex;align-items:center;gap:.5rem}
+.mrow label{font-weight:700;white-space:nowrap}
+.mrow input{max-width:9rem}
+.unit{font-weight:700}
+.met.ok,.bug.ok{border-color:var(--ok);background:var(--ok-soft)}
+.met.bad,.bug.bad{border-color:var(--bad);background:var(--bad-soft)}
+.met.half{border-color:var(--mid);background:var(--mid-soft)}
+
+/* дефекты */
+.bugs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.7rem;margin:.6rem 0}
+.bug{border:2px solid var(--line);border-radius:16px;padding:.6rem .8rem;display:flex;flex-direction:column;gap:.35rem}
+.bug p{margin:0;flex:1}
+.btop{display:flex;justify-content:space-between;gap:.5rem;flex-wrap:wrap}
+.bid{font-family:Consolas,"Courier New",monospace;font-weight:700;color:var(--ind)}
+.sev{border-radius:999px;padding:0 .6rem;font-weight:700}
+.sev.crit{background:var(--bad);color:#fff}
+.sev.maj{background:var(--mid-soft);color:var(--mid)}
+
+/* профиль */
+.profile{margin-top:1rem;border-top:3px solid var(--ind);padding-top:.7rem}
+.prof-row{display:grid;grid-template-columns:minmax(0,560px) minmax(0,1fr);gap:1.2rem;align-items:center}
+.radar svg{width:100%;height:auto;display:block}
+.legend{margin:0;padding-left:1.8rem}
+.legend li{display:flex;justify-content:space-between;gap:.6rem;border-bottom:2px solid #ECE6D8;padding:.2rem 0}
+.legend li b{white-space:nowrap}
+.legend li.mid b{color:var(--mid)}
+.legend li.low b{color:var(--bad)}
+.hint{color:var(--muted)}
+.hint.okc{color:var(--ok);font-weight:700}
+
+/* решение и протокол */
+.radios{display:flex;flex-direction:column;gap:.4rem;margin-bottom:.5rem}
+.radios label{display:flex;align-items:center;gap:.6rem;border:2px solid var(--line);border-radius:14px;padding:.35rem .7rem;cursor:pointer}
+.radios input{width:1.1rem;height:1.1rem;flex:none;accent-color:var(--ind)}
+.radios label.ok{border-color:var(--ok);background:var(--ok-soft)}
+.radios label.bad{border-color:var(--bad);background:var(--bad-soft)}
+.form2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:1rem;margin:.9rem 0}
+.form2 label{display:block;font-weight:700;margin-bottom:.25rem}
+.doc{border:2px solid var(--ink);border-radius:6px;padding:.9rem 1.2rem;background:#FFFEFB;box-shadow:8px 8px 0 #E5DCC7}
+.doc h3{text-align:center;letter-spacing:.02em}
+.doc h4{margin-top:.6rem;color:var(--ind)}
+.doc ul{margin:0 0 .3rem;padding-left:1.3rem}
+.doc li{overflow-wrap:anywhere}
+
+/* кнопки, сообщения, статус */
+.act{display:flex;flex-wrap:wrap;align-items:center;gap:.6rem;margin-top:.8rem}
+.btn{background:var(--ind);color:#fff;border:0;border-radius:14px;padding:.35rem 1rem;font-weight:700}
+.btn:hover{background:#2E3196}
+.btn:disabled{background:#9A9CC9;cursor:default}
+.btn.ghost{background:transparent;color:var(--bad);border:2px solid var(--bad);margin-left:auto}
+.btn.next{background:var(--ok)}
+.msg{font-weight:700}
+.msg.ok{color:var(--ok)}
+.msg.mid{color:var(--mid)}
+.msg.bad{color:var(--bad)}
+.status{margin-top:.8rem;text-align:center;color:var(--muted)}
+.offscreen{position:fixed;left:-9999px;top:0}
+
+@media (max-width:1100px){
+  .metrics,.bugs{grid-template-columns:1fr}
+  .prof-row{grid-template-columns:1fr}
+  .case{grid-template-columns:1fr}
+  .case-ill{max-width:340px}
+}
+@media (max-width:760px){
+  html{font-size:17px}
+  .wb{padding:.5rem .6rem 1rem}
+  .wb-head{flex-direction:column;align-items:stretch}
+  .tabs button{padding:.25rem .55rem}
+  .sheet{padding:.7rem .7rem .9rem;border-radius:0 14px 14px 14px}
+  .tbl thead{display:none}
+  .tbl,.tbl tbody,.tbl tr,.tbl td{display:block;width:100%}
+  .tbl tr{border:2px solid #ECE6D8;border-radius:12px;margin-bottom:.5rem;overflow:hidden}
+  .tbl td{border:0}
+  #reqT td:last-child,#stdT td:last-child{width:100%}
+  .form2{grid-template-columns:1fr}
+  .mrow{flex-wrap:wrap}
+  .btn.ghost{margin-left:0}
+}
+
+</style>
+</head>
+<body>
+<div class="wb">
+  <header class="wb-head">
+    <div>
+      <p class="wb-k">ОП.09 · Практическая работа · рабочая тетрадь аудитора</p>
+      <h1>Оценка качества программного средства по стандартам</h1>
+    </div>
+    <div class="wb-score"><span>Баллы</span><b id="score">0 / 31</b></div>
+  </header>
+
+  <nav class="tabs" id="tabs" role="tablist" aria-label="Листы тетради">
+    <button type="button" role="tab" id="tab0" aria-controls="sh0" data-t="0">Кейс</button>
+    <button type="button" role="tab" id="tab1" aria-controls="sh1" data-t="1">1. Требования</button>
+    <button type="button" role="tab" id="tab2" aria-controls="sh2" data-t="2">2. Метрики</button>
+    <button type="button" role="tab" id="tab3" aria-controls="sh3" data-t="3">3. Дефекты</button>
+    <button type="button" role="tab" id="tab4" aria-controls="sh4" data-t="4">4. Стандарты</button>
+    <button type="button" role="tab" id="tab5" aria-controls="sh5" data-t="5">5. Протокол</button>
+  </nav>
+
+  <!-- КЕЙС -->
+  <section class="sheet" id="sh0" role="tabpanel" aria-labelledby="tab0">
+    <div class="case">
+      <div class="case-ill" data-ill="audit"></div>
+      <div>
+        <h2>Ситуация</h2>
+        <p>Колледж внедряет систему мониторинга сети <b>«ОкоСети» версии 2.4</b>. Перед приёмкой директор поручил вам — специалисту ИТ-отдела — оценить качество программы по стандартам и подготовить протокол.</p>
+        <p>Порядок оценки — по <b>ГОСТ Р ИСО/МЭК 25040–2014</b>: требования → метрики → измерение → сравнение с требованиями → вывод. Характеристики качества — по <b>ГОСТ Р ИСО/МЭК 25010–2015</b>.</p>
+      </div>
+    </div>
+    <div class="plan">
+      <div class="pl"><span>1</span><b>Требования</b><p>Отнесите требования ТЗ к характеристикам качества.</p><em>10 баллов</em></div>
+      <div class="pl"><span>2</span><b>Метрики</b><p>Посчитайте метрики по журналу испытаний и сравните с требованиями.</p><em>8 баллов</em></div>
+      <div class="pl"><span>3</span><b>Дефекты</b><p>Классифицируйте дефекты и постройте профиль качества.</p><em>6 баллов</em></div>
+      <div class="pl"><span>4</span><b>Стандарты</b><p>Подберите стандарт к каждой задаче.</p><em>6 баллов</em></div>
+      <div class="pl"><span>5</span><b>Протокол</b><p>Примите решение и оформите протокол.</p><em>1 + 2 балла</em></div>
+    </div>
+    <p class="rule"><b>Оценка:</b> 29–33 — «5», 23–28 — «4», 16–22 — «3». Каждый лист проверяется <b>один раз</b>. Ответы хранятся только в вашем браузере и никуда не отправляются.</p>
+    <div class="act"><button type="button" class="btn" data-go="1">Открыть лист 1</button></div>
+  </section>
+
+  <!-- 1 ТРЕБОВАНИЯ -->
+  <section class="sheet" id="sh1" role="tabpanel" aria-labelledby="tab1" hidden>
+    <h2>Лист 1. Требования технического задания</h2>
+    <p class="task">Для каждого требования выберите характеристику качества по ГОСТ Р ИСО/МЭК 25010–2015.</p>
+    <div class="tbl-wrap"><table class="tbl" id="reqT"><thead><tr><th>№</th><th>Требование из ТЗ</th><th>Характеристика</th></tr></thead><tbody></tbody></table></div>
+    <div class="act"><button type="button" class="btn" id="chk1">Проверить лист</button><span class="msg" id="msg1"></span></div>
+  </section>
+
+  <!-- 2 МЕТРИКИ -->
+  <section class="sheet" id="sh2" role="tabpanel" aria-labelledby="tab2" hidden>
+    <h2>Лист 2. Журнал испытаний и метрики</h2>
+    <p class="task">Посчитайте значение каждой метрики по журналу (округлите до сотых) и решите, выполнено ли требование.</p>
+    <div class="log">
+      <p class="log-h">Журнал испытаний «ОкоСети» 2.4 · 30 суток · 300 устройств</p>
+      <ul>
+        <li>Продолжительность испытаний: <b>720 ч</b>. Простои сервиса: <b>2,4 ч</b> и <b>1,8 ч</b>.</li>
+        <li>Время обновления панели, 5 замеров: <b>4,2; 4,8; 5,6; 4,4; 5,0 с</b>.</li>
+        <li>Восстановление после отключения питания, 3 замера: <b>7; 12; 9 мин</b>.</li>
+        <li>Функциональные тесты: пройдено <b>214</b> из <b>230</b>.</li>
+      </ul>
+    </div>
+    <div class="metrics" id="metrics"></div>
+    <div class="act"><button type="button" class="btn" id="chk2">Проверить лист</button><span class="msg" id="msg2"></span></div>
+  </section>
+
+  <!-- 3 ДЕФЕКТЫ -->
+  <section class="sheet" id="sh3" role="tabpanel" aria-labelledby="tab3" hidden>
+    <h2>Лист 3. Дефекты из системы учёта ошибок</h2>
+    <p class="task">Отнесите каждый дефект к характеристике качества. После проверки появится профиль качества программы.</p>
+    <div class="bugs" id="bugs"></div>
+    <div class="act"><button type="button" class="btn" id="chk3">Проверить лист</button><span class="msg" id="msg3"></span></div>
+    <div class="profile" id="profile" hidden>
+      <h3>Профиль качества «ОкоСети» 2.4</h3>
+      <div class="prof-row"><div class="radar" id="radar"></div><ol class="legend" id="legend"></ol></div>
+      <p class="hint">Оценка от 0 до 5: из 5 баллов вычтено по 2 за критический дефект и по 1 — за значительный дефект или невыполненную метрику.</p>
+    </div>
+  </section>
+
+  <!-- 4 СТАНДАРТЫ -->
+  <section class="sheet" id="sh4" role="tabpanel" aria-labelledby="tab4" hidden>
+    <h2>Лист 4. Какой стандарт применить</h2>
+    <p class="task">Подберите стандарт для каждой рабочей задачи.</p>
+    <div class="tbl-wrap"><table class="tbl" id="stdT"><thead><tr><th>Задача</th><th>Стандарт</th></tr></thead><tbody></tbody></table></div>
+    <div class="act"><button type="button" class="btn" id="chk4">Проверить лист</button><span class="msg" id="msg4"></span></div>
+  </section>
+
+  <!-- 5 ПРОТОКОЛ -->
+  <section class="sheet" id="sh5" role="tabpanel" aria-labelledby="tab5" hidden>
+    <h2>Лист 5. Решение и протокол</h2>
+    <div class="dec">
+      <p class="task">Какое решение примет комиссия по итогам оценки?</p>
+      <div class="radios" id="decR">
+        <label><input type="radio" name="dec" value="0" id="dec0"> Принять систему в эксплуатацию</label>
+        <label><input type="radio" name="dec" value="1" id="dec1"> Вернуть на доработку и провести повторные испытания</label>
+        <label><input type="radio" name="dec" value="2" id="dec2"> Отказаться от системы полностью</label>
+      </div>
+      <div class="act"><button type="button" class="btn" id="chk5">Проверить решение</button><span class="msg" id="msg5"></span></div>
+    </div>
+    <div class="form2">
+      <div><label for="who">Исполнитель (фамилия, группа)</label><input type="text" id="who" autocomplete="off"></div>
+      <div><label for="why">Обоснование решения (от 200 знаков)</label><textarea id="why" rows="7"></textarea><p class="hint" id="whyN">0 знаков</p></div>
+    </div>
+    <div class="doc" id="doc"></div>
+    <div class="act"><button type="button" class="btn" id="copy">Скопировать протокол</button><span class="msg" id="copyMsg" aria-live="polite"></span><button type="button" class="btn ghost" id="reset">Начать заново</button></div>
+  </section>
+
+  <footer class="status" id="status" aria-live="polite"></footer>
+</div>
+
+<script>
+/* Рабочая тетрадь аудитора: 5 листов, автопроверка, профиль качества, протокол. Без внешних ресурсов и инлайн-стилей. */
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s);};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s));};
+function el(tag,cls,txt){var e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e;}
+var SVGNS='http://www.w3.org/2000/svg';
+
+/* Характеристики качества по ГОСТ Р ИСО/МЭК 25010–2015 */
+var CH=['Функциональная пригодность','Уровень производительности','Совместимость','Удобство использования','Надёжность','Защищённость','Сопровождаемость','Переносимость'];
+
+/* Лист 1: требования ТЗ (текст, номер характеристики, подхарактеристика) */
+var REQ=[
+ ['Система опрашивает коммутаторы и маршрутизаторы по SNMP (Simple Network Management Protocol — простой протокол сетевого управления) версий 2c и 3 и строит карту сети.',0,'функциональная полнота'],
+ ['Панель мониторинга при 300 устройствах обновляется в среднем не дольше 5 секунд.',1,'временны́е характеристики'],
+ ['Доступность сервиса мониторинга — не ниже 99,5 % времени за месяц.',4,'доступность'],
+ ['Вход только по учётной записи; пароли хранятся в виде хэша, а не открытым текстом.',5,'конфиденциальность'],
+ ['События выгружаются в формате Syslog в уже работающую в колледже SIEM (Security Information and Event Management — система управления событиями безопасности).',2,'способность к взаимодействию'],
+ ['Новый администратор осваивает основные функции за один рабочий день без специального обучения.',3,'изучаемость'],
+ ['Сервер устанавливается на Astra Linux и РЕД ОС без изменения программного кода.',7,'адаптируемость, устанавливаемость'],
+ ['Модули опроса заменяются независимо друг от друга; типовая ошибка исправляется не дольше 8 часов.',6,'модульность, модифицируемость'],
+ ['После отключения электропитания система сама восстанавливает работу не дольше чем за 10 минут.',4,'восстанавливаемость'],
+ ['Журнал аудита фиксирует действия каждого пользователя с датой и временем.',5,'подотчётность']
+];
+
+/* Лист 2: метрики */
+var MET=[
+ {name:'Коэффициент доступности',ab:'A',f:'A = (T − Tпр) ÷ T × 100',d:'T — продолжительность испытаний, Tпр — суммарное время простоя',unit:'%',val:(720-4.2)/720*100,req:'не ниже 99,5 %',ok:false,ch:4},
+ {name:'Среднее время обновления панели',ab:'tср',f:'tср = (t₁ + t₂ + … + tₙ) ÷ n',d:'tᵢ — отдельный замер, n — число замеров',unit:'с',val:24/5,req:'не более 5 с',ok:true,ch:1},
+ {name:'Среднее время восстановления',ab:'MTTR',f:'MTTR = (сумма времён восстановления) ÷ (число отказов)',d:'MTTR — Mean Time To Repair, среднее время восстановления после отказа',unit:'мин',val:28/3,req:'не более 10 мин',ok:true,ch:4},
+ {name:'Доля пройденных функциональных тестов',ab:'Pт',f:'Pт = Nпрошло ÷ Nвсего × 100',d:'Nпрошло — пройдено тестов, Nвсего — всего тестов',unit:'%',val:214/230*100,req:'не ниже 95 %',ok:false,ch:0}
+];
+
+/* Лист 3: дефекты (текст, критичность, характеристика) */
+var BUG=[
+ ['OKO-101','При 280 и более устройствах панель «зависает» на 40 секунд.','значительный',1],
+ ['OKO-107','Служба опроса аварийно завершается, получив повреждённый SNMP-пакет.','критический',4],
+ ['OKO-112','Пароль администратора передаётся по HTTP (HyperText Transfer Protocol — протокол передачи гипертекста) открытым текстом.','критический',5],
+ ['OKO-118','Кнопка «Удалить узел» стоит вплотную к «Сохранить» и срабатывает без подтверждения.','значительный',3],
+ ['OKO-123','Сообщения Syslog уходят в неверной кодировке, и SIEM их отвергает.','значительный',2],
+ ['OKO-130','Отчёт о трафике не учитывает интерфейсы VLAN (Virtual Local Area Network — виртуальная локальная сеть).','значительный',0]
+];
+
+/* Лист 4: стандарты и задачи */
+var STD=[
+ 'ГОСТ Р ИСО/МЭК 25010–2015 — модели качества систем и ПО',
+ 'ГОСТ Р ИСО/МЭК 25040–2014 — процесс оценки качества',
+ 'ГОСТ Р ИСО/МЭК 25051–2017 — требования к готовому ПО и его документации',
+ 'ГОСТ Р ИСО/МЭК 12207–2010 — процессы жизненного цикла ПО',
+ 'ГОСТ Р ИСО 9001–2015 — система менеджмента качества',
+ 'ГОСТ Р 56939–2024 — разработка безопасного ПО'
+];
+var TASK=[
+ ['Выбрать характеристики и подхарактеристики, по которым оценивается «ОкоСети».',0],
+ ['Спланировать этапы оценки: требования, метрики, измерения, сравнение, выводы.',1],
+ ['Проверить, что у купленного готового программного продукта есть документация пользователя и она соответствует продукту.',2],
+ ['Описать процессы разработки, сопровождения и вывода программы из эксплуатации.',3],
+ ['Компания-разработчик хочет сертифицировать свою систему менеджмента качества.',4],
+ ['Потребовать от разработчика анализ кода на уязвимости и моделирование угроз.',5]
+];
+var DEC=['Принять систему в эксплуатацию','Вернуть на доработку и провести повторные испытания','Отказаться от системы полностью'];
+var DEC_OK=1;
+var MAXP=[0,10,8,6,6,1];
+
+/* Профиль качества: 5 минус 2 за критический дефект, минус 1 за значительный дефект или невыполненную метрику */
+var PROF=CH.map(function(_,i){
+  var s=5;
+  BUG.forEach(function(b){if(b[3]===i)s-=(b[2]==='критический'?2:1);});
+  MET.forEach(function(m){if(m.ch===i&&!m.ok)s-=1;});
+  return Math.max(0,s);
+});
+
+/* ---------- состояние (только в браузере ученика) ---------- */
+var KEY='okoseti_tetrad_v1';
+var st={tab:0,done:[1,0,0,0,0,0],pts:[0,0,0,0,0,0],a1:[],a2v:[],a2d:[],a3:[],a4:[],dec:null,who:'',why:''};
+try{var raw=window.localStorage.getItem(KEY);if(raw){var o=JSON.parse(raw);if(o&&o.done)st=o;}}catch(e){}
+function save(){try{window.localStorage.setItem(KEY,JSON.stringify(st));}catch(e){}}
+
+/* ---------- иллюстрация кейса ---------- */
+function audIll(){
+  var h=$('[data-ill="audit"]');if(!h)return;
+  h.innerHTML='<svg viewBox="0 0 420 340" role="img" aria-label="Аудитор проверяет сервер по чек-листу">'+
+  '<rect x="18" y="40" width="160" height="250" rx="14" fill="#1F2340"/>'+
+  [0,1,2,3,4].map(function(i){var y=62+i*44;return '<rect x="34" y="'+y+'" width="128" height="32" rx="6" fill="#33386B"/><circle cx="52" cy="'+(y+16)+'" r="7" fill="'+(i===1?'#E5484D':'#4CC38A')+'"/><rect x="68" y="'+(y+12)+'" width="80" height="8" rx="4" fill="#8B90D0"/>';}).join('')+
+  '<rect x="214" y="22" width="190" height="276" rx="16" fill="#FFFFFF" stroke="#3B3FB6" stroke-width="6"/>'+
+  '<rect x="270" y="10" width="78" height="30" rx="8" fill="#3B3FB6"/>'+
+  [0,1,2,3,4].map(function(i){var y=72+i*44;var ok=i!==1&&i!==3;return (ok?'<path d="M236 '+(y+4)+' l10 10 l18 -20" fill="none" stroke="#1E7B4F" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>':'<path d="M238 '+(y-8)+' l20 20 M258 '+(y-8)+' l-20 20" stroke="#B3261E" stroke-width="7" stroke-linecap="round"/>')+'<rect x="278" y="'+(y-2)+'" width="106" height="12" rx="6" fill="#D5D7F2"/>';}).join('')+
+  '<circle cx="150" cy="250" r="54" fill="rgba(255,255,255,.25)" stroke="#E0A21B" stroke-width="12"/>'+
+  '<path d="M190 290 l42 42" stroke="#E0A21B" stroke-width="18" stroke-linecap="round"/>'+
+  '</svg>';
+}
+
+/* ---------- вкладки ---------- */
+var tabs=$$('#tabs [role="tab"]'), sheets=$$('.sheet');
+function showTab(i,focus){
+  st.tab=i;save();
+  tabs.forEach(function(t,k){var on=k===i;t.setAttribute('aria-selected',on?'true':'false');t.tabIndex=on?0:-1;t.classList.toggle('done',!!st.done[k]&&k>0);});
+  sheets.forEach(function(s,k){s.hidden=k!==i;});
+  if(focus)tabs[i].focus();
+  var top=$('#tabs');if(top&&top.getBoundingClientRect().top<0)top.scrollIntoView();
+  if(i===5)renderDoc();
+}
+tabs.forEach(function(t,k){
+  t.addEventListener('click',function(){showTab(k);});
+  t.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'){e.preventDefault();showTab((k+1)%tabs.length,true);}
+    else if(e.key==='ArrowLeft'){e.preventDefault();showTab((k+tabs.length-1)%tabs.length,true);}
+  });
+});
+$$('[data-go]').forEach(function(b){b.addEventListener('click',function(){showTab(+b.getAttribute('data-go'));});});
+
+/* ---------- общие помощники ---------- */
+function mkSelect(opts,label,val){
+  var s=el('select');s.setAttribute('aria-label',label);
+  var o0=el('option',null,'— выберите —');o0.value='';s.appendChild(o0);
+  opts.forEach(function(t,i){var o=el('option',null,t);o.value=String(i);s.appendChild(o);});
+  if(val!=null&&val!=='')s.value=String(val);
+  return s;
+}
+function msg(id,text,kind){var m=$(id);m.textContent=text;m.className='msg'+(kind?' '+kind:'');}
+function nextBtn(sheet,i){
+  var act=$('.act',sheet);if($('.next',act)||i>=5)return;
+  var b=el('button','btn next','Перейти к листу '+(i+1));b.type='button';
+  b.addEventListener('click',function(){showTab(i+1);});act.appendChild(b);
+}
+function finish(i,p,text){
+  st.done[i]=1;st.pts[i]=p;save();updScore();
+  msg('#msg'+i,text+' Баллы за лист: '+p+' из '+MAXP[i]+'.',p===MAXP[i]?'ok':(p>=MAXP[i]/2?'mid':'bad'));
+  $('#chk'+i).disabled=true;
+  tabs[i].classList.add('done');
+  nextBtn($('#sh'+i),i);
+}
+function right(text){var d=el('div','right');d.textContent='Верно: '+text;return d;}
+
+/* ---------- Лист 1 ---------- */
+function build1(){
+  var tb=$('#reqT tbody');
+  REQ.forEach(function(r,i){
+    var tr=el('tr');var c0=el('td','n',String(i+1));var c1=el('td',null,r[0]);var c2=el('td');
+    var s=mkSelect(CH,'Характеристика для требования '+(i+1),st.a1[i]);
+    s.addEventListener('change',function(){st.a1[i]=s.value;save();});
+    c2.appendChild(s);tr.appendChild(c0);tr.appendChild(c1);tr.appendChild(c2);tb.appendChild(tr);
+  });
+  if(st.done[1])show1();
+}
+function show1(){
+  var p=0;
+  $$('#reqT tbody tr').forEach(function(tr,i){
+    var s=$('select',tr);s.disabled=true;var ok=String(REQ[i][1])===String(st.a1[i]);
+    tr.classList.add(ok?'ok':'bad');if(ok)p++;
+    if(!$('.right',tr))$('td:last-child',tr).appendChild(right(CH[REQ[i][1]]+' ('+REQ[i][2]+')'));
+  });
+  return p;
+}
+$('#chk1').addEventListener('click',function(){
+  if(REQ.some(function(_,i){return st.a1[i]==null||st.a1[i]==='';})){msg('#msg1','Заполните все 10 строк, затем проверяйте.','bad');return;}
+  st.done[1]=1;var p=show1();finish(1,p,'Совпало '+p+' из 10.');
+});
+
+/* ---------- Лист 2 ---------- */
+function num(s){s=String(s||'').replace(/\s/g,'').replace(',','.').replace('%','');return /^\d+(\.\d+)?$/.test(s)?parseFloat(s):NaN;}
+function fmt(v){return v.toFixed(2).replace('.',',');}
+function build2(){
+  var box=$('#metrics');
+  MET.forEach(function(m,i){
+    var c=el('div','met');
+    c.appendChild(el('h3',null,(i+1)+'. '+m.name));
+    c.appendChild(el('p','formula',m.f));
+    c.appendChild(el('p','fd',m.d));
+    var row=el('div','mrow');
+    var lb=el('label',null,m.ab+' =');lb.setAttribute('for','mv'+i);
+    var inp=el('input');inp.type='text';inp.id='mv'+i;inp.setAttribute('inputmode','decimal');inp.autocomplete='off';inp.value=st.a2v[i]||'';
+    inp.addEventListener('input',function(){st.a2v[i]=inp.value;save();});
+    row.appendChild(lb);row.appendChild(inp);row.appendChild(el('span','unit',m.unit));c.appendChild(row);
+    c.appendChild(el('p','req','Требование ТЗ: '+m.req));
+    var s=mkSelect(['Требование выполнено','Требование не выполнено'],'Вывод по метрике '+(i+1),st.a2d[i]);
+    s.addEventListener('change',function(){st.a2d[i]=s.value;save();});
+    c.appendChild(s);box.appendChild(c);
+  });
+  if(st.done[2])show2();
+}
+function show2(){
+  var p=0;
+  $$('#metrics .met').forEach(function(c,i){
+    var m=MET[i];var v=num(st.a2v[i]);var okV=Math.abs(v-m.val)<=0.05;var okD=String(st.a2d[i])===(m.ok?'0':'1');
+    if(okV)p++;if(okD)p++;
+    $('input',c).disabled=true;$('select',c).disabled=true;
+    c.classList.add(okV&&okD?'ok':(okV||okD?'half':'bad'));
+    if(!$('.right',c))c.appendChild(right(m.ab+' = '+fmt(m.val)+' '+m.unit+' — требование '+(m.ok?'выполнено':'НЕ выполнено')));
+  });
+  return p;
+}
+$('#chk2').addEventListener('click',function(){
+  var bad=MET.some(function(_,i){return isNaN(num(st.a2v[i]))||st.a2d[i]==null||st.a2d[i]==='';});
+  if(bad){msg('#msg2','Введите все 4 числа (например, 12,34) и выберите вывод по каждой метрике.','bad');return;}
+  st.done[2]=1;var p=show2();finish(2,p,'За каждую метрику: 1 балл за число и 1 балл за вывод.');
+});
+
+/* ---------- Лист 3 ---------- */
+function build3(){
+  var box=$('#bugs');
+  BUG.forEach(function(b,i){
+    var c=el('div','bug');
+    var top=el('div','btop');top.appendChild(el('span','bid',b[0]));top.appendChild(el('span','sev '+(b[2]==='критический'?'crit':'maj'),b[2]));
+    c.appendChild(top);c.appendChild(el('p',null,b[1]));
+    var s=mkSelect(CH,'Характеристика для дефекта '+b[0],st.a3[i]);
+    s.addEventListener('change',function(){st.a3[i]=s.value;save();});
+    c.appendChild(s);box.appendChild(c);
+  });
+  if(st.done[3]){show3();profile();}
+}
+function show3(){
+  var p=0;
+  $$('#bugs .bug').forEach(function(c,i){
+    var ok=String(BUG[i][3])===String(st.a3[i]);if(ok)p++;
+    $('select',c).disabled=true;c.classList.add(ok?'ok':'bad');
+    if(!$('.right',c))c.appendChild(right(CH[BUG[i][3]]));
+  });
+  return p;
+}
+$('#chk3').addEventListener('click',function(){
+  if(BUG.some(function(_,i){return st.a3[i]==null||st.a3[i]==='';})){msg('#msg3','Классифицируйте все 6 дефектов.','bad');return;}
+  st.done[3]=1;var p=show3();finish(3,p,'Совпало '+p+' из 6.');profile();
+});
+function profile(){
+  $('#profile').hidden=false;
+  var R=$('#radar');if($('svg',R))return;
+  var cx=300,cy=300,rad=210,n=CH.length;
+  function pt(k,r){var a=-Math.PI/2+k*2*Math.PI/n;return [cx+r*Math.cos(a),cy+r*Math.sin(a)];}
+  var svg=document.createElementNS(SVGNS,'svg');svg.setAttribute('viewBox','0 0 600 600');svg.setAttribute('role','img');svg.setAttribute('aria-label','Лепестковая диаграмма профиля качества');
+  function add(tag,attrs,txt){var e=document.createElementNS(SVGNS,tag);for(var k in attrs)e.setAttribute(k,attrs[k]);if(txt!=null)e.textContent=txt;svg.appendChild(e);return e;}
+  for(var r=1;r<=5;r++){add('polygon',{points:CH.map(function(_,k){return pt(k,rad*r/5).join(',');}).join(' '),fill:r===5?'#F4F3FB':'none',stroke:'#C9CBE8','stroke-width':2});}
+  CH.forEach(function(_,k){var p=pt(k,rad);add('line',{x1:cx,y1:cy,x2:p[0],y2:p[1],stroke:'#C9CBE8','stroke-width':2});});
+  add('polygon',{points:CH.map(function(_,k){return pt(k,rad*5/5).join(',');}).join(' '),fill:'none',stroke:'#1E7B4F','stroke-width':3,'stroke-dasharray':'10 8'});
+  add('polygon',{points:PROF.map(function(v,k){return pt(k,rad*v/5).join(',');}).join(' '),fill:'rgba(59,63,182,.28)',stroke:'#3B3FB6','stroke-width':5});
+  PROF.forEach(function(v,k){var p=pt(k,rad*v/5);add('circle',{cx:p[0],cy:p[1],r:9,fill:v<=2?'#B3261E':(v<=3?'#C27C00':'#3B3FB6')});
+    var q=pt(k,rad+46);add('text',{x:q[0],y:q[1]+14,'text-anchor':'middle','font-size':40,'font-weight':700,fill:'#1F2340'},String(k+1));});
+  R.appendChild(svg);
+  var L=$('#legend');
+  CH.forEach(function(c,k){var li=el('li',PROF[k]<=2?'low':(PROF[k]<=3?'mid':''));li.appendChild(el('span',null,c));li.appendChild(el('b',null,PROF[k]+' из 5'));L.appendChild(li);});
+}
+
+/* ---------- Лист 4 ---------- */
+function build4(){
+  var tb=$('#stdT tbody');
+  TASK.forEach(function(t,i){
+    var tr=el('tr');tr.appendChild(el('td',null,t[0]));var c=el('td');
+    var s=mkSelect(STD,'Стандарт для задачи '+(i+1),st.a4[i]);
+    s.addEventListener('change',function(){st.a4[i]=s.value;save();});
+    c.appendChild(s);tr.appendChild(c);tb.appendChild(tr);
+  });
+  if(st.done[4])show4();
+}
+function show4(){
+  var p=0;
+  $$('#stdT tbody tr').forEach(function(tr,i){
+    var ok=String(TASK[i][1])===String(st.a4[i]);if(ok)p++;
+    $('select',tr).disabled=true;tr.classList.add(ok?'ok':'bad');
+    if(!$('.right',tr))$('td:last-child',tr).appendChild(right(STD[TASK[i][1]]));
+  });
+  return p;
+}
+$('#chk4').addEventListener('click',function(){
+  if(TASK.some(function(_,i){return st.a4[i]==null||st.a4[i]==='';})){msg('#msg4','Выберите стандарт для всех 6 задач.','bad');return;}
+  st.done[4]=1;var p=show4();finish(4,p,'Совпало '+p+' из 6.');
+});
+
+/* ---------- Лист 5 ---------- */
+var who=$('#who'),why=$('#why');
+function build5(){
+  who.value=st.who||'';why.value=st.why||'';
+  $$('#decR input').forEach(function(r){
+    if(st.dec!=null&&String(st.dec)===r.value)r.checked=true;
+    r.addEventListener('change',function(){if(r.checked){st.dec=r.value;save();renderDoc();}});
+  });
+  who.addEventListener('input',function(){st.who=who.value;save();renderDoc();});
+  why.addEventListener('input',function(){st.why=why.value;save();cnt();renderDoc();});
+  cnt();if(st.done[5])show5();
+}
+function cnt(){var n=why.value.trim().length;var h=$('#whyN');h.textContent=n+' знаков'+(n<200?' — нужно ещё '+(200-n):' — достаточно');h.className='hint'+(n>=200?' okc':'');}
+function show5(){
+  $$('#decR input').forEach(function(r){r.disabled=true;var lab=r.parentElement;if(+r.value===DEC_OK)lab.classList.add('ok');else if(r.checked)lab.classList.add('bad');});
+  return String(st.dec)===String(DEC_OK)?1:0;
+}
+$('#chk5').addEventListener('click',function(){
+  if(st.dec==null){msg('#msg5','Выберите одно из решений.','bad');return;}
+  st.done[5]=1;var p=show5();
+  finish(5,p,p?'Верно: метрики доступности и тестов не выполнены, есть 2 критических дефекта — систему возвращают на доработку.':'Решение неверное: при 2 критических дефектах и 2 невыполненных метриках систему возвращают на доработку и проводят повторные испытания.');
+  renderDoc();
+});
+
+/* ---------- протокол ---------- */
+function protoLines(){
+  var L=[];var d=new Date();
+  L.push(['h','ПРОТОКОЛ ОЦЕНКИ КАЧЕСТВА ПРОГРАММНОГО СРЕДСТВА']);
+  L.push(['p','Объект оценки: система мониторинга сети «ОкоСети», версия 2.4']);
+  L.push(['p','Основание: ГОСТ Р ИСО/МЭК 25040–2014 (процесс оценки), модель качества — ГОСТ Р ИСО/МЭК 25010–2015']);
+  L.push(['p','Дата: '+d.toLocaleDateString('ru-RU')]);
+  L.push(['s','1. Результаты измерений']);
+  MET.forEach(function(m,i){
+    var v=num(st.a2v[i]);var dv=st.a2d[i];
+    L.push(['li',m.name+': '+(isNaN(v)?'не измерено':fmt(v)+' '+m.unit)+' (требование: '+m.req+') — '+(dv==='0'?'выполнено':(dv==='1'?'не выполнено':'вывод не сделан'))]);
+  });
+  L.push(['s','2. Выявленные дефекты']);
+  var cr=BUG.filter(function(b){return b[2]==='критический';}).length;
+  L.push(['li','Всего: '+BUG.length+', из них критических: '+cr+', значительных: '+(BUG.length-cr)]);
+  if(st.done[3])BUG.forEach(function(b,i){L.push(['li',b[0]+' ('+b[2]+') — '+(st.a3[i]!=null&&st.a3[i]!==''?CH[+st.a3[i]]:'не классифицирован')]);});
+  L.push(['s','3. Профиль качества (из 5)']);
+  if(st.done[3])L.push(['li',CH.map(function(c,k){return c+' — '+PROF[k];}).join('; ')]);
+  else L.push(['li','будет построен после проверки листа 3']);
+  L.push(['s','4. Решение комиссии']);
+  L.push(['li',st.dec!=null?DEC[+st.dec]:'решение не выбрано']);
+  L.push(['s','5. Обоснование']);
+  L.push(['li',st.why&&st.why.trim()?st.why.trim():'не заполнено']);
+  L.push(['p','Исполнитель: '+(st.who&&st.who.trim()?st.who.trim():'__________________')]);
+  L.push(['p','Баллы автоматической проверки: '+total()+' из 31; обоснование оценивает преподаватель (до 2 баллов).']);
+  return L;
+}
+function renderDoc(){
+  var D=$('#doc');D.textContent='';var ul=null;
+  protoLines().forEach(function(x){
+    if(x[0]==='li'){if(!ul){ul=el('ul');D.appendChild(ul);}ul.appendChild(el('li',null,x[1]));return;}
+    ul=null;D.appendChild(el(x[0]==='h'?'h3':(x[0]==='s'?'h4':'p'),null,x[1]));
+  });
+}
+function protoText(){return protoLines().map(function(x){return (x[0]==='li'?'  • ':(x[0]==='s'?'\n':''))+x[1];}).join('\n');}
+$('#copy').addEventListener('click',function(){
+  var t=protoText();
+  function fallback(){var ta=el('textarea','offscreen');ta.value=t;document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy');}catch(e){}document.body.removeChild(ta);
+    msg('#copyMsg',ok?'Протокол скопирован — вставьте его в сообщение преподавателю.':'Не удалось скопировать: выделите текст протокола и нажмите Ctrl+C.',ok?'ok':'bad');}
+  if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(function(){msg('#copyMsg','Протокол скопирован — вставьте его в сообщение преподавателю.','ok');},fallback);}
+  else fallback();
+});
+var resetArm=false;
+$('#reset').addEventListener('click',function(){
+  var b=$('#reset');
+  if(!resetArm){resetArm=true;b.textContent='Нажмите ещё раз — все ответы сотрутся';setTimeout(function(){resetArm=false;b.textContent='Начать заново';},4000);return;}
+  try{window.localStorage.removeItem(KEY);}catch(e){}
+  window.location.reload();
+});
+
+/* ---------- баллы и статус ---------- */
+function total(){return st.pts.reduce(function(a,b){return a+b;},0);}
+function updScore(){
+  var t=total();$('#score').textContent=t+' / 31';
+  var n=st.done.slice(1).filter(Boolean).length;
+  var s='Проверено листов: '+n+' из 5 · автоматические баллы: '+t+' из 31';
+  if(n===5){var g=t>=27?'«5»':(t>=21?'«4»':(t>=14?'«3»':'«2»'));s+=' · предварительная оценка '+g+' (итог — после проверки обоснования преподавателем)';}
+  $('#status').textContent=s;
+}
+
+audIll();build1();build2();build3();build4();build5();updScore();
+[1,2,3,4,5].forEach(function(i){if(st.done[i]){$('#chk'+i).disabled=true;var p=st.pts[i];msg('#msg'+i,'Лист проверен. Баллы: '+p+' из '+MAXP[i]+'.',p===MAXP[i]?'ok':'mid');nextBtn($('#sh'+i),i);}});
+showTab(st.tab||0);
+})();
+
+</script>
+</body>
+</html>
