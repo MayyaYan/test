@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Взаимодействие ОС с оборудованием — практическая работа</title>
+<style>
+/* ===== Практикум «Лаборатория: ОС и оборудование»: сцена 1280×720, кегль не меньше 22 pt ===== */
+:root{
+  --side:#1E1B4B; --side2:#312E81; --ink:#1E1B4B; --muted:#4B5563; --line:#CBD5E1; --bg:#EEF0F8; --card:#FFFFFF;
+  --acc:#7C3AED; --acc-soft:#EDE9FE; --teal:#0F766E; --teal-soft:#CCFBF1; --blue:#1D4ED8; --blue-soft:#DBEAFE;
+  --amber:#B45309; --amber-soft:#FEF3C7; --ok:#15803D; --ok-soft:#DCFCE7; --bad:#B91C1C; --bad-soft:#FEE2E2;
+  --ff:"Segoe UI","PT Sans",Arial,sans-serif; --mono:Consolas,"PT Mono","Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#0F0D2E}
+body{font-family:var(--ff);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}button:disabled{cursor:default}
+:focus-visible{outline:4px solid #F59E0B;outline-offset:2px}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;background:var(--bg);font-size:22pt;line-height:1.2}
+
+/* боковая панель */
+#side{position:absolute;left:0;top:0;bottom:0;width:300px;background:var(--side);color:#E0E7FF;display:flex;flex-direction:column}
+#side .brand{height:62px;display:flex;align-items:center;gap:10px;padding:0 12px;background:#14123A}
+#side .chip{width:44px;height:44px;border-radius:10px;background:var(--acc);display:flex;align-items:center;justify-content:center}
+#side .chip svg{width:30px;height:30px}
+#side .brand b{color:#fff;line-height:1.05;white-space:nowrap}
+#nav{flex:1;display:flex;flex-direction:column;gap:3px;padding:8px}
+#nav button{border:0;background:transparent;color:#C7D2FE;border-radius:10px;height:54px;padding:0 6px;display:flex;align-items:center;gap:6px;text-align:left;white-space:nowrap}
+#nav button:hover:not(:disabled){background:rgba(255,255,255,.08)}
+#nav button.on{background:#fff;color:var(--ink);font-weight:700}
+#nav button:disabled{opacity:.45}
+#nav .n{flex:none;width:34px;height:34px;border-radius:50%;border:2px solid currentColor;display:flex;align-items:center;justify-content:center;font-weight:700}
+#nav button.done .n{background:#22C55E;border-color:#22C55E;color:#fff}
+#nav .l{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+#nav .s{flex:none;font-weight:700;color:#A5B4FC}
+#nav button.on .s{color:var(--acc)}
+#side .tot{padding:8px 14px 12px;border-top:2px solid var(--side2);display:flex;align-items:center;justify-content:space-between}
+#side .tot b{font-size:30pt;color:#fff}
+
+/* рабочая область */
+#card{position:absolute;left:310px;right:10px;top:10px;bottom:10px;background:var(--card);border-radius:14px;box-shadow:0 10px 30px rgba(30,27,75,.18);display:flex;flex-direction:column;overflow:hidden}
+.ch{flex:none;height:54px;display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:3px solid var(--acc)}
+.ch b{font-size:24pt;white-space:nowrap}
+.ch .sp{flex:1}
+.badge{padding:0 12px;border-radius:8px;font-weight:700;white-space:nowrap}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}.badge.mid{background:var(--amber-soft);color:var(--amber)}.badge.bad{background:var(--bad-soft);color:var(--bad)}.badge.new{background:var(--acc-soft);color:var(--acc)}
+.tabs{flex:none;display:flex;gap:4px;padding:6px 12px 0;background:#F5F3FF;border-bottom:2px solid var(--line)}
+.tabs button{border:0;background:transparent;padding:2px 16px 6px;border-radius:10px 10px 0 0;color:var(--muted)}
+.tabs button.on{background:#fff;color:var(--acc);font-weight:700;box-shadow:0 -3px 0 var(--acc) inset}
+.cb{flex:1;min-height:0;overflow:auto;padding:10px 18px}
+.cf{flex:none;height:60px;display:flex;align-items:center;gap:10px;padding:0 14px;background:#F5F3FF;border-top:2px solid var(--line)}
+.cf .st{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--muted)}
+
+/* общие элементы */
+p{margin:0 0 8px}
+h3{font-size:26pt;margin:0 0 8px;line-height:1.15}
+.btn{border:2px solid var(--acc);background:var(--acc);color:#fff;border-radius:10px;padding:0 16px;font-weight:700;white-space:nowrap;height:44px}
+.btn:hover:not(:disabled){filter:brightness(1.08)}
+.btn.o{background:#fff;color:var(--acc)}
+.btn.g{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn.t{background:var(--teal);border-color:var(--teal)}
+.btn.r{background:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.4}
+.chip{border:2px solid #94A3B8;background:#fff;border-radius:999px;padding:0 14px;white-space:nowrap;line-height:1.5}
+.chip:hover:not(:disabled){border-color:var(--acc)}
+.chip.on{background:var(--acc-soft);border-color:var(--acc);font-weight:700}
+.chip.ok{background:var(--ok-soft);border-color:var(--ok);color:#14532D;font-weight:700}
+.chip.bad{background:var(--bad-soft);border-color:var(--bad);color:#7F1D1D;text-decoration:line-through}
+.chips{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center}
+.lbl{font-weight:700;color:var(--ink)}
+.box{border:2px solid var(--line);border-radius:12px;padding:6px 14px;background:#fff}
+.box.acc{background:var(--acc-soft);border-color:#C4B5FD}.box.ok{background:var(--ok-soft);border-color:#86EFAC}.box.bad{background:var(--bad-soft);border-color:#FCA5A5}.box.amb{background:var(--amber-soft);border-color:#FCD34D}
+input[type=text]{border:2px solid #94A3B8;border-radius:8px;padding:0 10px;background:#fff;font-size:22pt;width:100%;height:42px}
+input[type=text]:focus{border-color:var(--acc)}
+input.okf{border-color:var(--ok);background:var(--ok-soft)}input.badf{border-color:var(--bad);background:var(--bad-soft)}
+table.tb{border-collapse:collapse;width:100%}
+.tb th,.tb td{border:2px solid var(--line);padding:1px 10px;text-align:left;vertical-align:middle}
+.tb th{background:#F5F3FF}
+.tb td.c,.tb th.c{text-align:center}
+.tb input{text-align:center;height:38px}
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center;padding:1px 0;line-height:1.12;border-bottom:2px solid #E5E7EB}
+.prow .chips{flex-wrap:nowrap}
+.qblk{margin-bottom:10px}
+.rad td{padding:1px 8px}.rad th.c{width:190px}
+.mcol .chips{flex-direction:column;align-items:flex-start}.qblk .ql{font-weight:700;margin-bottom:4px}
+
+/* упорядочивание */
+.ord{display:grid;grid-template-columns:1fr;gap:8px}
+.ord .col{display:flex;flex-direction:column;gap:4px}
+.ord .col:first-child{flex-direction:row;flex-wrap:wrap;gap:6px;align-items:center}
+.ord .col:first-child .cap{width:100%}
+.ord .cap{font-weight:700;color:var(--muted)}
+.ord .it{border:2px solid var(--line);background:#fff;border-radius:10px;padding:1px 10px;text-align:left;line-height:1.12;min-height:40px}
+.ord .it:hover:not(:disabled){border-color:var(--acc)}
+.ord .seq .it{border-color:var(--acc);background:var(--acc-soft);display:flex;gap:8px;align-items:center}
+.ord .seq .it i{font-style:normal;font-weight:700;color:var(--acc);flex:none;width:30px}
+.ord .seq .it.ok{border-color:var(--ok);background:var(--ok-soft)}.ord .seq .it.ok i{color:var(--ok)}
+.ord .seq .it.bad{border-color:var(--bad);background:var(--bad-soft)}.ord .seq .it.bad i{color:var(--bad)}
+.ord .slot{border:2px dashed var(--line);border-radius:10px;min-height:40px;display:flex;align-items:center;padding:0 12px;color:#9CA3AF}
+
+/* Диспетчер устройств */
+.dm{display:grid;grid-template-columns:400px minmax(0,1fr);gap:12px;height:100%}
+.win{border:2px solid #8B95A7;border-radius:8px;overflow:hidden;display:flex;flex-direction:column;background:#fff;min-height:0}
+.win .wt{flex:none;background:#F3F3F3;border-bottom:2px solid #D5DCE3;padding:0 10px;display:flex;align-items:center;gap:8px;white-space:nowrap;height:40px}
+.win .wt .sp{flex:1}
+.win .wb{flex:1;min-height:0;overflow:auto;padding:4px 8px}
+.tree .cat{display:flex;align-items:center;gap:6px;color:#334155;white-space:nowrap}
+.tree button.dev{display:flex;align-items:flex-start;gap:8px;width:100%;border:0;background:transparent;text-align:left;padding:2px 6px 2px 30px;border-radius:6px;line-height:1.15}
+.tree button.dev .di{margin-top:5px}
+.tree button.dev:hover{background:#EFF6FF}
+.tree button.dev.sel{background:#CCE4FF}
+.di{flex:none;width:22px;height:22px;border-radius:4px;background:#64748B;position:relative}
+.di.w::after{content:"!";position:absolute;right:-8px;bottom:-6px;width:18px;height:18px;border-radius:50%;background:#FACC15;color:#000;font-weight:800;font-size:22pt;line-height:18px;text-align:center;transform:scale(.62);transform-origin:center}
+.di.x::after{content:"↓";position:absolute;right:-8px;bottom:-6px;width:18px;height:18px;border-radius:50%;background:#475569;color:#fff;font-weight:800;font-size:22pt;line-height:18px;text-align:center;transform:scale(.62)}
+.ptabs{display:flex;gap:4px;margin-bottom:6px}
+.ptabs button{border:2px solid var(--line);background:#fff;border-radius:8px 8px 0 0;padding:0 12px}
+.ptabs button.on{border-bottom-color:#fff;font-weight:700;background:#F8FAFC}
+.kv{display:grid;grid-template-columns:170px minmax(0,1fr);gap:2px 10px}
+.kv span{color:var(--muted)}
+.stbox{border:2px solid var(--line);border-radius:6px;padding:2px 8px;margin-top:6px;background:#F8FAFC}
+.stbox.w{border-color:#FACC15;background:#FEFCE8}
+.hwid{font-family:var(--mono);word-break:break-all;border:2px solid var(--line);border-radius:6px;padding:2px 8px;background:#F8FAFC}
+.dbtns2{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+.dbtns2 .btn{height:42px}
+.cat tr.sel td{background:var(--acc-soft)}
+.mono{font-family:var(--mono)}
+
+/* замещение страниц */
+.refs{display:flex;gap:6px;margin-bottom:8px;align-items:center}
+.refs span{width:52px;height:46px;border:2px solid var(--line);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:700;font-family:var(--mono);background:#fff}
+.refs span.cur{background:var(--acc);border-color:var(--acc);color:#fff;transform:scale(1.08)}
+.refs span.past{color:#9CA3AF;background:#F3F4F6}
+.frames{display:flex;gap:10px;align-items:stretch;margin-bottom:8px}
+.frames button.fr{width:150px;height:96px;border:3px solid var(--teal);border-radius:12px;background:var(--teal-soft);display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.05}
+.frames button.fr b{font-family:var(--mono);font-size:36pt}
+.frames button.fr.empty{border-style:dashed;background:#fff;color:#9CA3AF}
+.frames button.fr:hover:not(:disabled){border-color:var(--bad);background:#FFF1F2}
+.frames .acts{display:flex;flex-direction:column;gap:6px;justify-content:center;margin-left:8px}
+.hist{border-collapse:collapse}
+.hist th,.hist td{border:2px solid var(--line);width:62px;height:36px;text-align:center;font-family:var(--mono);padding:0}
+.hist th:first-child,.hist td:first-child{width:150px;font-family:var(--ff);text-align:left;padding:0 8px;background:#F5F3FF}
+.hist td.ok{background:var(--ok-soft)}.hist td.bad{background:var(--bad-soft)}
+.hist td.p{color:var(--bad);font-weight:700}.hist td.h{color:var(--ok);font-weight:700}
+
+/* итоги */
+.res{display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px}
+.grade{width:110px;height:110px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:60pt;font-weight:800;color:#fff}
+.g5{background:#15803D}.g4{background:#0F766E}.g3{background:#A16207}.g2{background:#B91C1C}
+.big{font-size:44pt;font-weight:800;line-height:1}
+.bars{display:flex;flex-direction:column;gap:8px}
+.bar{display:grid;grid-template-columns:330px minmax(0,1fr) 90px;gap:10px;align-items:center}
+.bar .tr{height:24px;background:#E5E7EB;border-radius:8px;overflow:hidden}
+.bar .tr i{display:block;height:100%;width:0;border-radius:8px}
+.bar .v{text-align:right;font-weight:700}
+.lv{font-weight:700}.lv.l4{color:var(--ok)}.lv.l3{color:var(--teal)}.lv.l2{color:var(--amber)}.lv.l1{color:var(--bad)}
+.start{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px}
+.start .tb td,.start .tb th{padding:0 8px}
+.form{background:#F8FAFC;border:2px solid var(--line);border-radius:14px;padding:8px 16px;display:flex;flex-direction:column;gap:6px}
+
+/* диалоги */
+#dlg{position:absolute;inset:0;background:rgba(15,13,46,.6);display:flex;align-items:center;justify-content:center;z-index:50}
+.dbox{background:#fff;border-radius:16px;min-width:560px;max-width:1180px;max-height:680px;overflow:auto;padding:14px 22px;box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.dbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:12px;flex-wrap:wrap}
+.dbox textarea{width:1120px;height:420px;font-family:var(--mono);font-size:22pt;border:2px solid var(--line);border-radius:10px;padding:8px}
+.calc input{font-family:var(--mono)}
+.calc .out{font-family:var(--mono);font-size:26pt;font-weight:700;color:var(--blue);min-height:40px}
+.calc .keys{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.calc .keys button{min-width:70px;height:46px;border:2px solid var(--line);background:#F8FAFC;border-radius:10px;font-family:var(--mono)}
+#toast{position:absolute;left:310px;right:10px;bottom:76px;margin:0 auto;width:fit-content;max-width:900px;background:var(--side);color:#fff;padding:6px 20px;border-radius:12px;z-index:70;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+#toast.bad{background:#7F1D1D}#toast.good{background:#14532D}
+#printArea{display:none}
+@media print{body{overflow:visible;background:#fff}#stage{display:none}#printArea{display:block}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="side"><div class="brand"><span class="chip"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="8" y="8" width="16" height="16" rx="2" fill="#fff"/><rect x="12" y="12" width="8" height="8" fill="#7C3AED"/><path d="M11 3v5M16 3v5M21 3v5M11 24v5M16 24v5M21 24v5M3 11h5M3 16h5M3 21h5M24 11h5M24 16h5M24 21h5" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/></svg></span><b>Лаборатория ОС</b></div><div id="nav"></div><div class="tot"><span>Баллы</span><b id="tot">0</b></div></div>
+  <div id="card"></div>
+  <div id="dlg" class="hidden"></div>
+  <div id="toast" class="hidden"></div>
+</div>
+<div id="printArea"></div>
+<script>
+(function(){
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const r1=x=>Math.round(x*10)/10;
+const fmt=x=>String(r1(x)).replace('.',',');
+const num=v=>{const s=String(v??'').replace(/\s/g,'').replace(',','.');return s===''?NaN:Number(s)};
+
+/* ======================= ЗАДАНИЯ ======================= */
+const TASKS=[
+ {id:'t1',n:'Уровни ОС',full:'Уровни системы и режимы работы',pts:10},
+ {id:'t2',n:'Драйверы',full:'Драйверы и Диспетчер устройств',pts:15},
+ {id:'t3',n:'PnP',full:'Автонастройка Plug and Play',pts:10},
+ {id:'t4',n:'Адреса',full:'Перевод виртуальных адресов',pts:20},
+ {id:'t5',n:'Замещение',full:'Замещение страниц FIFO и LRU',pts:20},
+ {id:'t6',n:'Ввод-вывод',full:'Способы ввода-вывода',pts:13},
+ {id:'t7',n:'Прерывания',full:'Обработка прерываний',pts:12}];
+/* 1 */
+const LEVELS=['Прикладные программы','Системные вызовы (API)','Ядро операционной системы','Драйверы устройств','Аппаратура'];
+const MODES=['Режим пользователя','Режим ядра'];
+const MODEQ=[['Браузер отрисовывает страницу',0],['Драйвер пишет команду в контроллер',1],['Редактор проверяет орфографию',0],['Менеджер памяти выделяет страницу ОЗУ',1],['Обработчик прерывания читает код клавиши',1]];
+/* 2 */
+const CODE28=['Драйвер для устройства не установлен','Устройство отключено пользователем','Устройство физически сломано','Компьютеру не хватает памяти'];
+const DRVF=[['Переводит запросы ОС в команды устройства',1],['Распределяет процессорное время между программами',0],['Обрабатывает прерывания от устройства',1],['Сообщает ОС о состоянии и ошибках',1],['Хранит файлы пользователя',0],['Скрывает особенности конкретной модели',1]];
+const CATALOG=[{id:'d1',name:'Intel Ethernet I219-LM',hw:'VEN_8086&DEV_15BC',ver:'12.19.2.45'},{id:'d2',name:'Intel Wi-Fi 6 AX200',hw:'VEN_8086&DEV_2723',ver:'23.60.0.10'},{id:'d3',name:'Realtek PCIe GbE',hw:'VEN_10EC&DEV_8168',ver:'10.68'},{id:'d4',name:'Qualcomm QCA9377',hw:'VEN_168C&DEV_0042',ver:'12.0.0.953'}];
+/* 3 */
+const PNP=['Устройство подключено к порту','Контроллер шины сообщает ОС','ОС читает коды VID и PID','Поиск и загрузка драйвера','Выделение ресурсов (IRQ, DMA)','Устройство готово к работе'];
+const RES=[['Номер прерывания (IRQ)',1],['Процессорное время',0],['Диапазон адресов',1],['Учётную запись пользователя',0],['Канал DMA',1]];
+const YEL=['Нет драйвера или устройство работает с ошибкой','Устройство подключено впервые','Устройство отключено пользователем'];
+/* 4 */
+const PAGE=4096;
+const PT=[5,null,0,1,null,7];
+const ADDR=[300,5000,8200,13000,21000];
+const tr=a=>{const p=Math.floor(a/PAGE),o=a%PAGE,f=PT[p];return {p,o,f,ph:f==null?null:f*PAGE+o}};
+/* 5 */
+const REF=[7,0,1,2,0,3,0,4,2,3];
+const T5Q=[['Какой алгоритм дал меньше страничных прерываний?',['FIFO','LRU','Одинаково'],1],['Почему алгоритм OPT не применяют в реальных ОС?',['ОС не знает будущих обращений к страницам','OPT требует больше кадров','OPT работает только с FIFO'],0]];
+/* 6 */
+const IOM=['Опрос','Прерывания','DMA'];
+const IOQ=[['Копирование большого файла с SSD в ОЗУ',2],['Нажатие клавиши на клавиатуре',1],['Простой микроконтроллер только ждёт нажатия кнопки',0],['Сетевая карта принимает пакеты большими блоками',2],['Мышь сообщает о каждом движении',1]];
+const SPM=['Буферизация','Кэширование','Спулинг'];
+const SPQ=[['Десять человек печатают на одном принтере',2],['Повторно открытый файл открывается быстрее',1],['Видео подгружается заранее',0],['Запись на флешку копится в ОЗУ блоками',0]];
+/* 7 */
+const IRQS=['Устройство шлёт запрос IRQ','APIC передаёт запрос ЦП','ЦП сохраняет контекст','Поиск обработчика по вектору','Драйвер обслуживает устройство','Программа продолжает работу'];
+const ITYPE=['Аппаратное','Внутреннее','Программное'];
+const IEV=[['Нажата клавиша',0],['Деление на ноль',1],['Нет страницы в ОЗУ',1],['Сработал таймер',0],['Системный вызов',2],['Диск завершил чтение',0]];
+
+/* ======================= СОСТОЯНИЕ ======================= */
+const shuf=a=>{const b=a.map((x,i)=>i);for(let i=b.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[b[i],b[j]]=[b[j],b[i]]}return b};
+const S={name:'',group:'',t0:0,fin:false,view:'start',rtab:0,
+ t1:{tab:0,ord:[],sh:shuf(LEVELS),m:{},done:false},
+ t2:{tab:0,ptab:0,sel:null,found:false,code:null,ven:'',dev:'',f:{},cat:null,att:0,inst:false,rb:false,rbFirst:null,done:false,
+  dev2:[{id:'gpu',cat:'Видеоадаптеры',name:'Intel UHD Graphics 770',st:'ok',maker:'Intel Corporation',drv:['Intel Corporation','12.03.2026','31.0.101.5590'],prev:null,hw:'PCI\\VEN_8086&DEV_4680&SUBSYS_7D251462'},
+   {id:'ssd',cat:'Дисковые устройства',name:'Samsung SSD 980 1TB',st:'ok',maker:'(Стандартные дисковые накопители)',drv:['Microsoft','21.06.2006','10.0.26100.1'],prev:null,hw:'SCSI\\DiskNVMe____Samsung_SSD_980'},
+   {id:'mouse',cat:'Мыши и иные указывающие устройства',name:'HID-совместимая мышь',st:'ok',maker:'Microsoft',drv:['Microsoft','21.06.2006','10.0.26100.1'],prev:null,hw:'HID\\VID_046D&PID_C077'},
+   {id:'eth',cat:'Сетевые адаптеры',name:'Realtek PCIe GbE Family Controller',st:'err',maker:'Realtek',drv:['Realtek','27.10.2026','10.75.1003'],prev:['Realtek','06.05.2025','10.68.0410'],hw:'PCI\\VEN_10EC&DEV_8168&SUBSYS_7D251462'},
+   {id:'unk',cat:'Другие устройства',name:'Неизвестное устройство',st:'nodrv',maker:'Неизвестно',drv:null,prev:null,hw:'PCI\\VEN_8086&DEV_2723&SUBSYS_00848086'}]},
+ t3:{tab:0,ord:[],sh:shuf(PNP),r:{},y:null,done:false},
+ t4:{v:{},done:false},
+ t5:{tab:0,fifo:{i:0,fr:[null,null,null],load:{},use:{},dec:[]},lru:{i:0,fr:[null,null,null],load:{},use:{},dec:[]},c:{},v:{},done:false},
+ t6:{tab:0,a:{},b:{},v:{},done:false},
+ t7:{tab:0,ord:[],sh:shuf(IRQS),e:{},done:false}};
+
+/* ======================= ОЦЕНИВАНИЕ ======================= */
+/* каждая функция возвращает строки [вопрос, ответ студента, верный ответ, баллы, макс] */
+const ordRows=(seq,items,lab)=>items.map((t,i)=>[`${lab} — позиция ${i+1}`,seq[i]!=null?items[seq[i]]:'—',t,seq[i]===i?1:0,1]);
+const multi=(sel,opts,max)=>{let good=0,bad=0;opts.forEach((o,i)=>{if(sel[i]&&o[1])good++;if(sel[i]&&!o[1])bad++});const need=opts.filter(o=>o[1]).length;return {good,bad,need,max}};
+const G={
+ t1(){const T=S.t1;return [...ordRows(T.ord,LEVELS,'Уровень'),...MODEQ.map((q,i)=>[q[0],T.m[i]!=null?MODES[T.m[i]]:'—',MODES[q[1]],T.m[i]===q[1]?1:0,1])]},
+ t2(){const T=S.t2;const m=multi(T.f,DRVF);const fp=m.bad===0&&m.good===m.need?2:(m.good+(DRVF.length-m.need-m.bad)>=DRVF.length-1?1:0);
+  return [['Найдено проблемное устройство (открыты его свойства)',T.found?'да':'нет','да',T.found?2:0,2],
+   ['Что означает код 28?',T.code!=null?CODE28[T.code]:'—',CODE28[0],T.code===0?2:0,2],
+   ['Код производителя VEN',T.ven||'—','8086',/^(ven_)?8086$/i.test(T.ven.trim())?2:0,2],
+   ['Код модели DEV',T.dev||'—','2723',/^(dev_)?2723$/i.test(T.dev.trim())?2:0,2],
+   ['Установлен подходящий драйвер',T.inst?`да, попыток: ${T.att}`:(T.att?`нет, ошибок: ${T.att}`:'нет'),'Intel Wi-Fi 6 AX200 с первой попытки',T.inst?Math.max(1,3-T.att):0,3],
+   ['Неисправный драйвер Realtek откачен',T.rb?(T.rbFirst==='rb'?'да, сразу':'да, после других действий'):'нет','Откатить драйвер',T.rb?(T.rbFirst==='rb'?2:1):0,2],
+   ['Функции драйвера (выбрано верных / лишних)',`${m.good} из ${m.need} / ${m.bad}`,DRVF.filter(x=>x[1]).map(x=>x[0]).join('; '),fp,2]]},
+ t3(){const T=S.t3;const m=multi(T.r,RES);return [...ordRows(T.ord,PNP,'Шаг PnP'),['Ресурсы устройства (верных / лишних)',`${m.good} из 3 / ${m.bad}`,'IRQ, диапазон адресов, канал DMA',Math.max(0,m.good-m.bad),3],['Жёлтый значок в Диспетчере',T.y!=null?YEL[T.y]:'—',YEL[0],T.y===0?1:0,1]]},
+ t4(){const T=S.t4.v;const rows=[];ADDR.forEach((a,i)=>{const r=tr(a);const fr=T['f'+i];
+  rows.push([`${a}: номер страницы`,T['p'+i]||'—',String(r.p),num(T['p'+i])===r.p?1:0,1]);
+  rows.push([`${a}: смещение`,T['o'+i]||'—',String(r.o),num(T['o'+i])===r.o?1:0,1]);
+  rows.push([`${a}: кадр`,fr==null?'—':fr==='d'?'на диске':String(fr),r.f==null?'на диске':String(r.f),(r.f==null?fr==='d':fr===r.f)?1:0,1]);
+  rows.push([`${a}: физический адрес`,r.f==null?(fr==='d'?'page fault':(T['h'+i]||'—')):(T['h'+i]||'—'),r.f==null?'page fault':String(r.ph),(r.f==null?fr==='d':num(T['h'+i])===r.ph)?1:0,1])});return rows},
+ t5(){const T=S.t5;const sim=(k,lab)=>{const d=T[k].dec;const ok=d.filter(x=>x.ok).length;return [lab+`: верных решений ${ok} из ${REF.length}`,`${ok} из ${d.length} шагов`,'все 10 шагов верно',r1(ok*0.8),8]};
+  const f=countFaults('fifo'),l=countFaults('lru');
+  return [sim('fifo','FIFO'),sim('lru','LRU'),['Число прерываний FIFO',T.v.f||'—',String(f),num(T.v.f)===f?1:0,1],['Число прерываний LRU',T.v.l||'—',String(l),num(T.v.l)===l?1:0,1],...T5Q.map((q,i)=>[q[0],T.c[i]!=null?q[1][T.c[i]]:'—',q[1][q[2]],T.c[i]===q[2]?1:0,1])]},
+ t6(){const T=S.t6;return [...IOQ.map((q,i)=>[q[0],T.a[i]!=null?IOM[T.a[i]]:'—',IOM[q[1]],T.a[i]===q[1]?1:0,1]),...SPQ.map((q,i)=>[q[0],T.b[i]!=null?SPM[T.b[i]]:'—',SPM[q[1]],T.b[i]===q[1]?1:0,1]),
+  ['Прерываний при передаче 4 МБ порциями по 512 байт',T.v.n||'—','8192',num(T.v.n)===8192?2:0,2],['Прерываний при передаче 4 МБ через DMA',T.v.d||'—','1',num(T.v.d)===1?2:0,2]]},
+ t7(){const T=S.t7;return [...ordRows(T.ord,IRQS,'Шаг'),...IEV.map((q,i)=>[q[0],T.e[i]!=null?ITYPE[T.e[i]]:'—',ITYPE[q[1]],T.e[i]===q[1]?1:0,1])]}};
+const SC=id=>S[id].done?r1(G[id]().reduce((s,r)=>s+r[3],0)):0;
+const total=()=>r1(TASKS.reduce((s,t)=>s+SC(t.id),0));
+function grade(t){return t>=85?[5,'отлично']:t>=70?[4,'хорошо']:t>=50?[3,'удовлетворительно']:[2,'неудовлетворительно']}
+function level(p){return p>=85?['Высокий','l4']:p>=70?['Достаточный','l3']:p>=50?['Базовый','l2']:['Низкий','l1']}
+const bcls=(v,m)=>v>=m*.85?'ok':v>=m*.5?'mid':'bad';
+
+/* ======================= ЗАМЕЩЕНИЕ СТРАНИЦ ======================= */
+function correctAct(k){const s=S.t5[k];const p=REF[s.i];if(s.fr.includes(p))return {a:'hit'};const fi=s.fr.indexOf(null);if(fi>=0)return {a:'free',slot:fi};
+ let best=0;s.fr.forEach((x,j)=>{const key=k==='fifo'?s.load:s.use;if(key[x]<key[s.fr[best]])best=j});return {a:'evict',slot:best,page:s.fr[best]}}
+function simStep(k,act){const s=S.t5[k];if(s.i>=REF.length||S.t5.done)return;const p=REF[s.i];const c=correctAct(k);
+ const ok=act.a===c.a&&(c.a!=='evict'||act.slot===c.slot);
+ if(c.a==='free'){s.fr[c.slot]=p;s.load[p]=s.i}else if(c.a==='evict'){delete s.load[c.page];s.fr[c.slot]=p;s.load[p]=s.i}
+ s.use[p]=s.i;s.dec.push({p,ok,fault:c.a!=='hit',victim:c.page,fr:s.fr.slice()});s.i++;
+ if(ok)toast(c.a==='hit'?`Верно: страница ${p} уже в памяти`:c.a==='free'?`Верно: страница ${p} загружена в свободный кадр`:`Верно: вытеснена страница ${c.page}`,'good');
+ else toast(c.a==='hit'?`Неверно: страница ${p} уже есть в кадре — прерывания нет`:c.a==='free'?`Неверно: есть свободный кадр — страница ${p} загружается туда`:`Неверно: по ${k==='fifo'?'FIFO':'LRU'} вытесняется страница ${c.page}`,'bad');
+ renderCard(true)}
+function countFaults(k){const fr=[],load={},use={};let n=0;REF.forEach((p,i)=>{if(fr.includes(p)){use[p]=i;return}n++;if(fr.length<3){fr.push(p)}else{let b=0;fr.forEach((x,j)=>{const key=k==='fifo'?load:use;if(key[x]<key[fr[b]])b=j});fr[b]=p}load[p]=i;use[p]=i});return n}
+
+/* ======================= СЦЕНА И ОБЩИЕ ФУНКЦИИ ======================= */
+const stage=$('#stage');
+function fit(){const s=Math.min(window.innerWidth/1280,window.innerHeight/720);stage.style.transform=`translate(${(window.innerWidth-1280*s)/2}px,${(window.innerHeight-720*s)/2}px) scale(${s})`}
+window.addEventListener('resize',fit);fit();
+stage.addEventListener('scroll',()=>{stage.scrollLeft=0;stage.scrollTop=0});
+let toastT;function toast(t,kind){const d=$('#toast');d.textContent=t;d.className=kind||'';clearTimeout(toastT);toastT=setTimeout(()=>d.classList.add('hidden'),kind==='bad'?3600:2800)}
+let DLG=[],PICK=null;
+function dialog(title,html,buttons){DLG=buttons||[{t:'OK'}];const d=$('#dlg');d.innerHTML=`<div class="dbox"><h3>${esc(title)}</h3><div>${html}</div><div class="dbtns">${DLG.map((b,k)=>`<button class="btn ${b.cls||''}" data-a="dlgb" data-v="${k}">${esc(b.t)}</button>`).join('')}</div></div>`;d.classList.remove('hidden')}
+function closeDlg(){$('#dlg').classList.add('hidden');$('#dlg').innerHTML=''}
+const ask=(title,text,yes,fn,cls)=>dialog(title,`<p>${text}</p>`,[{t:'Отмена',cls:'g'},{t:yes,cls:cls||'',fn}]);
+function calc(expr){const s=String(expr).replace(/,/g,'.').replace(/\s+/g,'').replace(/×/g,'*').replace(/÷/g,'/').replace(/[−–]/g,'-');let i=0;const pk=()=>s[i];
+ const nm=()=>{const m=s.slice(i).match(/^\d+(\.\d+)?/);if(!m)throw 0;i+=m[0].length;return parseFloat(m[0])};
+ const prim=()=>{if(pk()==='('){i++;const v=add();if(s[i]!==')')throw 0;i++;return v}if(pk()==='-'){i++;return -prim()}const f=s.slice(i).match(/^(floor|mod)/);if(f){i+=f[1].length;if(s[i]!=='(')throw 0;i++;const a=add();if(f[1]==='mod'){if(s[i]!==';')throw 0;i++;const b=add();if(s[i]!==')')throw 0;i++;return a%b}if(s[i]!==')')throw 0;i++;return Math.floor(a)}return nm()};
+ const pow=()=>{let v=prim();if(pk()==='^'){i++;v=Math.pow(v,pow())}return v};
+ const mul=()=>{let v=pow();while(pk()==='*'||pk()==='/'||pk()==='%'){const o=s[i++],r=pow();v=o==='*'?v*r:o==='/'?v/r:v%r}return v};
+ const add=()=>{let v=mul();while(pk()==='+'||pk()==='-'){const o=s[i++],r=mul();v=o==='+'?v+r:v-r}return v};
+ const v=add();if(i<s.length||!isFinite(v))throw 0;return v}
+function openCalc(){dialog('Калькулятор',`<div class="calc"><input type="text" id="cx" placeholder="например: 8200 / 4096" autocomplete="off"><div class="out" id="co">&nbsp;</div><div class="keys">${['(',')','×','÷','%','−','+','4096'].map(k=>`<button data-a="ck" data-v="${k}">${k}</button>`).join('')}<button data-a="cc">C</button><button data-a="ceq">=</button></div><p class="muted">% — остаток от деления: 8200 % 4096 = 8.</p></div>`,[{t:'Закрыть',cls:'o'}]);
+ const x=$('#cx');x.focus();x.addEventListener('keydown',e=>{if(e.key==='Enter')ACT.ceq()})}
+
+/* ======================= ОТРИСОВКА ======================= */
+function renderNav(){const items=[['start','▶','Старт',''],...TASKS.map((t,i)=>[t.id,S[t.id].done?'✓':String(i+1),t.n,S[t.id].done?String(Math.round(SC(t.id))):'']),['res','★','Итоги','']];
+ $('#nav').innerHTML=items.map(([id,n,l,s])=>`<button class="${S.view===id?'on':''}${id[0]==='t'&&S[id].done?' done':''}" data-a="go" data-v="${id}"${!S.t0&&id!=='start'?' disabled':''}><span class="n">${n}</span><span class="l">${esc(l)}</span>${s?`<span class="s">${s}</span>`:''}</button>`).join('');
+ $('#tot').textContent=fmt(total())}
+const V={};
+function render(){renderNav();renderCard()}
+function renderCard(keep){const c=$('#card'),v=V[S.view];const sc0=keep&&$('.cb')?$('.cb').scrollTop:0;const t=TASKS.find(x=>x.id===S.view);const tabs=v.tabs?v.tabs():null;const f=v.foot();
+ c.innerHTML=`<div class="ch"><b>${t?`Задание ${TASKS.indexOf(t)+1}. ${esc(t.full)}`:esc(v.title)}</b><span class="sp"></span>${t?(S[t.id].done?`<span class="badge ${bcls(SC(t.id),t.pts)}">${fmt(SC(t.id))} / ${t.pts}</span>`:`<span class="badge new">${t.pts} баллов</span>`):''}</div>
+ ${tabs?`<div class="tabs">${tabs.map((x,k)=>`<button class="${k===S[S.view].tab?'on':''}" data-a="tab" data-v="${k}">${x}</button>`).join('')}</div>`:''}
+ <div class="cb">${v.body()}</div><div class="cf"><span class="st">${f[0]}</span>${f[1]}</div>`;
+ $$('[data-w]',c).forEach(e=>{e.style.width=e.dataset.w+'%';if(e.dataset.c)e.style.background=e.dataset.c});
+ if(sc0)$('.cb').scrollTop=sc0;
+ if(S.fin&&S.view!=='res')$$('.cb button:not(.keep),.cb input',c).forEach(b=>b.disabled=true);renderNav()}
+const done=id=>S[id].done;
+const subBtn=id=>done(id)||S.fin?'':`<button class="btn" data-a="submit" data-v="${id}">Сдать задание</button>`;
+const nextBtn=id=>{const i=TASKS.findIndex(t=>t.id===id);const n=TASKS[i+1];return `<button class="btn o keep" data-a="go" data-v="${n?n.id:'res'}">${n?'Задание '+(i+2)+' →':'Итоги →'}</button>`};
+const inp=(path,val,cls,ph)=>`<input type="text" data-in="${path}" value="${esc(val??'')}" class="${cls||''}" autocomplete="off"${ph?` placeholder="${esc(ph)}"`:''}>`;
+const cc=(on,right,d)=>d?(right?' ok':(on?' bad':'')):(on?' on':'');
+function choiceRow(text,opts,cur,right,d,act,i){return `<div class="prow"><span>${esc(text)}</span><div class="chips">${opts.map((o,j)=>`<button class="chip${cc(cur===j,j===right,d)}" data-a="${act}" data-v="${i}:${j}">${esc(o)}</button>`).join('')}</div></div>`}
+function orderW(id,items,capL,capR){const T=S[id],d=T.done;const pool=T.sh.filter(k=>!T.ord.includes(k));
+ return `<div class="ord"><div class="col"><span class="cap">${capL}</span>${pool.map(k=>`<button class="it" data-a="oadd" data-v="${id}:${k}">${esc(items[k])}</button>`).join('')||'<span class="muted">Все пункты расставлены.</span>'}</div>
+ <div class="col seq"><span class="cap">${capR}</span>${items.map((x,i)=>T.ord[i]!=null?`<button class="it${d?(T.ord[i]===i?' ok':' bad'):''}" data-a="orem" data-v="${id}:${i}"><i>${i+1}.</i><span>${esc(items[T.ord[i]])}</span></button>`:`<div class="slot">${i+1}.</div>`).join('')}</div></div>`}
+function multiW(id,key,opts,act){const T=S[id],d=T.done,sel=T[key];return `<div class="chips">${opts.map((o,i)=>`<button class="chip${d?(o[1]?(sel[i]?' ok':' bad'):(sel[i]?' bad':'')):(sel[i]?' on':'')}" data-a="${act}" data-v="${i}">${sel[i]?'☑':'☐'} ${esc(o[0])}</button>`).join('')}</div>`}
+const cntAns=(o,n)=>Object.keys(o).filter(k=>o[k]!=null).length;
+
+/* ---------- старт ---------- */
+V.start={title:'Практическая работа: ОС и оборудование',
+ body:()=>`<div class="start"><div><p>Вы — техник сервисного центра. Каждое задание сдаётся один раз.</p>
+ <table class="tb"><tr><th>Задание</th><th class="c">Баллы</th></tr>${TASKS.map((t,i)=>`<tr><td>${i+1}. ${esc(t.full)}</td><td class="c">${t.pts}</td></tr>`).join('')}</table></div>
+ <div class="form">${S.t0?`<h3>Работа начата</h3><p>${esc(S.name)}<br>${esc(S.group)}</p><button class="btn keep" data-a="go" data-v="t1">К заданию 1 →</button>`:`<h3>Регистрация</h3><label>Фамилия и имя</label><input type="text" id="fn" autocomplete="off"><label>Группа</label><input type="text" id="fg" autocomplete="off"><button class="btn" data-a="start">▶ Начать</button>`}</div></div>`,
+ foot:()=>['Задания выполняются в любом порядке, каждое сдаётся один раз. Ограничения по времени нет.',''],
+ bind:()=>{}};
+
+/* ---------- 1 ---------- */
+V.t1={tabs:()=>['Уровни системы','Режимы работы'],
+ body:()=>{const T=S.t1,d=T.done;if(T.tab===0)return `<p>Нажимайте на уровни <b>сверху вниз</b>. Нажатие справа вернёт пункт.</p>`+orderW('t1',LEVELS,'Уровни (нажмите по порядку):','Сверху вниз');
+  return `<p>В каком режиме процессора выполняется каждое действие?</p>`+MODEQ.map((q,i)=>choiceRow(q[0],MODES,T.m[i],q[1],d,'t1m',i)).join('')},
+ foot:()=>[done('t1')?`Порядок и режимы проверены`:`Расставлено: ${S.t1.ord.length} из 5, режимы: ${cntAns(S.t1.m)} из 5`,subBtn('t1')+nextBtn('t1')]};
+
+/* ---------- 2 ---------- */
+function devIcon(x){return x.st==='ok'?'':x.st==='off'?' x':' w'}
+function dmHTML(){const T=S.t2,d=T.done;const devs=T.dev2.filter(x=>!x.removed);const cats=[...new Set(devs.map(x=>x.cat))].sort();
+ const sel=devs.find(x=>x.id===T.sel);
+ const tree=`<div class="tree"><div class="cat">🖥 WS-LAB-07</div>${cats.map(c=>`<div class="cat">&nbsp;▾ ${esc(c)}</div>${devs.filter(x=>x.cat===c).map(x=>`<button class="dev${T.sel===x.id?' sel':''}" data-a="dsel" data-v="${x.id}"><span class="di${devIcon(x)}"></span>${esc(x.name)}</button>`).join('')}`).join('')}</div>`;
+ let props='<p class="muted">Выберите устройство слева — здесь откроются его свойства.</p>';
+ if(sel){const stt={ok:'Устройство работает нормально.',nodrv:'Драйверы для этого устройства не установлены. (Код 28)',err:'Запуск этого устройства невозможен. (Код 10)',off:'Это устройство отключено. (Код 22)'}[sel.st];
+  const tabsH=`<div class="ptabs">${['Общие','Драйвер','Сведения'].map((x,k)=>`<button class="${T.ptab===k?'on':''}" data-a="ptab" data-v="${k}">${x}</button>`).join('')}</div>`;
+  if(T.ptab===0)props=tabsH+`<div class="kv"><span>Тип:</span><b>${esc(sel.cat)}</b><span>Изготовитель:</span><span>${esc(sel.maker)}</span></div><div class="stbox${sel.st==='ok'?'':' w'}"><span class="muted">Состояние</span><br>${stt}</div>`;
+  else if(T.ptab===1)props=tabsH+(sel.drv?`<div class="kv"><span>Поставщик:</span><span>${esc(sel.drv[0])}</span><span>Дата:</span><span>${sel.drv[1]}</span><span>Версия:</span><span>${sel.drv[2]}</span></div>`:'<p>Драйвер не установлен.</p>')+
+   `<div class="dbtns2"><button class="btn t" data-a="dupd">Обновить драйвер</button><button class="btn o" data-a="drb"${sel.prev?'':' disabled'}>Откатить</button><button class="btn g" data-a="doff">${sel.st==='off'?'Включить':'Отключить'}</button><button class="btn g" data-a="ddel">Удалить</button></div>`;
+  else props=tabsH+`<p class="muted" style="margin:0">Свойство: ИД оборудования</p><div class="hwid">${esc(sel.hw)}</div>`}
+ return `<div class="dm"><div class="win"><div class="wt">Диспетчер устройств<span class="sp"></span><button class="btn g" data-a="dscan" title="Обновить конфигурацию оборудования">⟳</button></div><div class="wb">${tree}</div></div><div class="win"><div class="wt">${sel?'Свойства: '+esc(sel.name):'Свойства'}</div><div class="wb">${props}</div></div></div>`}
+V.t2={tabs:()=>['Диспетчер устройств','Каталог драйверов','Вопросы','Функции драйвера'],
+ body:()=>{const T=S.t2,d=T.done;
+  if(T.tab===0)return dmHTML();
+  if(T.tab===1)return `<p>Драйвер выбирают по <b>ИД оборудования</b>: коды VEN (производитель) и DEV (модель) должны совпасть.</p><table class="tb cat"><tr><th>Драйвер</th><th>Подходит для</th><th class="c">Версия</th></tr>${CATALOG.map(x=>`<tr class="${T.cat===x.id?'sel':''}"><td><button class="chip${T.cat===x.id?' on':''}" data-a="dcat" data-v="${x.id}">${esc(x.name)}</button></td><td class="mono">${x.hw}</td><td class="c">${x.ver}</td></tr>`).join('')}</table>
+   <div class="row" style="display:flex;gap:10px;align-items:center;margin-top:10px"><button class="btn t" data-a="dinst"${T.cat&&!T.inst&&!d?'':' disabled'}>Установить драйвер</button>${T.inst?'<span class="badge ok">Драйвер установлен ✓</span>':T.att?`<span class="badge bad">Ошибок: ${T.att}</span>`:''}</div>`;
+  if(T.tab===3)return `<div class="qblk"><div class="ql">Что делает драйвер? Отметьте все верные варианты.</div><div class="mcol">${multiW('t2','f',DRVF,'t2f')}</div></div>`;
+  return `<div class="qblk"><div class="ql">1. Что означает код 28 в свойствах устройства?</div><div class="chips">${CODE28.map((o,j)=>`<button class="chip${cc(T.code===j,j===0,d)}" data-a="t2code" data-v="${j}">${esc(o)}</button>`).join('')}</div></div>
+   <div class="qblk"><div class="ql">2. Коды из ИД оборудования неизвестного устройства (вкладка «Сведения»):</div><div style="display:grid;grid-template-columns:auto 200px auto 200px;gap:10px;align-items:center"><span>VEN</span>${inp('t2.ven',T.ven,d?(/^(ven_)?8086$/i.test(T.ven.trim())?'okf':'badf'):'','4 знака')}<span>DEV</span>${inp('t2.dev',T.dev,d?(/^(dev_)?2723$/i.test(T.dev.trim())?'okf':'badf'):'','4 знака')}</div></div>
+   `+''},
+ foot:()=>{const T=S.t2;const st=T.dev2.filter(x=>!x.removed&&x.st!=='ok').length;return [done('t2')?'Задание сдано':`Устройств с проблемами: ${st}. Исправьте их и ответьте на вопросы.`,subBtn('t2')+nextBtn('t2')]}};
+
+/* ---------- 3 ---------- */
+V.t3={tabs:()=>['Шаги Plug and Play','Ресурсы и значки'],
+ body:()=>{const T=S.t3,d=T.done;if(T.tab===0)return `<p>Сетевую карту вставили в слот PCIe. Расставьте шаги по порядку.</p>`+orderW('t3',PNP,'Шаги (нажмите по порядку):','Порядок');
+  return `<div class="qblk"><div class="ql">1. Что ОС выделяет устройству на шаге «Выделение ресурсов»? Отметьте все верные.</div>${multiW('t3','r',RES,'t3r')}</div>
+   <div class="qblk"><div class="ql">2. Что означает жёлтый значок у устройства в Диспетчере?</div><div class="chips">${YEL.map((o,j)=>`<button class="chip${cc(T.y===j,j===0,d)}" data-a="t3y" data-v="${j}">${esc(o)}</button>`).join('')}</div></div>`},
+ foot:()=>[done('t3')?'Задание сдано':`Расставлено шагов: ${S.t3.ord.length} из 6`,subBtn('t3')+nextBtn('t3')]};
+
+/* ---------- 4 ---------- */
+V.t4={body:()=>{const T=S.t4.v,d=S.t4.done;
+  const pt=`<div class="chips" style="margin-bottom:8px"><span class="lbl">Таблица страниц:</span>${PT.map((f,p)=>`<span class="chip">${p} → ${f==null?'диск':'кадр '+f}</span>`).join('')}</div>`;
+  return `<p>Размер страницы — <b>4096 байт</b>. Страница = адрес ÷ 4096 (целая часть), смещение = остаток, физический адрес = кадр × 4096 + смещение.</p>${pt}
+  <table class="tb"><tr><th class="c">Вирт. адрес</th><th class="c">Страница</th><th class="c">Смещение</th><th class="c">Кадр</th><th class="c">Физ. адрес</th></tr>${ADDR.map((a,i)=>{const r=tr(a);const fr=T['f'+i];
+   const ok=(k,v)=>d?(v?'okf':'badf'):'';const frOk=r.f==null?fr==='d':fr===r.f;
+   return `<tr><td class="c mono"><b>${a}</b></td><td>${inp('t4.v.p'+i,T['p'+i],ok('p',num(T['p'+i])===r.p))}</td><td>${inp('t4.v.o'+i,T['o'+i],ok('o',num(T['o'+i])===r.o))}</td>
+    <td class="c"><button class="chip${d?(frOk?' ok':' bad'):(fr!=null?' on':'')}" data-a="t4f" data-v="${i}">${fr==null?'выбрать':fr==='d'?'диск':'кадр '+fr}</button></td>
+    <td>${fr==='d'?`<span class="badge ${d?(r.f==null?'ok':'bad'):'mid'}">page fault</span>`:inp('t4.v.h'+i,T['h'+i],ok('h',num(T['h'+i])===r.ph))}</td></tr>`}).join('')}</table>`},
+ foot:()=>{const n=Object.values(S.t4.v).filter(v=>String(v).trim()).length;return [done('t4')?'Задание сдано':`Заполнено полей: ${n} из 20`,'<button class="btn t keep" data-a="calc">Калькулятор</button>'+subBtn('t4')+nextBtn('t4')]}};
+
+/* ---------- 5 ---------- */
+function simHTML(k){const s=S.t5[k],d=S.t5.done;const fin=s.i>=REF.length;
+ const refs=`<div class="refs"><span class="lbl" style="width:auto;border:0;background:none">Обращения:</span>${REF.map((p,i)=>`<span class="${i===s.i?'cur':i<s.i?'past':''}">${p}</span>`).join('')}</div>`;
+ const frames=`<div class="frames">${s.fr.map((x,j)=>`<button class="fr${x==null?' empty':''}" data-a="t5ev" data-v="${k}:${j}"${fin||d?' disabled':''} title="Вытеснить"><span>Кадр ${j+1}</span><b>${x==null?'—':x}</b></button>`).join('')}
+  <div class="acts"><button class="btn t" data-a="t5hit" data-v="${k}"${fin||d?' disabled':''}>Страница найдена</button><button class="btn o" data-a="t5free" data-v="${k}"${fin||d?' disabled':''}>В свободный кадр</button></div></div>`;
+ const col=(i)=>s.dec[i];
+ const hist=`<table class="hist"><tr><th>Обращение</th>${REF.map((p,i)=>`<th>${p}</th>`).join('')}</tr>${[0,1,2].map(j=>`<tr><td>Кадр ${j+1}</td>${REF.map((p,i)=>{const c=col(i);return `<td>${c&&c.fr[j]!=null?c.fr[j]:''}</td>`}).join('')}</tr>`).join('')}<tr><td>Итог</td>${REF.map((p,i)=>{const c=col(i);return c?`<td class="${c.ok?'ok':'bad'} ${c.fault?'p':'h'}">${c.fault?'П':'Н'}</td>`:'<td></td>'}).join('')}</tr></table>`;
+ return `<p>${k==='fifo'?'<b>FIFO</b> вытесняет страницу, загруженную раньше всех.':'<b>LRU</b> вытесняет страницу, к которой дольше всех не обращались.'} ${fin?'<b>Моделирование завершено.</b>':'Страница в памяти — «найдена»; нет — загрузите в свободный кадр или нажмите на кадр, который нужно освободить.'}</p>${refs}${frames}${hist}`}
+V.t5={tabs:()=>['FIFO','LRU','Вывод'],
+ body:()=>{const T=S.t5,d=T.done;if(T.tab===0)return simHTML('fifo');if(T.tab===1)return simHTML('lru');
+  const f=countFaults('fifo'),l=countFaults('lru');
+  return `<p>Подсчитайте страничные прерывания (П) по своим таблицам и сделайте вывод.</p><div style="display:grid;grid-template-columns:auto 160px auto 160px;gap:10px;align-items:center;margin-bottom:10px"><span>Прерываний FIFO:</span>${inp('t5.v.f',T.v.f,d?(num(T.v.f)===f?'okf':'badf'):'')}<span>Прерываний LRU:</span>${inp('t5.v.l',T.v.l,d?(num(T.v.l)===l?'okf':'badf'):'')}</div>
+   ${T5Q.map((q,i)=>`<div class="qblk"><div class="ql">${esc(q[0])}</div><div class="chips">${q[1].map((o,j)=>`<button class="chip${cc(T.c[i]===j,j===q[2],d)}" data-a="t5c" data-v="${i}:${j}">${esc(o)}</button>`).join('')}</div></div>`).join('')}`},
+ foot:()=>{const T=S.t5;return [done('t5')?'Задание сдано':`FIFO: шаг ${T.fifo.i} из 10, LRU: шаг ${T.lru.i} из 10`,subBtn('t5')+nextBtn('t5')]}};
+
+/* ---------- 6 ---------- */
+V.t6={tabs:()=>['Способ обмена','Ускорение обмена','Расчёт'],
+ body:()=>{const T=S.t6,d=T.done;if(T.tab===0)return `<p>Какой способ ввода-вывода подходит лучше всего?</p>`+IOQ.map((q,i)=>choiceRow(q[0],IOM,T.a[i],q[1],d,'t6a',i)).join('');
+  if(T.tab===1)return `<p>Какой приём ОС ускоряет обмен в каждой ситуации?</p>`+SPQ.map((q,i)=>choiceRow(q[0],SPM,T.b[i],q[1],d,'t6b',i)).join('');
+  return `<p>Нужно передать <b>4 МБ</b> (4 × 1024 × 1024 байт) с диска в ОЗУ.</p>
+   <div class="qblk"><div class="ql">1. Способ «прерывания»: устройство сообщает о готовности каждой порции в 512 байт. Сколько будет прерываний?</div><div style="width:260px">${inp('t6.v.n',T.v.n,d?(num(T.v.n)===8192?'okf':'badf'):'')}</div></div>
+   <div class="qblk"><div class="ql">2. Способ DMA: контроллер копирует весь блок сам. Сколько прерываний получит процессор?</div><div style="width:260px">${inp('t6.v.d',T.v.d,d?(num(T.v.d)===1?'okf':'badf'):'')}</div></div>`},
+ foot:()=>[done('t6')?'Задание сдано':`Ответов: ${cntAns(S.t6.a)+cntAns(S.t6.b)} из 9`,'<button class="btn t keep" data-a="calc">Калькулятор</button>'+subBtn('t6')+nextBtn('t6')]};
+
+/* ---------- 7 ---------- */
+V.t7={tabs:()=>['Шаги обработки','Виды прерываний'],
+ body:()=>{const T=S.t7,d=T.done;if(T.tab===0)return `<p>Нажата клавиша. Расставьте шаги по порядку.</p>`+orderW('t7',IRQS,'Шаги (нажмите по порядку):','Порядок');
+  return `<p>К какому виду относится прерывание?</p><table class="tb rad"><tr><th>Событие</th>${ITYPE.map(x=>`<th class="c">${x}</th>`).join('')}</tr>${IEV.map((q,i)=>`<tr><td>${esc(q[0])}</td>${ITYPE.map((x,j)=>{const on=T.e[i]===j;return `<td class="c"><button class="chip${cc(on,j===q[1],d)}" data-a="t7e" data-v="${i}:${j}" aria-label="${x}">${d?(j===q[1]?'✓':(on?'✗':'·')):(on?'●':'○')}</button></td>`}).join('')}</tr>`).join('')}</table>`},
+ foot:()=>[done('t7')?'Задание сдано':`Шагов: ${S.t7.ord.length} из 6, видов: ${cntAns(S.t7.e)} из 6`,subBtn('t7')+nextBtn('t7')]};
+
+/* ---------- итоги ---------- */
+const COMP={t1:'Архитектура и режимы',t2:'Драйверы устройств',t3:'Plug and Play',t4:'Виртуальная память',t5:'Замещение страниц',t6:'Ввод-вывод',t7:'Прерывания'};
+const RS={t1:'Слайды 2–3: уровни, режимы',t2:'Слайды 4–5: драйверы',t3:'Слайды 6–7: Plug and Play',t4:'Слайды 9–10: перевод адреса',t5:'Слайды 11–12: FIFO и LRU',t6:'Слайды 13–14: опрос, DMA',t7:'Слайды 15–16: прерывания'};
+function analysis(){const rows=TASKS.map(t=>{const v=SC(t.id),p=Math.round(v/t.pts*100);return {t,v,p,lv:level(p),d:done(t.id)}});const all=TASKS.flatMap(t=>done(t.id)?G[t.id]().map(r=>[t.id,...r]):[]);
+ const bad=all.filter(r=>r[4]<r[5]);return {rows,all,bad}}
+V.res={title:'Итоги и анализ',tabs:()=>['Результат','Анализ'],
+ body:()=>{const T=total(),[g,gt]=grade(T),A=analysis();
+  if(S.rtab===0)return `<div class="res"><div><div class="grade g${g}">${g}</div><p style="margin-top:8px"><span class="big">${fmt(T)}</span> из 100</p><p>Оценка: <b>${g}</b> (${gt})</p>${S.fin?'<p class="muted">Работа сдана</p>':''}</div>
+   <div class="bars">${A.rows.map(r=>`<div class="bar"><span>${esc(COMP[r.t.id])}</span><span class="tr"><i data-w="${r.p}" data-c="${r.p>=85?'#15803D':r.p>=70?'#0F766E':r.p>=50?'#CA8A04':'#B91C1C'}"></i></span><span class="v">${r.d?fmt(r.v)+'/'+r.t.pts:'—'}</span></div>`).join('')}</div></div>`;
+  return `<div class="box acc" style="margin-bottom:8px">Проверено ответов: ${A.all.length}, ошибок: ${A.bad.length}. ${S.t2.att?`Неверных установок драйвера: ${S.t2.att}. `:''}Ошибок при моделировании: FIFO — ${S.t5.fifo.dec.filter(x=>!x.ok).length}, LRU — ${S.t5.lru.dec.filter(x=>!x.ok).length}.</div>
+   <table class="tb"><tr><th>Тема</th><th class="c">%</th><th>Уровень</th><th>Что повторить</th></tr>${A.rows.map(r=>`<tr><td>${esc(COMP[r.t.id])}</td><td class="c">${r.d?r.p:'—'}</td><td><span class="lv ${r.d?r.lv[1]:'l1'}">${r.d?r.lv[0]:'Не сдано'}</span></td><td>${r.d&&r.p>=70?'<span class="muted">освоено</span>':esc(RS[r.t.id])}</td></tr>`).join('')}</table>`},
+ foot:()=>[S.fin?'Работа сдана. Сохраните отчёт.':'Несданные задания — 0 баллов.',(S.fin?'':'<button class="btn r keep" data-a="finish">Сдать работу</button>')+'<button class="btn keep" data-a="report">Отчёт</button><button class="btn o keep" data-a="print">Печать</button>']};
+S.res={tab:0};Object.defineProperty(S.res,'tab',{get:()=>S.rtab,set:v=>{S.rtab=v}});
+
+/* ======================= ОТЧЁТ ======================= */
+function reportHTML(){const T=total(),[g,gt]=grade(T),A=analysis(),dt=new Date().toLocaleString('ru-RU');const weak=A.rows.filter(r=>r.p<70);
+ return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>Отчёт — ${esc(S.name||'студент')}</title><style>
+body{font-family:"Times New Roman",serif;font-size:14pt;color:#000;max-width:190mm;margin:10mm auto;line-height:1.35}h1{font-size:18pt;text-align:center;margin:0 0 4mm}h2{font-size:15pt;margin:6mm 0 2mm}
+table{border-collapse:collapse;width:100%;font-size:12pt}th,td{border:1px solid #000;padding:2px 6px;vertical-align:top;text-align:left}th{background:#eee}
+.ok{color:#15803d;font-weight:bold}.no{color:#b91c1c;font-weight:bold}.sig{margin-top:12mm;display:flex;justify-content:space-between}
+</style></head><body>
+<h1>Отчёт о выполнении практической работы</h1>
+<p><b>Тема:</b> Взаимодействие операционной системы с аппаратным обеспечением: драйверы, память, ввод-вывод, прерывания<br><b>Студент:</b> ${esc(S.name||'—')} &nbsp; <b>Группа:</b> ${esc(S.group||'—')}<br><b>Дата:</b> ${dt} &nbsp; <b>Статус:</b> ${S.fin?'работа сдана':'промежуточный отчёт'}</p>
+<h2>1. Результаты</h2><table><tr><th>№</th><th>Задание</th><th>Баллы</th><th>%</th><th>Уровень</th></tr>${A.rows.map((r,i)=>`<tr><td>${i+1}</td><td>${esc(r.t.full)}</td><td>${fmt(r.v)} / ${r.t.pts}</td><td>${r.d?r.p:'—'}</td><td>${r.d?r.lv[0]:'не сдано'}</td></tr>`).join('')}<tr><th></th><th>Итого</th><th>${fmt(T)} / 100</th><th colspan="2">Оценка: ${g} (${gt})</th></tr></table>
+<h2>2. Анализ</h2><p>Проверено ответов: ${A.all.length}, с ошибкой: ${A.bad.length}. Неверных попыток установки драйвера: ${S.t2.att}. Ошибочных решений при моделировании: FIFO — ${S.t5.fifo.dec.filter(x=>!x.ok).length}, LRU — ${S.t5.lru.dec.filter(x=>!x.ok).length}.</p>
+${weak.length?'<p><b>Рекомендации:</b></p><ul>'+weak.map(r=>`<li><b>${esc(COMP[r.t.id])}</b> (${r.d?r.p+' %':'не сдано'}): повторите по презентации: ${esc(RS[r.t.id])}.</li>`).join('')+'</ul>':'<p>Все темы освоены на уровне «достаточный» и выше.</p>'}
+<h2>3. Ответы студента</h2><table><tr><th>Зад.</th><th>Вопрос</th><th>Ответ студента</th><th>Верный ответ</th><th>Баллы</th></tr>${TASKS.flatMap((t,ti)=>G[t.id]().map(r=>`<tr><td>${ti+1}</td><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2])}</td><td class="${done(t.id)&&r[3]>=r[4]?'ok':'no'}">${done(t.id)?fmt(r[3]):0} / ${r[4]}</td></tr>`)).join('')}</table>
+<h2>4. Моделирование замещения страниц</h2><p>Обращения: ${REF.join(' ')}; 3 кадра.</p>${['fifo','lru'].map(k=>`<p><b>${k.toUpperCase()}:</b> ${S.t5[k].dec.map(x=>`${x.p}${x.fault?'П':'Н'}${x.ok?'':'(ошибка)'}`).join(', ')||'не выполнялось'}</p>`).join('')}
+<div class="sig"><span>Студент: ____________ / ${esc(S.name||'')}</span><span>Преподаватель: ____________</span></div>
+</body></html>`}
+function reportTXT(){const T=total(),[g,gt]=grade(T),A=analysis();return `ОТЧЁТ О ВЫПОЛНЕНИИ ПРАКТИЧЕСКОЙ РАБОТЫ
+Тема: Взаимодействие ОС с аппаратным обеспечением
+Студент: ${S.name||'—'}   Группа: ${S.group||'—'}
+Дата: ${new Date().toLocaleString('ru-RU')}   Статус: ${S.fin?'работа сдана':'промежуточный отчёт'}
+
+${A.rows.map((r,i)=>`${i+1}. ${r.t.full}: ${fmt(r.v)} / ${r.t.pts} (${r.d?r.p+' %, '+r.lv[0]:'не сдано'})`).join('\n')}
+ИТОГО: ${fmt(T)} / 100   ОЦЕНКА: ${g} (${gt})
+
+Ошибки:
+${A.bad.length?A.bad.map(r=>`- [${TASKS.findIndex(t=>t.id===r[0])+1}] ${r[1]}: ${r[2]} (верно: ${r[3]})`).join('\n'):'- нет'}
+`}
+function download(name,text,type){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['﻿'+text],{type:type+';charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast('Файл отчёта сохраняется…')}catch(e){toast('Скачивание недоступно — используйте «Копировать»','bad')}}
+const fname=ext=>`Отчёт_ОС_оборудование_${(S.name||'студент').replace(/\s+/g,'_')}.${ext}`;
+let REPORT='';
+function copyRep(){const t=$('#rep');let ok=false;try{if(navigator.clipboard){navigator.clipboard.writeText(REPORT);ok=true}}catch(e){}if(!ok&&t){t.select();try{ok=document.execCommand('copy')}catch(e){}}toast(ok?'Отчёт скопирован':'Выделите текст и скопируйте вручную',ok?'':'bad')}
+
+/* ======================= ДЕЙСТВИЯ ======================= */
+const dev=id=>S.t2.dev2.find(x=>x.id===id);
+const ACT={
+ go(v){if(!S.t0&&v!=='start'){toast('Сначала зарегистрируйтесь','bad');return}S.view=v;render();const b=$('.cb');if(b)b.scrollTop=0},
+ tab(v){S[S.view].tab=+v;renderCard()},
+ start(){const n=$('#fn').value.trim(),g=$('#fg').value.trim();if(!n||!g){toast('Введите фамилию, имя и группу','bad');return}S.name=n;S.group=g;S.t0=Date.now();S.view='t1';render();toast('Работа начата. Удачи!')},
+ dlgb(v){const b=DLG[+v];closeDlg();b&&b.fn&&b.fn()},
+ dlgpick(v){const f=PICK;closeDlg();PICK=null;f&&f(v)},
+ submit(id){const t=TASKS.find(x=>x.id===id);ask('Сдать задание?','После сдачи изменить ответы будет нельзя. Пустые ответы засчитываются как неверные.','Сдать',()=>{S[id].done=true;render();toast(`Задание сдано: ${fmt(SC(id))} из ${t.pts}`,'good')})},
+ finish(){ask('Сдать работу?','После этого изменить ответы будет нельзя. Несданные задания получат 0 баллов.','Сдать работу',()=>finish(),'r')},
+ report(){REPORT=reportTXT();dialog('Отчёт',`<textarea id="rep" readonly>${esc(REPORT)}</textarea>`,[{t:'Закрыть',cls:'g'},{t:'Копировать',cls:'o',fn:copyRep},{t:'Скачать .txt',cls:'o',fn:()=>download(fname('txt'),reportTXT(),'text/plain')},{t:'Скачать .html',fn:()=>download(fname('html'),reportHTML(),'text/html')}])},
+ print(){const pa=$('#printArea');const h=reportHTML();pa.innerHTML=h.slice(h.indexOf('<h1>'),h.lastIndexOf('</body>'));const st=document.createElement('style');st.textContent='@media print{#printArea{font-family:"Times New Roman",serif;font-size:14pt}#printArea table{border-collapse:collapse;width:100%;font-size:12pt}#printArea th,#printArea td{border:1px solid #000;padding:2px 6px}}';pa.prepend(st);try{window.print()}catch(e){toast('Печать недоступна — скачайте отчёт .html','bad')}},
+ calc(){openCalc()},ck(v){const x=$('#cx');x.value+=v;x.focus()},cc(){$('#cx').value='';$('#co').innerHTML='&nbsp;'},
+ ceq(){const x=$('#cx'),o=$('#co');try{const r=calc(x.value);o.textContent='= '+String(Math.round(r*1e6)/1e6).replace('.',',')}catch(e){o.textContent='Ошибка в выражении'}},
+ /* упорядочивание */
+ oadd(v){const [id,k]=v.split(':');if(S[id].done)return;S[id].ord.push(+k);renderCard(true)},
+ orem(v){const [id,i]=v.split(':');if(S[id].done)return;S[id].ord.splice(+i,1);renderCard(true)},
+ /* 1 */ t1m(v){if(S.t1.done)return;const [i,j]=v.split(':').map(Number);S.t1.m[i]=j;renderCard(true)},
+ /* 2 */
+ dsel(v){S.t2.sel=v;if(v==='unk'&&dev('unk').st==='nodrv')S.t2.found=true;renderCard(true)},
+ ptab(v){S.t2.ptab=+v;renderCard(true)},
+ dupd(){const x=dev(S.t2.sel);if(!x||S.t2.done)return;if(x.id==='unk'&&x.st==='nodrv'){S.t2.tab=1;renderCard();toast('Выберите драйвер в каталоге по ИД оборудования');return}
+  dialog('Обновление драйверов',`<p><b>${esc(x.name)}</b></p><p>Наилучшие драйверы для этого устройства уже установлены.</p>`,[{t:'Закрыть'}]);if(x.id==='eth'&&!S.t2.rbFirst)S.t2.rbFirst='upd'},
+ drb(){const x=dev(S.t2.sel);if(!x||!x.prev||S.t2.done)return;ask('Откат драйвера',`Вернуть предыдущую версию драйвера ${esc(x.prev[2])} от ${x.prev[1]}?`,'Да',()=>{x.drv=x.prev;x.prev=null;x.st='ok';if(x.id==='eth'){S.t2.rb=true;if(!S.t2.rbFirst)S.t2.rbFirst='rb'}renderCard(true);toast('Драйвер откачен. Устройство работает нормально.','good')})},
+ doff(){const x=dev(S.t2.sel);if(!x||S.t2.done)return;if(x.id!=='eth'){toast('Исправные устройства в этом задании не трогаем','bad');return}
+  if(x.st==='off'){x.st=S.t2.rb?'ok':'err';toast('Устройство включено');}else{x.st='off';if(!S.t2.rbFirst)S.t2.rbFirst='off';toast('Сетевая карта отключена — сети нет!','bad')}renderCard(true)},
+ ddel(){const x=dev(S.t2.sel);if(!x||S.t2.done)return;if(x.id!=='eth'&&x.id!=='unk'){toast('Исправные устройства в этом задании не трогаем','bad');return}
+  ask('Удаление устройства',`Удалить ${esc(x.name)} из системы?`,'Удалить',()=>{x.removed=true;S.t2.sel=null;if(x.id==='eth'&&!S.t2.rbFirst)S.t2.rbFirst='del';renderCard(true);toast('Устройство удалено. Нажмите ⟳, чтобы ОС снова нашла оборудование.')},'r')},
+ dscan(){const rm=S.t2.dev2.filter(x=>x.removed);if(!rm.length){toast('Изменений в оборудовании не найдено');return}rm.forEach(x=>{x.removed=false;if(x.id==='eth'&&!S.t2.rb){x.st='err'}});renderCard(true);toast('Plug and Play: устройство найдено снова, драйвер установлен тот же')},
+ dcat(v){if(S.t2.done)return;S.t2.cat=v;renderCard(true)},
+ dinst(){const T=S.t2;if(T.done||T.inst)return;const u=dev('unk');if(u.removed){toast('Неизвестное устройство удалено: нажмите ⟳ в Диспетчере','bad');return}const c=CATALOG.find(x=>x.id===T.cat);if(!c)return;
+  if(!u.hw.includes(c.hw)){T.att++;dialog('Установка драйвера',`<p>Указанная папка не содержит совместимого драйвера для этого устройства.</p><p class="muted">ИД оборудования: ${esc(u.hw)}</p>`,[{t:'OK'}]);renderCard(true);return}
+  T.inst=true;Object.assign(u,{st:'ok',cat:'Сетевые адаптеры',name:'Intel Wi-Fi 6 AX200 160MHz',maker:'Intel Corporation',drv:['Intel','14.08.2026',c.ver]});renderCard(true);toast('Драйвер установлен. Устройство работает нормально.','good')},
+ t2code(v){if(S.t2.done)return;S.t2.code=+v;renderCard(true)},
+ t2f(v){if(S.t2.done)return;S.t2.f[v]=!S.t2.f[v];renderCard(true)},
+ /* 3 */ t3r(v){if(S.t3.done)return;S.t3.r[v]=!S.t3.r[v];renderCard(true)},t3y(v){if(S.t3.done)return;S.t3.y=+v;renderCard(true)},
+ /* 4 */ t4f(v){if(S.t4.done)return;const i=+v;PICK=x=>{S.t4.v['f'+i]=x==='d'?'d':+x;renderCard(true)};const d=$('#dlg');DLG=[{t:'Отмена',cls:'g'}];
+  d.innerHTML=`<div class="dbox"><h3>Где страница адреса ${ADDR[i]}?</h3><div class="chips">${[0,1,2,3,4,5,6,7].map(k=>`<button class="chip" data-a="dlgpick" data-v="${k}">кадр ${k}</button>`).join('')}<button class="chip" data-a="dlgpick" data-v="d">на диске (page fault)</button></div><div class="dbtns"><button class="btn g" data-a="dlgb" data-v="0">Отмена</button></div></div>`;d.classList.remove('hidden')},
+ /* 5 */ t5hit(k){simStep(k,{a:'hit'})},t5free(k){simStep(k,{a:'free'})},t5ev(v){const [k,j]=v.split(':');simStep(k,{a:'evict',slot:+j})},
+ t5c(v){if(S.t5.done)return;const [i,j]=v.split(':').map(Number);S.t5.c[i]=j;renderCard(true)},
+ /* 6 */ t6a(v){if(S.t6.done)return;const [i,j]=v.split(':').map(Number);S.t6.a[i]=j;renderCard(true)},t6b(v){if(S.t6.done)return;const [i,j]=v.split(':').map(Number);S.t6.b[i]=j;renderCard(true)},
+ /* 7 */ t7e(v){if(S.t7.done)return;const [i,j]=v.split(':').map(Number);S.t7.e[i]=j;renderCard(true)}
+};
+stage.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;const f=ACT[b.dataset.a];if(f)f(b.dataset.v,b,e)});
+stage.addEventListener('input',e=>{const k=e.target.dataset.in;if(!k)return;const p=k.split('.');if(p.length===2)S[p[0]][p[1]]=e.target.value;else S[p[0]][p[1]][p[2]]=e.target.value});
+stage.addEventListener('focusout',e=>{if(e.target.dataset&&e.target.dataset.in){const sc=$('.cb')?$('.cb').scrollTop:0;const f=V[S.view].foot();const st=$('.cf .st');if(st)st.innerHTML=f[0]}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#dlg').classList.contains('hidden'))closeDlg();if(e.key==='Enter'&&(e.target.id==='fn'||e.target.id==='fg'))ACT.start()});
+window.addEventListener('beforeunload',e=>{if(S.t0&&!S.fin){e.preventDefault();e.returnValue=''}});
+function finish(){if(S.fin)return;S.fin=true;S.view='res';S.rtab=0;render();dialog('Работа сдана',`<p>Результат: <b>${fmt(total())} из 100</b>. Сохраните отчёт кнопкой «Отчёт».</p>`,[{t:'К итогам'}])}
+render();
+window.APP={S,ACT,G,SC,total,countFaults,correctAct,tr,ADDR,LEVELS,PNP,IRQS,MODEQ,IOQ,SPQ,IEV,T5Q,DRVF,RES,reportHTML,reportTXT,render};
+})();
+</script>
+</body>
+</html>
