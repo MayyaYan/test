@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Автоматизация в ОС — практикум в командной строке</title>
+<style>
+/* ===== Практикум «Командная строка»: сцена 1280×720, кегль не меньше 22 pt ===== */
+:root{
+  --bg:#0B1220; --bar:#111827; --line:#CBD5E1; --ink:#0F172A; --muted:#475569; --panel:#F8FAFC;
+  --acc:#22C55E; --acc2:#16A34A; --blue:#2563EB; --blue-soft:#DBEAFE; --amber:#D97706; --amber-soft:#FEF3C7;
+  --ok:#15803D; --ok-soft:#DCFCE7; --bad:#B91C1C; --bad-soft:#FEE2E2;
+  --ff:"Segoe UI","PT Sans",Arial,sans-serif; --mono:Consolas,"Cascadia Mono","PT Mono","Liberation Mono",monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:#050A14}
+body{font-family:var(--ff);color:var(--ink);-webkit-font-smoothing:antialiased}
+button,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}button:disabled{cursor:default}
+:focus-visible{outline:3px solid #FBBF24;outline-offset:2px}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+#stage{position:absolute;left:0;top:0;width:1280px;height:720px;transform-origin:0 0;overflow:hidden;background:var(--bg);font-size:22pt;line-height:1.2}
+
+/* шапка */
+#top{position:absolute;left:0;right:0;top:0;height:54px;background:var(--bar);color:#E5E7EB;display:flex;align-items:center;gap:8px;padding:0 10px;border-bottom:2px solid #1F2937}
+#top .logo{font-family:var(--mono);font-weight:700;color:#0B1220;background:var(--acc);border-radius:8px;padding:0 8px;height:42px;display:flex;align-items:center}
+#top .ttl{font-weight:700;white-space:nowrap;color:#fff}
+#top .chips{display:flex;gap:4px;margin-left:6px}
+#top .chips button{border:2px solid #374151;background:#1F2937;color:#D1D5DB;min-width:44px;height:42px;border-radius:8px;padding:0 8px;font-weight:700}
+#top .chips button.on{background:#fff;color:#0B1220;border-color:#fff}
+#top .chips button.done{border-color:var(--acc);color:#86EFAC}
+#top .chips button.on.done{color:var(--acc2)}
+#top .chips button:disabled{opacity:.4}
+#top .sp{flex:1}
+#top .pill{padding:0 12px;height:42px;display:flex;align-items:center;border-radius:8px;background:#1F2937;font-weight:700;white-space:nowrap}
+#top .clock{font-family:var(--mono);background:#1E3A8A;color:#fff}
+#top .clock.warn{background:#A16207}#top .clock.crit{background:#B91C1C}
+#top .ib{border:0;background:#1F2937;color:#fff;width:44px;height:42px;border-radius:8px}
+
+/* основная область */
+#main{position:absolute;left:0;right:0;top:54px;bottom:0;display:flex;gap:8px;padding:8px}
+#mis{width:500px;flex:none;background:var(--panel);border-radius:10px;display:flex;flex-direction:column;overflow:hidden}
+#main.wide #mis{display:none}
+#right{flex:1;min-width:0;display:flex;flex-direction:column;border-radius:10px;overflow:hidden;background:#0C0C0C;position:relative}
+.mh{flex:none;padding:6px 14px;background:#E2E8F0;border-bottom:3px solid var(--acc2)}
+.mh .mn{color:var(--muted);display:block;line-height:1.1}
+.mh b{display:block;line-height:1.15}
+.mh .row{display:flex;align-items:center;gap:8px}
+.mh .row b{flex:1;min-width:0}
+.badge{padding:0 10px;border-radius:8px;font-weight:700;white-space:nowrap;background:#fff;border:2px solid var(--line)}
+.badge.ok{background:var(--ok-soft);border-color:#86EFAC;color:var(--ok)}
+.mb{flex:1;min-height:0;overflow:auto;padding:8px 12px}
+.mf{flex:none;display:flex;gap:8px;padding:6px 10px;border-top:2px solid var(--line);background:#EEF2F7}
+.mf .sp{flex:1}
+.step{border:2px solid var(--line);border-radius:10px;margin-bottom:6px;background:#fff}
+.step>button.sh{display:flex;align-items:flex-start;gap:8px;width:100%;border:0;background:transparent;text-align:left;padding:4px 10px;line-height:1.2}
+.step .ic{flex:none;width:34px;height:34px;border-radius:50%;border:3px solid #94A3B8;display:flex;align-items:center;justify-content:center;font-weight:700;margin-top:2px}
+.step.done{border-color:#86EFAC;background:#F0FDF4}
+.step.done .ic{background:var(--acc2);border-color:var(--acc2);color:#fff}
+.step.cur{border-color:var(--blue);box-shadow:0 0 0 3px #BFDBFE}
+.step.cur .ic{border-color:var(--blue);color:var(--blue)}
+.step .stt{flex:1;min-width:0;font-weight:700}
+.step .pts{flex:none;color:var(--muted);white-space:nowrap}
+.step .sd{padding:0 10px 8px}
+.step .sd p{margin:0 0 6px}
+pre.code{margin:4px 0 6px;background:#0F172A;color:#E2E8F0;border-radius:8px;padding:6px 10px;font-family:var(--mono);font-size:22pt;line-height:1.15;white-space:pre-wrap;word-break:break-word;position:relative}
+pre.code .cm{color:#94A3B8}
+.zoom{border:2px solid var(--blue);background:#fff;color:var(--blue);border-radius:8px;padding:0 10px;font-weight:700}
+.why{background:var(--amber-soft);border-left:6px solid var(--amber);border-radius:6px;padding:4px 10px;margin:4px 0}
+.okmsg{background:var(--ok-soft);border-left:6px solid var(--acc2);border-radius:6px;padding:4px 10px;margin:4px 0}
+.btn{border:2px solid var(--acc2);background:var(--acc2);color:#fff;border-radius:8px;padding:0 14px;font-weight:700;white-space:nowrap;height:42px}
+.btn:hover:not(:disabled){filter:brightness(1.08)}
+.btn.o{background:#fff;color:var(--acc2)}
+.btn.b{background:var(--blue);border-color:var(--blue)}
+.btn.r{background:var(--bad);border-color:var(--bad)}
+.btn.g{background:#fff;color:var(--ink);border-color:var(--line)}
+.btn:disabled{opacity:.4}
+
+/* терминал */
+.ttabs{flex:none;display:flex;align-items:flex-end;gap:4px;background:#1F2937;padding:6px 8px 0}
+.ttabs button.tb{border:0;border-radius:10px 10px 0 0;padding:2px 16px 4px;background:#374151;color:#D1D5DB;display:flex;align-items:center;gap:8px;white-space:nowrap}
+.ttabs button.tb.on{background:#0C0C0C;color:#fff;font-weight:700}
+.ttabs button.tb.ps.on{background:#012456}
+.ttabs button.tb.sh.on{background:#300A24}
+.ttabs .ti{width:24px;height:20px;border-radius:3px;border:2px solid #9CA3AF;background:#0C0C0C}
+.ttabs .ps .ti{background:#012456;border-color:#60A5FA}
+.ttabs .sh .ti{background:#300A24;border-color:#E95420}
+.ttabs .sp{flex:1}
+.ttabs .ib{border:0;background:#374151;color:#fff;border-radius:8px;height:40px;padding:0 12px;margin-bottom:5px;white-space:nowrap}
+.term{flex:1;min-height:0;display:flex;flex-direction:column;background:#0C0C0C;color:#CCCCCC;font-family:var(--mono);font-size:22pt;line-height:1.18;cursor:text}
+.term.ps{background:#012456;color:#EEEDF0}
+.term.sh{background:#300A24;color:#FFFFFF}
+.tout{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;padding:6px 10px 0}
+.tout div{white-space:pre-wrap;word-break:break-all;min-height:1.18em}
+.tin{flex:none;display:flex;align-items:flex-start;padding:0 10px 8px}
+.tin .pr{white-space:pre-wrap;word-break:break-all;max-width:60%}
+.tin input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-family:var(--mono);font-size:22pt;padding:0;line-height:1.18;caret-color:#FBBF24}
+.c-g{color:#16C60C}.term.sh .c-g{color:#8AE234}.c-b{color:#729FCF}
+.c-y{color:#F9F1A5}.c-r{color:#FF7B72}.c-m{color:#9CA3AF}
+.term.ps .c-r{color:#FF8A80;background:#000;}
+.c-cmd{color:#FBBF24}
+
+/* редактор */
+.ed{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;flex-direction:column;background:#fff;z-index:5}
+.ed .eh{flex:none;display:flex;align-items:center;gap:10px;background:#F3F3F3;border-bottom:2px solid #D5DCE3;padding:2px 10px;white-space:nowrap}
+.ed .eh .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.ed .em{flex:none;padding:0 10px;border-bottom:2px solid #E3E9EF;color:#334155;white-space:nowrap}
+.ed textarea{flex:1;min-height:0;resize:none;border:0;outline:0;padding:6px 10px;font-family:var(--mono);font-size:22pt;line-height:1.18;white-space:pre-wrap;color:#111}
+.ed .ef{flex:none;display:flex;align-items:center;gap:8px;padding:4px 8px;background:#F3F3F3;border-top:2px solid #D5DCE3}
+.ed .ef .st{flex:1;min-width:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ed.nano{background:#300A24}
+.ed.nano .eh{background:#D3D7CF;color:#300A24;justify-content:center;font-family:var(--mono)}
+.ed.nano .em{display:none}
+.ed.nano textarea{background:#300A24;color:#fff;caret-color:#FBBF24}
+.ed.nano .ef{background:#300A24;border-top:0;color:#fff;font-family:var(--mono)}
+.ed.nano .ef .st{color:#D3D7CF}
+.ed.nano .ef button{background:#D3D7CF;color:#300A24;border:0;border-radius:4px;padding:0 10px;font-family:var(--mono);height:40px}
+
+/* панели: вопросы, итоги */
+.pane{position:absolute;inset:0;background:#fff;display:flex;flex-direction:column;z-index:4}
+.pane .ph{flex:none;padding:6px 16px;border-bottom:3px solid var(--acc2);display:flex;align-items:center;gap:10px;background:#F1F5F9}
+.pane .ph b{flex:1}
+.pane .pb{flex:1;min-height:0;overflow:auto;padding:10px 16px}
+.pane .pf{flex:none;display:flex;align-items:center;gap:10px;padding:6px 12px;border-top:2px solid var(--line);background:#F1F5F9}
+.pane .pf .st{flex:1;min-width:0;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.nums{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.nums button{min-width:50px;height:42px;border:2px solid #94A3B8;background:#fff;border-radius:8px;font-weight:700}
+.nums button.ans{background:var(--blue-soft);border-color:var(--blue);color:var(--blue)}
+.nums button.cur{outline:3px solid var(--amber);outline-offset:1px}
+.nums button.ok{background:var(--ok);border-color:var(--ok);color:#fff}.nums button.bad{background:var(--bad);border-color:var(--bad);color:#fff}
+.qtxt{font-weight:700;font-size:24pt;margin-bottom:8px;line-height:1.2}
+.opts{display:flex;flex-direction:column;gap:6px}
+.opt{text-align:left;border:2px solid #94A3B8;background:#fff;border-radius:10px;padding:4px 14px;line-height:1.2}
+.opt.on{border-color:var(--blue);background:var(--blue-soft);font-weight:700}
+.opt.ok{border-color:var(--ok);background:var(--ok-soft);font-weight:700}
+.opt.bad{border-color:var(--bad);background:var(--bad-soft);text-decoration:line-through}
+.opt code,.qtxt code{font-family:var(--mono);background:#F1F5F9;border-radius:4px;padding:0 4px}
+.res{display:grid;grid-template-columns:230px minmax(0,1fr);gap:20px}
+.grade{width:110px;height:110px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:60pt;font-weight:800;color:#fff}
+.g5{background:#15803D}.g4{background:#0F766E}.g3{background:#A16207}.g2{background:#B91C1C}
+.big{font-size:44pt;font-weight:800;line-height:1}
+.bars{display:flex;flex-direction:column;gap:6px}
+.bar{display:grid;grid-template-columns:390px minmax(0,1fr) 90px;gap:10px;align-items:center}
+.bar .tr{height:24px;background:#E2E8F0;border-radius:8px;overflow:hidden}
+.bar .tr i{display:block;height:100%;width:0;border-radius:8px}
+.bar .v{text-align:right;font-weight:700}
+table.tb{border-collapse:collapse;width:100%}
+.tb th,.tb td{border:2px solid var(--line);padding:1px 8px;text-align:left;vertical-align:middle}
+.tb th{background:#F1F5F9}.tb td.c,.tb th.c{text-align:center}
+.lv{font-weight:700}.lv.l4{color:var(--ok)}.lv.l3{color:#0F766E}.lv.l2{color:var(--amber)}.lv.l1{color:var(--bad)}
+.tabs2{display:flex;gap:6px;margin-bottom:8px}
+.tabs2 button{border:2px solid var(--line);background:#fff;border-radius:8px;padding:0 14px;font-weight:700}
+.tabs2 button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* диалоги */
+#dlg{position:absolute;inset:0;background:rgba(5,10,20,.66);display:flex;align-items:center;justify-content:center;z-index:50}
+.dbox{background:#fff;border-radius:14px;min-width:560px;max-width:1220px;max-height:690px;overflow:auto;padding:12px 20px;box-shadow:0 30px 70px rgba(0,0,0,.6)}
+.dbox h3{margin:0 0 8px;font-size:26pt}
+.dbox p{margin:0 0 8px}
+.dbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:10px;flex-wrap:wrap}
+.dbox input[type=text]{width:100%;height:46px;border:2px solid #94A3B8;border-radius:8px;padding:0 10px;font-size:22pt}
+.dbox textarea{width:1160px;height:440px;font-family:var(--mono);font-size:22pt;border:2px solid var(--line);border-radius:8px;padding:8px}
+.dbox pre.code{font-size:22pt;max-height:520px;overflow:auto}
+.intro{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:20px;width:1160px}
+.intro ul{margin:0 0 8px;padding-left:1.2em}
+#toast{position:absolute;left:8px;bottom:8px;width:500px;background:#14532D;color:#fff;padding:6px 20px;border-radius:12px;z-index:70;max-width:1000px;text-align:center;box-shadow:0 10px 30px rgba(0,0,0,.5);border:2px solid var(--acc)}
+#toast.bad{background:#7F1D1D;border-color:#F87171}
+#printArea{display:none}
+@media print{body{overflow:visible;background:#fff}#stage{display:none}#printArea{display:block}}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="top"></div>
+  <div id="main">
+    <div id="mis"></div>
+    <div id="right">
+      <div class="ttabs" id="ttabs"></div>
+      <div class="term" id="term"><div class="tout" id="tout"></div><div class="tin"><span class="pr" id="tpr"></span><input id="tin" type="text" autocomplete="off" spellcheck="false" aria-label="Командная строка"></div></div>
+      <div class="ed hidden" id="ed"></div>
+      <div class="pane hidden" id="pane"></div>
+    </div>
+  </div>
+  <div id="dlg" class="hidden"></div>
+  <div id="toast" class="hidden"></div>
+</div>
+<div id="printArea"></div>
+<script>
+(function(){
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>Array.from(r.querySelectorAll(s));
+const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const pad=n=>String(n).padStart(2,'0');
+const r2=x=>Math.round(x*100)/100;
+const fmt=x=>String(r2(x)).replace('.',',');
+const NOW=()=>new Date();
+const DAY=864e5;
+const dRu=d=>`${pad(d.getDate())}.${pad(d.getMonth()+1)}.${d.getFullYear()}`;
+const hm=d=>`${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const tRu=d=>`${String(d.getHours()).padStart(2,' ')}:${pad(d.getMinutes())}:${pad(d.getSeconds())},${pad(Math.floor(d.getMilliseconds()/10))}`;
+const dInv=d=>`${pad(d.getMonth()+1)}/${pad(d.getDate())}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+const MON=['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+const wild=(p,ci)=>new RegExp('^'+p.replace(/[.+^${}()|[\]\\]/g,'\\$&').replace(/\*/g,'.*').replace(/\?/g,'.')+'$',ci?'i':'');
+
+/* ======================= ВИРТУАЛЬНЫЕ ФАЙЛОВЫЕ СИСТЕМЫ ======================= */
+class FS{
+ constructor(win){this.win=win;this.root={t:'d',n:'',c:{},m:NOW()}}
+ key(n){return this.win?n.toLowerCase():n}
+ split(abs){return this.win?abs.replace(/^[A-Za-z]:/,'').split('\\').filter(Boolean):abs.split('/').filter(Boolean)}
+ join(parts){return this.win?'C:\\'+parts.join('\\'):'/'+parts.join('/')}
+ norm(cwd,p){
+  p=String(p??'');
+  if(this.win){p=p.replace(/\//g,'\\');let base;
+   if(/^[A-Za-z]:/.test(p)){base=[];p=p.replace(/^[A-Za-z]:\\?/,'')}else if(p.startsWith('\\')){base=[];p=p.slice(1)}else base=this.split(cwd);
+   for(const s of p.split('\\')){if(!s||s==='.')continue;if(s==='..'){base.pop();continue}base.push(s)}
+   return this.join(this.fix(base))}
+  if(p==='~'||p.startsWith('~/'))p='/home/student'+p.slice(1);
+  let base=p.startsWith('/')?[]:this.split(cwd);
+  for(const s of p.split('/')){if(!s||s==='.')continue;if(s==='..'){base.pop();continue}base.push(s)}
+  return this.join(base)}
+ fix(parts){let n=this.root;return parts.map(s=>{const c=n&&n.c&&n.c[this.key(s)];if(c){n=c;return c.n}n=null;return s})}
+ get(abs){let n=this.root;for(const s of this.split(abs)){if(!n||n.t!=='d')return null;n=n.c[this.key(s)]}return n||null}
+ isDir(abs){const n=this.get(abs);return !!n&&n.t==='d'}
+ isFile(abs){const n=this.get(abs);return !!n&&n.t==='f'}
+ parent(abs){const ps=this.split(abs);const name=ps.pop()||'';return [this.join(ps),name]}
+ mkdir(abs,p){let n=this.root;const ps=this.split(abs);for(let i=0;i<ps.length;i++){const k=this.key(ps[i]);let c=n.c[k];if(!c){if(!p&&i<ps.length-1)return 'noparent';c=n.c[k]={t:'d',n:ps[i],c:{},m:NOW()}}else if(c.t!=='d')return 'file';n=c}return 'ok'}
+ write(abs,content,append){const [d,name]=this.parent(abs);const dn=this.get(d);if(!dn||dn.t!=='d'||!name)return false;const k=this.key(name);let f=dn.c[k];if(f&&f.t==='d')return false;
+  if(!f)f=dn.c[k]={t:'f',n:name,s:'',m:NOW(),mode:this.win?'':'rw-r--r--'};f.s=append?f.s+content:content;f.m=NOW();delete f.sz;return true}
+ read(abs){const f=this.get(abs);return f&&f.t==='f'?f.s:null}
+ rm(abs){const [d,name]=this.parent(abs);const dn=this.get(d);if(!dn)return false;const k=this.key(name);if(!dn.c[k])return false;delete dn.c[k];return true}
+ list(abs){const n=this.get(abs);return n&&n.t==='d'?Object.values(n.c).sort((a,b)=>a.n.localeCompare(b.n)):null}
+ size(f){return f.sz!=null?f.sz:new Blob([f.s]).size}
+ glob(cwd,pat){const abs=this.norm(cwd,pat);const [d,name]=this.parent(abs);if(!/[*?]/.test(name))return this.get(abs)?[abs]:[];
+  const re=wild(name,this.win);return (this.list(d)||[]).filter(x=>x.t==='f'&&re.test(x.n)&&(this.win||!x.n.startsWith('.')||name.startsWith('.'))).map(x=>this.join([...this.split(d),x.n]))}
+ lines(abs){const s=this.read(abs);return s==null?[]:s.split(/\r?\n/).filter(x=>x.trim())}
+}
+let W,L;
+function seedFS(){
+ const t=Date.now();
+ W=new FS(true);
+ ['C:\\Windows\\System32','C:\\Users\\student\\Documents','C:\\Users\\student\\Desktop','C:\\Program Files','C:\\Data','C:\\Temp'].forEach(p=>W.mkdir(p,true));
+ const wf=(p,s,ago,sz)=>{W.write(p,s);const f=W.get(p);f.m=new Date(t-ago);if(sz)f.sz=sz};
+ wf('C:\\Data\\report1.txt','Отчёт за неделю 1\r\nЗаявок закрыто: 42\r\n',DAY+3e6);
+ wf('C:\\Data\\report2.txt','Отчёт за неделю 2\r\nЗаявок закрыто: 37\r\n',DAY+2e6);
+ wf('C:\\Data\\notes.txt','Заменить патч-корд в серверной 2.\r\n',DAY+1e6);
+ wf('C:\\Data\\budget.xlsx','',2*DAY,18432);
+ wf('C:\\Data\\photo.jpg','',3*DAY,524288);
+ TEMP0.forEach(([n,ago,sz])=>wf('C:\\Temp\\'+n,'',ago,sz));
+ L=new FS(false);
+ ['/etc','/var/log','/tmp','/home/student/data'].forEach(p=>L.mkdir(p,true));
+ const lf=(p,s,ago,sz)=>{L.write(p,s);const f=L.get(p);f.m=new Date(t-ago);if(sz)f.sz=sz};
+ lf('/home/student/.bashrc','# ~/.bashrc\n',30*DAY);
+ lf('/home/student/data/report.txt','Report: 42 tickets closed\n',DAY);
+ lf('/home/student/data/notes.txt','Check UPS in server room\n',DAY);
+ lf('/home/student/data/image.png','',2*DAY,204800);
+ lf('/etc/hostname','srv\n',90*DAY);
+}
+const TEMP0=[['old1.tmp',10*DAY,2048],['old2.tmp',9*DAY,4096],['cache.tmp',2*DAY,1024],['fresh.tmp',3e6,512],['setup.log',20*DAY,8192]];
+function resetTemp(){const t=Date.now();(W.list('C:\\Temp')||[]).forEach(f=>W.rm('C:\\Temp\\'+f.n));TEMP0.forEach(([n,ago,sz])=>{W.write('C:\\Temp\\'+n,'');const f=W.get('C:\\Temp\\'+n);f.m=new Date(t-ago);f.sz=sz})}
+
+/* ======================= СОСТОЯНИЕ ======================= */
+const S={name:'',group:'',t0:0,tEnd:0,limit:5400,fin:false,view:1,wide:false,tab:'cmd',
+ done:{},ev:{},runs:{bat:0,ps:0,sh:0,err:0},cmds:0,errs:{cmd:0,ps:0,sh:0},hist:[],
+ quiz:{a:{},cur:0,done:false},rtab:0,tasks:{},cron:'',batRuns:{}};
+const SH={
+ cmd:{cwd:'C:\\Users\\student',vars:{},out:[],hist:[],hp:0},
+ ps:{cwd:'C:\\Users\\student',policy:'Restricted',pending:null,out:[],hist:[],hp:0,vars:{}},
+ sh:{cwd:'/home/student',vars:{},out:[],hist:[],hp:0,code:0}};
+const ev=(k,v)=>{S.ev[k]=v===undefined?(S.ev[k]||0)+1:v};
+
+/* ======================= ВЫВОД В ТЕРМИНАЛ ======================= */
+function out(sh,text,cls){String(text).split('\n').forEach(l=>SH[sh].out.push([l,cls||'']));if(SH[sh].out.length>600)SH[sh].out.splice(0,SH[sh].out.length-600)}
+function prompt(sh){const s=SH[sh];if(sh==='cmd')return s.cwd+'>';if(sh==='ps')return s.pending?'':'PS '+s.cwd+'> ';const c=s.cwd==='/home/student'?'~':s.cwd.startsWith('/home/student/')?'~'+s.cwd.slice(13):s.cwd;return 'student@srv:'+c+'$ '}
+
+/* разбор строки на слова с учётом кавычек */
+function words(s,q){const out=[];let cur='',qq=null,has=false;for(const ch of s){if(qq){if(ch===qq)qq=null;else cur+=ch;continue}if(q.includes(ch)){qq=ch;has=true;continue}if(/\s/.test(ch)){if(cur||has){out.push(cur);cur='';has=false}continue}cur+=ch}if(cur||has)out.push(cur);return out}
+/* перенаправление вывода: последнее > или >> вне кавычек */
+function redir(line,q){let qq=null,pos=-1,app=false;for(let i=0;i<line.length;i++){const ch=line[i];if(qq){if(ch===qq)qq=null;continue}if(q.includes(ch)){qq=ch;continue}if(ch==='>'){if(line[i-1]==='2'&&(i<2||/\s/.test(line[i-2]))){continue}pos=i;app=line[i+1]==='>';break}}
+ if(pos<0)return {cmd:line,file:null};let f=line.slice(pos+(app?2:1)).trim();const w=words(f,q);return {cmd:line.slice(0,pos).replace(/\s+$/,app||pos?'':''),file:w[0]||'',app,raw:line.slice(0,pos)}}
+function splitTop(line,sepCh,q){const out=[];let qq=null,depth=0,cur='';for(const ch of line){if(qq){cur+=ch;if(ch===qq)qq=null;continue}if(q.includes(ch)){qq=ch;cur+=ch;continue}if(ch==='{'||ch==='(')depth++;if(ch==='}'||ch===')')depth--;if(ch===sepCh&&depth===0){out.push(cur);cur='';continue}cur+=ch}out.push(cur);return out}
+
+/* ======================= CMD ======================= */
+const CMD_UNKNOWN=n=>`"${n}" не является внутренней или внешней\nкомандой, исполняемой программой или пакетным файлом.`;
+function cmdExpand(line,batch){return line.replace(/%%/g,'\u0001').replace(/%([^%\s]+)%/g,(m,n)=>{const k=n.toLowerCase();const d=NOW();
+ if(k==='date')return dRu(d);if(k==='time')return tRu(d);if(k==='cd')return SH.cmd.cwd;if(k==='username')return 'student';if(k==='computername')return 'WS-ADMIN';if(k==='userprofile')return 'C:\\Users\\student';if(k==='random')return String(Math.floor(Math.random()*32768));
+ const v=Object.keys(SH.cmd.vars).find(x=>x.toLowerCase()===k);if(v!=null)return SH.cmd.vars[v];return batch?'':m}).replace(/\u0001/g,'%')}
+function cmdLine(line,ctx){/* ctx: {batch, o:[]} — возвращает код */
+ const o=ctx.o;let t=line.trim();if(!t)return 0;
+ if(t[0]==='@')t=t.slice(1).trim();
+ const lc=t.toLowerCase();
+ if(/^(rem(\s|$)|::)/.test(lc))return 0;
+ /* if */
+ let m=t.match(/^if\s+(\/i\s+)?(not\s+)?exist\s+("[^"]+"|\S+)\s+(.+)$/i);
+ if(m){const p=W.norm(SH.cmd.cwd,m[3].replace(/"/g,''));const ex=!!W.get(p)||W.glob(SH.cmd.cwd,m[3].replace(/"/g,'')).length>0;if(ex!==!!m[2])return cmdLine(m[4],ctx);return 0}
+ m=t.match(/^if\s+(\/i\s+)?(not\s+)?("[^"]*"|\S+)\s*==\s*("[^"]*"|\S+)\s+(.+)$/i);
+ if(m){let a=m[3],b=m[4];if(m[1]){a=a.toLowerCase();b=b.toLowerCase()}if((a===b)!==!!m[2])return cmdLine(m[5],ctx);return 0}
+ if(/^if(\s|$)/i.test(t)||/^[()]/.test(t)||/\s\($/.test(t)){o.push(['Синтаксическая ошибка в команде.','']);return 1}
+ if(/^(for)\s/i.test(t)){o.push(['В тренажёре цикл for не поддерживается: используйте xcopy или copy.','c-y']);return 1}
+ const r=redir(t,'"');
+ let ro=null;if(r.file!=null){ro=[];}
+ const target=ro||o;
+ const code=cmdRun(r.cmd.trim(),target,ctx,r);
+ if(ro){const p=W.norm(SH.cmd.cwd,r.file);if(!W.isDir(W.parent(p)[0])){o.push(['Системе не удается найти указанный путь.','']);return 1}
+  W.write(p,ro.map(x=>x[0]).join('\r\n')+(ro.length?'\r\n':''),r.app);ev('cmd.redir:'+p.toLowerCase());if(/%date%|\d\d\.\d\d\.\d{4}/i.test(line))ev('cmd.redirDate')}
+ return code}
+function cmdRun(t,o,ctx,r){
+ if(!t)return 0;
+ const sp=t.match(/^(\S+)(\s?)(.*)$/);let name=sp[1],rest=sp[3]||'';
+ /* echo. и cd\ */
+ let mm=name.match(/^(echo)([.:])(.*)$/i);if(mm){name='echo';rest=mm[3]+(sp[2]+rest)}
+ mm=name.match(/^(cd)(\\.*|\.\..*)$/i);if(mm){name='cd';rest=mm[2]}
+ const n=name.toLowerCase();const a=words(rest,'"');const cwd=SH.cmd.cwd;
+ const pth=x=>W.norm(SH.cmd.cwd,x);
+ switch(n){
+ case 'echo':{if(!rest.trim()&&!/^echo[.:]/i.test(t)){o.push([`ECHO ${ctx.echoOn===false?'отключен':'включен'}.`,'']);return 0}
+  if(/^(off|on)$/i.test(rest.trim())){if(ctx.batch)ctx.echoOn=rest.trim().toLowerCase()==='on';return 0}
+  o.push([r&&r.file!=null?rest.replace(/\s$/,' '):rest,'']);if(/\d\d\.\d\d\.\d{4}/.test(rest)&&/\d:\d\d:\d\d/.test(rest))ev('cmd.echoDate');return 0}
+ case 'cd':case 'chdir':{let p=rest.trim().replace(/^\/d\s+/i,'').replace(/"/g,'');if(!p){o.push([cwd,'']);return 0}const ap=pth(p);if(W.isDir(ap)){SH.cmd.cwd=ap;ev('cmd.cd:'+ap.toLowerCase());return 0}o.push(['Системе не удается найти указанный путь.','']);return 1}
+ case 'cls':SH.cmd.out=[];return 0;
+ case 'dir':{const args=a.filter(x=>!x.startsWith('/'));const tgt=args[0]||'.';let ap=pth(tgt),mask='*';
+  if(!W.isDir(ap)){const [d,nm]=W.parent(ap);if(/[*?]/.test(nm)&&W.isDir(d)){ap=d;mask=nm}else if(W.isFile(ap)){ap=d;mask=nm}else{o.push([' Не удается найти указанный файл.','']);return 1}}
+  const items=(W.list(ap)||[]).filter(x=>wild(mask,true).test(x.n));let fc=0,bytes=0;
+  o.push([` Содержимое папки ${ap}`,'']);o.push(['','']);
+  items.forEach(x=>{if(x.t==='d')o.push([`${dRu(x.m)}  ${hm(x.m)}  <DIR>      ${x.n}`,'']);else{const s=W.size(x);fc++;bytes+=s;o.push([`${dRu(x.m)}  ${hm(x.m)} ${String(s).padStart(10)} ${x.n}`,''])}});
+  o.push([`  ${fc} файлов, ${bytes} байт`,'']);ev('cmd.dir:'+ap.toLowerCase());return 0}
+ case 'md':case 'mkdir':{if(!a.length){o.push(['Синтаксическая ошибка в команде.','']);return 1}let c=0;a.forEach(x=>{const ap=pth(x);if(W.get(ap)){o.push([`Подпапка или файл ${x} уже существует.`,'']);c=1}else W.mkdir(ap,true)});return c}
+ case 'type':{if(!a.length){o.push(['Синтаксическая ошибка в команде.','']);return 1}let c=0;a.forEach(x=>{const ap=pth(x);const f=W.get(ap);if(!f||f.t!=='f'){o.push(['Не удается найти указанный файл.','']);c=1;return}if(f.sz&&!f.s){o.push(['ЙРҐ▒п█ ▒☺ ♦ ... (двоичный файл)','c-m']);return}f.s.replace(/\r?\n$/,'').split(/\r?\n/).forEach(l=>o.push([l,'']));ev('cmd.type:'+ap.toLowerCase());ev('cmd.typeLines:'+ap.toLowerCase(),W.lines(ap).length)});return c}
+ case 'set':{if(!rest.trim()){Object.keys(SH.cmd.vars).sort().forEach(k=>o.push([k+'='+SH.cmd.vars[k],'']));o.push(['USERNAME=student','']);return 0}
+  const i=rest.indexOf('=');if(i<0){const k=Object.keys(SH.cmd.vars).find(x=>x.toLowerCase().startsWith(rest.trim().toLowerCase()));if(k)o.push([k+'='+SH.cmd.vars[k],'']);else{o.push([`Переменная среды ${rest.trim()} не определена`,'']);return 1}return 0}
+  const k=rest.slice(0,i).replace(/^\/a\s+/i,''),v=rest.slice(i+1);if(!v)delete SH.cmd.vars[k];else SH.cmd.vars[k]=v;if(/\s$/.test(k))ev('cmd.setSpace');return 0}
+ case 'copy':case 'xcopy':{const args=a.filter(x=>!x.startsWith('/'));if(args.length<1){o.push(['Неверное число параметров','']);return 1}
+  const src=W.glob(cwd,args[0]);if(!src.length){o.push([n==='xcopy'?'Файл не найден - '+args[0]:'Не удается найти указанный файл.','']);if(n==='xcopy')o.push(['Скопировано файлов: 0.','']);return 1}
+  let dst=pth(args[1]||'.');const many=src.length>1||/[*?]/.test(args[0]);
+  if(!W.isDir(dst)){if(n==='xcopy'&&(many||/\\$/.test(args[1]||''))){o.push([`Указывает ли ${args[1]} имя файла`,'']);o.push(['или каталога в целевом расположении','']);o.push(['(F = файл, D = каталог)? D','']);W.mkdir(dst,true)}
+   else if(many){if(!W.isDir(W.parent(dst)[0])){o.push(['Системе не удается найти указанный путь.','']);return 1}}}
+  if(!W.isDir(W.parent(dst)[0])&&!W.isDir(dst)){o.push(['Системе не удается найти указанный путь.','']);return 1}
+  let cnt=0;src.forEach(sf=>{const f=W.get(sf);const target=W.isDir(dst)?dst+'\\'+f.n:dst;W.write(target,f.s);const nf=W.get(target);if(f.sz)nf.sz=f.sz;cnt++;if(n==='xcopy')o.push([sf,''])});
+  o.push([n==='xcopy'?`Скопировано файлов: ${cnt}.`:`Скопировано файлов:${String(cnt).padStart(9)}.`,'']);ev('cmd.copy');return 0}
+ case 'del':case 'erase':{const args=a.filter(x=>!x.startsWith('/'));let c=0;args.forEach(x=>{const fl=W.glob(cwd,x);if(!fl.length){o.push([`Не удается найти ${pth(x)}`,'']);c=1}fl.forEach(f=>W.rm(f))});return c}
+ case 'notepad':case 'notepad.exe':{if(ctx.batch){return 0}openEditor('np',a[0]?pth(a[0]):null);return 0}
+ case 'schtasks':return schtasks(a,o,ctx);
+ case 'pause':o.push(['Для продолжения нажмите любую клавишу . . .','']);return 0;
+ case 'exit':if(ctx.batch){ctx.stop=true;return 0}o.push(['В тренажёре окно не закрывается.','c-m']);return 0;
+ case 'ver':o.push(['','']);o.push(['Microsoft Windows [Version 10.0.26100]','']);return 0;
+ case 'whoami':o.push(['ws-admin\\student','']);return 0;
+ case 'hostname':o.push(['WS-ADMIN','']);return 0;
+ case 'date':if(/\/t/i.test(rest)){o.push([dRu(NOW()),'']);return 0}o.push(['Текущая дата: '+dRu(NOW()),'']);return 0;
+ case 'time':if(/\/t/i.test(rest)){o.push([hm(NOW()),'']);return 0}o.push(['Текущее время: '+tRu(NOW()),'']);return 0;
+ case 'help':o.push(['Команды тренажёра CMD:','c-y']);o.push(['cd, dir, mkdir, type, echo, set, copy,','']);o.push(['xcopy, del, notepad, schtasks, cls,','']);o.push(['date /t, time /t, whoami, ver','']);o.push(['Запуск файла: имя.bat','']);return 0;
+ case 'powershell':case 'pwsh':case 'bash':o.push([`Откройте вкладку «${n==='bash'?'Bash':'PowerShell'}» вверху терминала.`,'c-y']);return 0;
+ case 'call':return cmdRun(rest,o,ctx);
+ }
+ /* запуск командного файла */
+ const bp=findBat(name);if(bp){if(ctx.depth>3){o.push(['Слишком глубокая вложенность вызовов.','']);return 1}runBatch(bp,o,ctx.depth+1||1);return 0}
+ if(/\.ps1$/i.test(name)){o.push(['Сценарий .ps1 запускают в PowerShell (вкладка вверху).','c-y']);return 1}
+ o.push([CMD_UNKNOWN(name),'']);return 1}
+function findBat(name){const c=[name];if(!/\.(bat|cmd)$/i.test(name))c.push(name+'.bat',name+'.cmd');for(const x of c){const p=W.norm(SH.cmd.cwd,x.replace(/"/g,''));if(W.isFile(p)&&/\.(bat|cmd)$/i.test(p))return p}return null}
+function runBatch(p,o,depth,silent){const f=W.get(p);S.runs.bat++;S.batRuns[p.toLowerCase()]=(S.batRuns[p.toLowerCase()]||0)+1;ev('bat.run:'+p.toLowerCase());
+ const ctx={batch:true,o,echoOn:true,depth:depth||1};const saveCwd=SH.cmd.cwd;let errs=0;
+ for(const raw of f.s.split(/\r?\n/)){if(ctx.stop)break;let line=raw.trim();if(!line)continue;const at=line[0]==='@';
+  const ex=cmdExpand(line,true);
+  if(ctx.echoOn&&!at&&!/^@?echo\s+off\s*$/i.test(line)){o.push(['','']);o.push([SH.cmd.cwd+'>'+ex.replace(/^@/,''),''])}
+  else if(ctx.echoOn&&!at&&/^echo\s+off\s*$/i.test(line)){o.push(['','']);o.push([SH.cmd.cwd+'>'+ex,''])}
+  const c=cmdLine(ex,ctx);if(c)errs++}
+ if(errs)S.runs.err++;
+ return errs}
+
+/* планировщик */
+function schtasks(a,o,ctx){const op=(a[0]||'').toLowerCase();const opt={};for(let i=1;i<a.length;i++){const k=a[i].toLowerCase();if(k.startsWith('/')){const v=a[i+1]&&!a[i+1].startsWith('/')?a[++i]:true;opt[k]=v}}
+ const nm=typeof opt['/tn']==='string'?opt['/tn'].replace(/^\\/,''):null;const key=nm&&Object.keys(S.tasks).find(k=>k.toLowerCase()===nm.toLowerCase());
+ if(op==='/create'){if(!nm){o.push(['ОШИБКА: Неверный синтаксис. Отсутствует обязательный параметр /tn.','c-r']);return 1}
+  if(typeof opt['/tr']!=='string'){o.push(['ОШИБКА: Неверный синтаксис. Отсутствует обязательный параметр /tr.','c-r']);return 1}
+  if(typeof opt['/sc']!=='string'){o.push(['ОШИБКА: Неверный синтаксис. Отсутствует обязательный параметр /sc.','c-r']);return 1}
+  const sc=opt['/sc'].toLowerCase();if(!['daily','weekly','monthly','once','minute','hourly','onlogon','onstart'].includes(sc)){o.push([`ОШИБКА: Недопустимое значение для параметра /sc: "${opt['/sc']}".`,'c-r']);return 1}
+  const st=typeof opt['/st']==='string'?opt['/st']:null;if(st&&!/^([01]?\d|2[0-3]):[0-5]\d$/.test(st)){o.push(['ОШИБКА: Неверное время запуска. Формат: ЧЧ:ММ (24 часа).','c-r']);return 1}
+  if(['daily','weekly','monthly','once'].includes(sc)&&!st){o.push(['ВНИМАНИЕ: время запуска не указано — взято текущее время.','c-y'])}
+  if(key&&!opt['/f']){o.push([`ОШИБКА: Задача "${nm}" уже существует. Добавьте /f для замены.`,'c-r']);return 1}
+  if(key)delete S.tasks[key];
+  S.tasks[nm]={name:nm,tr:opt['/tr'],sc,st:st?st.replace(/^(\d):/,'0$1:'):hm(NOW()),created:NOW()};
+  o.push([`УСПЕХ. Запланированная задача "${nm}" успешно создана.`,'c-g']);ev('task.create');return 0}
+ if(op==='/query'){const list=nm?(key?[S.tasks[key]]:[]):Object.values(S.tasks);if(nm&&!key){o.push(['ОШИБКА: Система не может найти указанный файл.','c-r']);return 1}
+  if(!list.length){o.push(['ИНФОРМАЦИЯ: Пользовательских задач нет.','']);return 0}
+  list.forEach(t=>{const nx=new Date();const [h,mi]=t.st.split(':').map(Number);nx.setHours(h,mi,0,0);if(nx<NOW())nx.setDate(nx.getDate()+1);
+   o.push(['','']);o.push(['Имя задачи:     \\'+t.name,'']);o.push(['Следующий запуск: '+dRu(nx)+' '+t.st,'']);o.push(['Состояние:      Готово','']);o.push(['Расписание:     '+({daily:'Ежедневно',weekly:'Еженедельно',monthly:'Ежемесячно',once:'Однократно',minute:'Каждую минуту',hourly:'Каждый час',onlogon:'При входе',onstart:'При запуске'}[t.sc]||t.sc)+' в '+t.st,'']);o.push(['Задача:         '+t.tr,''])});
+  ev('task.query');return 0}
+ if(op==='/run'){if(!key){o.push(['ОШИБКА: Система не может найти указанный файл.','c-r']);return 1}const t=S.tasks[key];
+  o.push([`УСПЕХ. Попытка выполнить запланированную задачу "${t.name}".`,'c-g']);const p=W.norm('C:\\',t.tr.replace(/"/g,''));
+  if(W.isFile(p)&&/\.(bat|cmd)$/i.test(p)){const keep=SH.cmd.cwd;SH.cmd.cwd='C:\\Windows\\System32';runBatch(p,[],1);SH.cmd.cwd=keep;ev('task.run')}else ev('task.runBad');return 0}
+ if(op==='/delete'){if(!key){o.push(['ОШИБКА: Система не может найти указанный файл.','c-r']);return 1}delete S.tasks[key];o.push([`УСПЕХ. Запланированная задача "${nm}" успешно удалена.`,'c-g']);return 0}
+ o.push(['ОШИБКА: Неверный аргумент или параметр. Введите "schtasks /?"','c-r']);o.push(['Примеры: schtasks /create, /query, /run, /delete','c-m']);return 1}
+
+/* ======================= POWERSHELL ======================= */
+const PS_UNKNOWN=n=>`${n} : Имя "${n}" не распознано как имя командлета,\nфункции, файла сценария или выполняемой программы.\nПроверьте правильность написания имени.`;
+const PSALIAS={ls:'get-childitem',dir:'get-childitem',gci:'get-childitem',cd:'set-location',sl:'set-location','chdir':'set-location',pwd:'get-location',gl:'get-location',cat:'get-content',type:'get-content',gc:'get-content',rm:'remove-item',del:'remove-item',ri:'remove-item',erase:'remove-item',echo:'write-output',write:'write-output',cls:'clear-host',clear:'clear-host',mkdir:'new-item-dir',md:'new-item-dir',cp:'copy-item',copy:'copy-item',ni:'new-item',ac:'add-content',where:'where-object','?':'where-object',select:'select-object',measure:'measure-object',sort:'sort-object',ft:'format-table',fl:'format-list','%':'foreach-object',foreach:'foreach-object'};
+function psArgs(a){const pos=[],named={};for(let i=0;i<a.length;i++){const x=a[i];if(/^-[A-Za-z]/.test(x)&&!/^-\d/.test(x)){const k=x.slice(1).toLowerCase();const nx=a[i+1];if(nx!==undefined&&!/^-[A-Za-z]/.test(nx)&&!['force','recurse','file','directory','append','whatif','confirm'].includes(k)){named[k]=nx;i++}else named[k]=true}else pos.push(x)}return {pos,named}}
+function psFileObj(abs){const f=W.get(abs);return {name:f.n,full:abs,dir:f.t==='d',len:f.t==='d'?null:W.size(f),lwt:f.m}}
+function psTable(o,items,cwdLabel){if(!items.length)return;const groups={};items.forEach(x=>{const d=W.parent(x.full)[0];(groups[d]=groups[d]||[]).push(x)});
+ Object.keys(groups).forEach(d=>{o.push(['','']);o.push(['    Каталог: '+d,'']);o.push(['','']);o.push(['Mode   LastWriteTime     Length Name','']);o.push(['----   -------------     ------ ----','']);
+  groups[d].forEach(x=>o.push([`${x.dir?'d----':'-a---'}  ${dRu(x.lwt)} ${hm(x.lwt)} ${x.dir?'      ':String(x.len).padStart(6)} ${x.name}`,'']))});o.push(['',''])}
+function psGetDate(){const d=NOW();const M=['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()} г. ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}
+const DISK={used:200*1073741824,free:32*1073741824};
+function psRhs(v){/* значение для сравнения: число, строка, дата */
+ v=v.trim();let m=v.match(/^\(?\s*get-date\s*\)?\.adddays\(\s*(-?\d+(?:\.\d+)?)\s*\)\s*\)?$/i);if(m)return new Date(Date.now()+parseFloat(m[1])*DAY);
+ m=v.match(/^\$(\w+)$/);if(m){const k=Object.keys(SH.ps.vars).find(x=>x.toLowerCase()===m[1].toLowerCase());return k?SH.ps.vars[k]:null}
+ m=v.match(/^(\d+(?:\.\d+)?)(kb|mb|gb)?$/i);if(m)return parseFloat(m[1])*({kb:1024,mb:1048576,gb:1073741824}[(m[2]||'').toLowerCase()]||1);
+ return v.replace(/^["']|["']$/g,'')}
+function psCmp(a,op,b){if(a instanceof Date)a=a.getTime();if(b instanceof Date)b=b.getTime();switch(op){case '-lt':return a<b;case '-le':return a<=b;case '-gt':return a>b;case '-ge':return a>=b;case '-eq':return String(a).toLowerCase()===String(b).toLowerCase();case '-ne':return String(a).toLowerCase()!==String(b).toLowerCase();case '-like':return wild(String(b),true).test(String(a));case '-notlike':return !wild(String(b),true).test(String(a))}return false}
+function psProp(x,p){p=p.toLowerCase();if(p==='lastwritetime')return x.lwt;if(p==='length')return x.len||0;if(p==='name')return x.name;if(p==='fullname')return x.full;if(p==='extension'){const m=x.name.match(/\.[^.]+$/);return m?m[0]:''}if(p==='psiscontainer')return x.dir;return null}
+function psLine(line,o){
+ const s=SH.ps;let t=line.trim();if(!t)return 0;
+ if(s.pending){const f=s.pending;s.pending=null;return f(t,o)}
+ if(t.startsWith('#'))return 0;
+ /* присваивание переменной */
+ let m=t.match(/^\$(\w+)\s*=\s*(.+)$/);if(m){const v=t.slice(t.indexOf('=')+1).trim();let val;if(/^["']/.test(v))val=psExpand(v.replace(/^["']|["']$/g,''),{});else if(/^-?\d+(\.\d+)?$/.test(v))val=parseFloat(v);else if(/get-date/i.test(v))val=psRhs(v);else if(/^get-psdrive/i.test(v))val={used:DISK.used,free:DISK.free,name:'C'};else val=v;s.vars[m[1]]=val;return 0}
+ m=t.match(/^\$(\w+)(\.(\w+))?$/);if(m){const k=Object.keys(s.vars).find(x=>x.toLowerCase()===m[1].toLowerCase());if(k==null)return 0;let v=s.vars[k];if(m[3]&&v&&typeof v==='object')v=v[m[3].toLowerCase()];if(v instanceof Date)v=psGetDate();o.push([String(v),'']);return 0}
+ if(/^\(\s*get-date\s*\)\.adddays/i.test(t)){const d=psRhs(t);o.push(['','']);o.push([dRu(d)+' '+d.toLocaleTimeString('ru-RU'),'']);o.push(['','']);return 0}
+ const parts=splitTop(t,'|','"\'');
+ let objs=null;let code=0;
+ for(let i=0;i<parts.length;i++){const seg=parts[i].trim();const r=psSeg(seg,o,objs,i===parts.length-1);if(r&&r.err){code=1;objs=null;break}objs=r?r.objs:null}
+ if(objs&&objs.length){if(typeof objs[0]==='object'&&objs[0].full)psTable(o,objs);else objs.forEach(x=>o.push([String(x),'']))}
+ if(code)S.errs.ps++;
+ return code}
+function psSeg(seg,o,inp,last){
+ const sm=seg.match(/^(\S+)\s*(.*)$/s);if(!sm)return null;let n=sm[1].toLowerCase();const restRaw=sm[2]||'';
+ n=PSALIAS[n]||n;
+ const a=words(restRaw,'"\'');const {pos,named}=psArgs(a);const s=SH.ps;const P=x=>W.norm(s.cwd,x);
+ const err=(msg)=>{o.push([msg,'c-r']);return {err:1}};
+ switch(n){
+ case 'get-childitem':{let p=named.path||pos[0]||'.';let filt=named.filter||null;let ap=P(p);let items;
+  if(!W.isDir(ap)){const [d,nm]=W.parent(ap);if(/[*?]/.test(nm)&&W.isDir(d)){ap=d;filt=filt||nm}else if(W.isFile(ap)){items=[psFileObj(ap)]}else return err(`Get-ChildItem : Не удается найти путь "${ap}",\nтак как он не существует.`)}
+  if(!items)items=(W.list(ap)||[]).filter(x=>!filt||wild(filt,true).test(x.n)).map(x=>psFileObj(ap+'\\'+x.n));
+  if(named.file)items=items.filter(x=>!x.dir);ev('ps.gci:'+ap.toLowerCase());return {objs:items}}
+ case 'where-object':{if(!inp)return {objs:[]};const m=restRaw.match(/^\{\s*\$_\.(\w+)\s+(-\w+)\s+(.+?)\s*\}$/i)||restRaw.match(/^(\w+)\s+(-\w+)\s+(.+)$/i);if(!m)return err('Where-Object : в тренажёре поддерживается вид\n{ $_.Свойство -оператор значение }');
+  const rhs=psRhs(m[3]);return {objs:inp.filter(x=>psCmp(psProp(x,m[1]),m[2].toLowerCase(),rhs))}}
+ case 'select-object':{if(!inp)return null;const k=named.first||named.last;let r=inp;if(named.first)r=inp.slice(0,+named.first);if(named.last)r=inp.slice(-named.last);return {objs:r}}
+ case 'sort-object':{if(!inp)return null;const p=(pos[0]||named.property||'name');const r=inp.slice().sort((x,y)=>{const a1=psProp(x,p),b1=psProp(y,p);return a1>b1?1:a1<b1?-1:0});if(named.descending)r.reverse();return {objs:r}}
+ case 'measure-object':{if(!inp)return null;o.push(['','']);o.push(['Count    : '+inp.length,'']);o.push(['','']);return {objs:[]}}
+ case 'format-table':case 'format-list':case 'out-default':return {objs:inp};
+ case 'remove-item':{let list=[];if(inp)list=inp.map(x=>x.full);else{const p=named.path||pos[0];if(!p)return err('Remove-Item : не указан путь.');const g=W.glob(s.cwd,p);if(!g.length)return err(`Remove-Item : Не удается найти путь "${P(p)}",\nтак как он не существует.`);list=g}
+  list.forEach(x=>W.rm(x));ev('ps.rm');return {objs:[]}}
+ case 'set-location':{const p=named.path||pos[0];if(!p){return null}const ap=P(p);if(!W.isDir(ap))return err(`Set-Location : Не удается найти путь "${ap}",\nтак как он не существует.`);s.cwd=ap;return null}
+ case 'get-location':o.push(['','']);o.push(['Path','']);o.push(['----','']);o.push([s.cwd,'']);o.push(['','']);return null;
+ case 'get-content':{const p=named.path||pos[0];if(!p)return err('Get-Content : не указан путь.');const ap=P(p);const f=W.get(ap);if(!f||f.t!=='f')return err(`Get-Content : Не удается найти путь "${ap}",\nтак как он не существует.`);
+  f.s.replace(/\r?\n$/,'').split(/\r?\n/).forEach(l=>o.push([l,'']));ev('ps.gc:'+ap.toLowerCase());ev('ps.gcLines:'+ap.toLowerCase(),W.lines(ap).length);return null}
+ case 'write-host':case 'write-output':{const txt=a.map(x=>psExpand(x,{})).join(' ');const fg=(named.foregroundcolor||'').toLowerCase();o.push([psExpand(restRaw.replace(/\s*-foregroundcolor\s+\w+/i,'').replace(/^["']|["']$/g,''),{}),fg==='red'?'c-r':fg==='yellow'?'c-y':fg==='green'?'c-g':'']);return null}
+ case 'get-date':o.push(['','']);o.push([psGetDate(),'']);o.push(['','']);return null;
+ case 'clear-host':s.out=[];return null;
+ case 'get-executionpolicy':{if(named.list){o.push(['','']);o.push(['        Scope ExecutionPolicy','']);o.push(['        ----- ---------------','']);o.push(['  CurrentUser '+(s.policy==='Restricted'?'Undefined':s.policy),'']);o.push([' LocalMachine Undefined','']);o.push(['','']);return null}o.push([s.policy,'']);return null}
+ case 'set-executionpolicy':{const pol=(named.executionpolicy||pos[0]||'');const ok=['restricted','remotesigned','allsigned','unrestricted','bypass','default','undefined'];if(!ok.includes(pol.toLowerCase()))return err(`Set-ExecutionPolicy : Не удается привязать параметр "ExecutionPolicy".\nДопустимые значения: Restricted, RemoteSigned, AllSigned, Unrestricted, Bypass.`);
+  const scope=String(named.scope||'LocalMachine').toLowerCase();const norm={restricted:'Restricted',remotesigned:'RemoteSigned',allsigned:'AllSigned',unrestricted:'Unrestricted',bypass:'Bypass',default:'Restricted',undefined:'Restricted'}[pol.toLowerCase()];
+  if(scope==='localmachine'){o.push(['Set-ExecutionPolicy : Отказано в доступе к разделу реестра','c-r']);o.push(['HKEY_LOCAL_MACHINE. Запустите PowerShell от имени','c-r']);o.push(['администратора или добавьте -Scope CurrentUser.','c-r']);ev('ps.policyDenied');return {err:1}}
+  const apply=()=>{s.policy=norm;ev('ps.policySet:'+norm.toLowerCase())};
+  if(named.force){apply();return null}
+  o.push(['','']);o.push(['Изменение политики выполнения','c-y']);o.push(['Политика выполнения защищает компьютер от ненадежных','']);o.push(['сценариев. Вы хотите изменить политику выполнения?','']);o.push(['[Y] Да  [A] Да для всех  [N] Нет  (по умолчанию "N"):','']);
+  s.pending=(ans,oo)=>{if(/^[ya]$/i.test(ans.trim())||/^да/i.test(ans.trim())){apply();oo.push(['Политика выполнения изменена: '+norm+'.','c-g'])}else oo.push(['Политика не изменена.','c-y']);return 0};return null}
+ case 'get-psdrive':{const nm=(named.name||pos[0]||'C').toUpperCase();if(nm!=='C'&&nm!=='C:')return err(`Get-PSDrive : Не удается найти диск. Диск с именем "${nm}" не существует.`);
+  o.push(['','']);o.push(['Name  Used (GB)  Free (GB)  Root','']);o.push(['----  ---------  ---------  ----','']);o.push(['C        200,00      32,00  C:\\','']);o.push(['','']);ev('ps.psdrive');return null}
+ case 'new-item-dir':case 'new-item':{const p=named.path||pos[0];if(!p)return err('New-Item : не указан путь.');const ap=P(p);const isDir=n==='new-item-dir'||/^dir/i.test(String(named.itemtype||''));if(W.get(ap))return err(`New-Item : Элемент с указанным именем ${ap} уже существует.`);if(isDir)W.mkdir(ap,true);else{if(!W.write(ap,named.value?String(named.value):''))return err('New-Item : Не удается найти часть пути.')}psTable(o,[psFileObj(ap)]);return null}
+ case 'add-content':case 'set-content':{const p=named.path||pos[0];const v=named.value!=null?named.value:pos[1];if(!p)return err('Add-Content : не указан путь.');const ap=P(p);if(!W.isDir(W.parent(ap)[0]))return err(`${n==='add-content'?'Add-Content':'Set-Content'} : Не удается найти часть пути "${ap}".`);W.write(ap,psExpand(String(v??''),{})+'\r\n',n==='add-content');return null}
+ case 'copy-item':{const src=W.glob(s.cwd,named.path||pos[0]||'');const dst=P(named.destination||pos[1]||'.');if(!src.length)return err('Copy-Item : Не удается найти путь.');src.forEach(sf=>{const f=W.get(sf);const t2=W.isDir(dst)?dst+'\\'+f.n:dst;W.write(t2,f.s);if(f.sz)W.get(t2).sz=f.sz});return null}
+ case 'test-path':{const p=named.path||pos[0];o.push([W.get(P(p||''))?'True':'False','']);return null}
+ case 'notepad':case 'notepad.exe':openEditor('np',pos[0]?P(pos[0]):null);return null;
+ case 'get-scheduledtask':{const list=Object.values(S.tasks);o.push(['','']);o.push(['TaskName              State','']);o.push(['--------              -----','']);list.forEach(t=>o.push([t.name.padEnd(22)+'Ready','']));o.push(['','']);return null}
+ case 'help':case 'get-help':o.push(['Командлеты тренажёра PowerShell:','c-y']);o.push(['Get-ChildItem, Get-Content, Set-Location,','']);o.push(['Remove-Item, Get-Date, Get-PSDrive, Write-Host,','']);o.push(['Get-/Set-ExecutionPolicy, New-Item, Add-Content,','']);o.push(['notepad, Where-Object, Select-Object.','']);o.push(['Запуск сценария: .\\имя.ps1','']);return null;
+ case 'schtasks':case 'schtasks.exe':{const oo=[];const c=schtasks(a,oo,{});oo.forEach(x=>o.push(x));return c?{err:1}:null}
+ case 'bash':o.push(['Откройте вкладку «Bash» вверху терминала.','c-y']);return null;
+ }
+ /* запуск сценария */
+ const raw=sm[1];
+ if(/\.(ps1|bat|cmd)$/i.test(raw)||raw.startsWith('.\\')||raw.startsWith('./')||raw.startsWith('&')){
+  let p=raw.replace(/^&\s*/,'');if(raw==='&')p=(a[0]||'');p=p.replace(/^["']|["']$/g,'');
+  const explicit=/^(\.\\|\.\/|[A-Za-z]:\\|\\)/.test(p);let ap=P(p);if(!W.isFile(ap)&&W.isFile(ap+'.ps1'))ap+='.ps1';
+  if(!W.isFile(ap))return err(PS_UNKNOWN(p));
+  if(!/\.(ps1|bat|cmd)$/i.test(ap)){o.push(['Файл открыт в программе по умолчанию.','c-m']);return null}
+  if(!explicit){o.push([`${p} : Команда ${p} не найдена, однако существует`,'c-r']);o.push(['в текущем расположении. PowerShell не загружает','c-r']);o.push([`команды из текущей папки. Введите ".\\${p}".`,'c-r']);ev('ps.noDotSlash');return {err:1}}
+  if(/\.(bat|cmd)$/i.test(ap)){const keep=SH.cmd.cwd;SH.cmd.cwd=s.cwd;const oo=[];runBatch(ap,oo,1);SH.cmd.cwd=keep;oo.forEach(x=>o.push(x));return null}
+  if(s.policy==='Restricted'){o.push([`${p} : Невозможно загрузить файл ${ap}, так как`,'c-r']);o.push(['выполнение сценариев отключено в этой системе.','c-r']);o.push(['Подробнее: about_Execution_Policies.','c-r']);ev('ps.policyErr');ev('ps.policyErr:'+ap.toLowerCase());S.runs.err++;return {err:1}}
+  S.runs.ps++;const e=runPS(ap,o);if(e)S.runs.err++;return e?{err:1}:null}
+ return err(PS_UNKNOWN(sm[1]))}
+function psExpand(str,vars){const d=NOW();return String(str)
+ .replace(/\$\(\s*get-date\s*\)/gi,dInv(d))
+ .replace(/\$\(\s*\[math\]::round\(\s*\$(\w+)\s*,\s*(\d+)\s*\)\s*\)/gi,(m,v,n)=>{const x=vars[v.toLowerCase()];return x==null?'':String(Math.round(x*10**n)/10**n)})
+ .replace(/\$\(\s*\$\w+\.fullname\s*\)|\$\w+\.fullname/gi,vars.__full||'')
+ .replace(/\$\(\s*\$\w+\.name\s*\)/gi,vars.__name||'')
+ .replace(/\$_\b/g,vars.__err||'')
+ .replace(/\$(\w+)/g,(m,v)=>{const k=v.toLowerCase();if(vars[k]!=null)return vars[k] instanceof Date?dInv(vars[k]):String(vars[k]);const g=Object.keys(SH.ps.vars).find(x=>x.toLowerCase()===k);return g!=null?String(SH.ps.vars[g]):''})}
+
+/* ---------- выполнение сценария PowerShell (анализ структуры + моделирование) ---------- */
+function stripPS(src){return src.replace(/<#[\s\S]*?#>/g,'').split(/\r?\n/).map(l=>{let q=null;for(let i=0;i<l.length;i++){const c=l[i];if(q){if(c===q)q=null;continue}if(c==='"'||c==="'"){q=c;continue}if(c==='#')return l.slice(0,i)}return l}).join('\n')}
+function balance(src){let q=null,b=0,p=0,line=1,bl=0;for(const c of src){if(c==='\n')line++;if(q){if(c===q)q=null;continue}if(c==='"'||c==="'"){q=c;continue}if(c==='{'){b++;bl=line}if(c==='}')b--;if(c==='(')p++;if(c===')')p--;if(b<0||p<0)return {ok:false,msg:`Непредвиденная лексема "${c==='}'?'}':')'}" в выражении (строка ${line}).`}}
+ if(q)return {ok:false,msg:'В строке отсутствует закрывающая кавычка.'};if(b>0)return {ok:false,msg:`Отсутствует закрывающая скобка "}" в блоке операторов (строка ${bl}).`};if(p>0)return {ok:false,msg:'Отсутствует закрывающая скобка ")".'};return {ok:true}}
+function psVars(src){const v={};const re=/\$(\w+)\s*=\s*("([^"]*)"|'([^']*)'|(-?\d+(?:\.\d+)?)\b)/g;let m;while((m=re.exec(src))){const k=m[1].toLowerCase();if(m[3]!=null||m[4]!=null)v[k]=m[3]!=null?m[3]:m[4];else v[k]=parseFloat(m[5])}
+ const pr=/\[(?:string|int|double|decimal)\]\s*\$(\w+)\s*=\s*("([^"]*)"|'([^']*)'|(-?\d+(?:\.\d+)?))/gi;while((m=pr.exec(src))){const k=m[1].toLowerCase();v[k]=m[3]!=null?m[3]:m[4]!=null?m[4]:parseFloat(m[5])}return v}
+function resolveVal(tok,vars){if(tok==null)return null;tok=String(tok).trim();const m=tok.match(/^\$(\w+)$/);if(m)return vars[m[1].toLowerCase()]!=null?String(vars[m[1].toLowerCase()]):null;return tok.replace(/^["']|["']$/g,'')}
+function arith(expr){const s=expr.replace(/\s+/g,'');let i=0;const num=()=>{const m=s.slice(i).match(/^\d+(\.\d+)?/);if(!m)throw 0;i+=m[0].length;return parseFloat(m[0])};
+ const prim=()=>{if(s[i]==='('){i++;const v=add();if(s[i]!==')')throw 0;i++;return v}if(s[i]==='-'){i++;return -prim()}return num()};
+ const mul=()=>{let v=prim();while(s[i]==='*'||s[i]==='/'){const op=s[i++];const r=prim();v=op==='*'?v*r:v/r}return v};
+ const add=()=>{let v=mul();while(s[i]==='+'||s[i]==='-'){const op=s[i++];const r=mul();v=op==='+'?v+r:v-r}return v};const v=add();if(i<s.length)throw 0;return v}
+function runPS(ap,o){const src0=W.read(ap);const src=stripPS(src0);const low=src.toLowerCase();
+ const bal=balance(src);if(!bal.ok){o.push(['ParserError: '+bal.msg,'c-r']);ev('ps.parseErr');return 1}
+ const vars=psVars(src);vars.__date=new Date();
+ if(/get-psdrive/i.test(src)&&/\.free/i.test(src))return runDisk(src,vars,o);
+ if(/get-childitem|\bgci\b|\bls\b/i.test(src)&&/remove-item|\bdel\b|\brm\b/i.test(src))return runCleanup(src,vars,o);
+ /* простой сценарий: построчно */
+ let e=0;src.split('\n').forEach(l=>{if(!l.trim()||/^[{}]\s*$/.test(l.trim()))return;e|=psLine(l,o)});return e}
+function writeHosts(block){const r=[];const re=/write-(?:host|output)\s+("([^"]*)"|'([^']*)'|\$(\w+))/gi;let m;while((m=re.exec(block)))r.push(m[2]!=null?m[2]:m[3]!=null?m[3]:'$'+m[4]);return r}
+function splitTry(src){const m=src.match(/\btry\s*\{([\s\S]*)\}\s*catch\s*\{([\s\S]*)\}/i);return m?{has:true,body:m[1],katch:m[2]}:{has:false,body:src,katch:''}}
+function runCleanup(src,vars,o){
+ const tc=splitTry(src);const body=tc.body;
+ /* дата-граница */
+ let days=null,dvar=null;let m=body.match(/\$(\w+)\s*=\s*\(\s*get-date\s*\)\.adddays\(\s*(-?\d+)\s*\)/i)||src.match(/\$(\w+)\s*=\s*\(\s*get-date\s*\)\.adddays\(\s*(-?\d+)\s*\)/i);if(m){dvar=m[1].toLowerCase();days=parseInt(m[2])}
+ /* Get-ChildItem */
+ m=body.match(/(?:get-childitem|gci|\bls\b)([^|\n]*)/i);if(!m){o.push(['В сценарии нет Get-ChildItem — нечего удалять.','c-y']);return 1}
+ const ga=words(m[1].trim(),'"\'');const {pos,named}=psArgs(ga);let path=resolveVal(named.path||pos[0]||'.',vars);let filt=named.filter?resolveVal(named.filter,vars):(named.include?resolveVal(named.include,vars):null);
+ if(path==null){const msg='Значение параметра Path пустое: переменная не задана.';return psFail(tc,msg,o)}
+ let ap=W.norm(SH.ps.cwd,path);if(!W.isDir(ap)){const [d,nm]=W.parent(ap);if(/[*?]/.test(nm)&&W.isDir(d)){ap=d;filt=filt||nm}else return psFail(tc,`Не удается найти путь "${ap}", так как он не существует.`,o)}
+ let files=(W.list(ap)||[]).filter(x=>x.t==='f'&&(!filt||wild(filt,true).test(x.n))).map(x=>psFileObj(ap+'\\'+x.n));
+ /* условие отбора */
+ m=body.match(/\$_\.(\w+)\s+(-lt|-le|-gt|-ge|-eq|-ne|-like)\s+(\$\w+|\(\s*get-date\s*\)\.adddays\(\s*-?\d+\s*\)|\S+)/i);
+ if(m){let rhs;const v=m[3];if(/^\$/.test(v)){const k=v.slice(1).toLowerCase();if(k===dvar)rhs=new Date(Date.now()+days*DAY);else if(vars[k]!=null)rhs=vars[k];else return psFail(tc,`Переменная ${v} не задана: сравнивать не с чем.`,o)}else rhs=psRhs(v);
+  files=files.filter(x=>psCmp(psProp(x,m[1]),m[2].toLowerCase(),rhs))}
+ const rem=/remove-item|\bdel\b|\brm\b/i.test(body);
+ /* лог */
+ let logp=null,tpl=null;m=body.match(/(?:add-content|out-file)\s+(?:-path\s+|-filepath\s+)?(\$\w+|"[^"]+"|'[^']+'|\S+)(?:\s+-value\s+("([^"]*)"|'([^']*)'|\$\w+))?/i);
+ if(m){logp=resolveVal(m[1],vars);tpl=m[3]!=null?m[3]:m[4]!=null?m[4]:'$(Get-Date): Deleted file $($file.FullName)'}
+ if(logp){const lp=W.norm(SH.ps.cwd,logp);if(!W.isDir(W.parent(lp)[0]))return psFail(tc,`Не удается найти часть пути "${lp}".`,o);logp=lp}
+ const deleted=[];files.forEach(x=>{if(rem){W.rm(x.full);deleted.push(x.full)}if(logp&&tpl!=null){W.write(logp,psExpand(tpl,{...vars,__full:x.full,__name:x.name})+'\r\n',true)}});
+ ev('ps.cleanupRun');S.ev.cleanupDeleted=deleted.map(x=>x.toLowerCase());
+ const wh=writeHosts(body);if(wh.length)o.push([psExpand(wh[wh.length-1],vars),'']);
+ return 0}
+function psFail(tc,msg,o){if(tc.has){const wh=writeHosts(tc.katch);o.push([wh.length?psExpand(wh[0],{__err:msg}):'','c-y']);ev('ps.caught');return 0}o.push([msg,'c-r']);return 1}
+function runDisk(src,vars,o){
+ const fm=src.match(/function\s+([\w-]+)\s*(?:\(([^)]*)\))?\s*\{/i);let callArgs={};
+ if(fm){const fname=fm[1];const re=new RegExp('(^|\\n)\\s*'+fname.replace(/[-]/g,'\\-')+'\\b([^\\n]*)','gi');let call=null,mm;while((mm=re.exec(src))){if(!/function\s*$/i.test(src.slice(0,mm.index+mm[1].length).slice(-12)))call=mm}
+  /* вызов — строка, начинающаяся с имени функции и не являющаяся её объявлением */
+  const lines=src.split('\n');const callLine=lines.find(l=>new RegExp('^\\s*'+fname.replace(/[-]/g,'\\-')+'(\\s|$)','i').test(l));
+  if(!callLine){ev('ps.funcNotCalled');return 0}
+  const ca=psArgs(words(callLine.trim().slice(fname.length).trim(),'"\''));Object.keys(ca.named).forEach(k=>callArgs[k]=ca.named[k]);ca.pos.forEach((v,i)=>callArgs['#'+i]=v);
+  ev('ps.funcCalled')}
+ /* формула */
+ let m=src.match(/\$(\w+)\s*=\s*([^\n]*\.(?:free|used)[^\n]*)/i);if(!m){o.push(['Не найдено вычисление процента свободного места.','c-y']);return 1}
+ const pvar=m[1].toLowerCase();let expr=m[2].replace(/\[math\]::round\(([^,]+),\s*\d+\)/i,'$1').replace(/\$\w+\.free/gi,String(DISK.free/1073741824)).replace(/\$\w+\.used/gi,String(DISK.used/1073741824)).replace(/\$\w+\.size/gi,'0');
+ let val;try{val=arith(expr)}catch(e){o.push(['Ошибка в формуле: '+m[2].trim(),'c-r']);return 1}
+ vars[pvar]=val;ev('ps.diskPercent',Math.round(val*100)/100);
+ /* порог */
+ m=src.match(/if\s*\(\s*\$(\w+)\s+(-lt|-le|-gt|-ge)\s+(\$\w+|\d+(?:\.\d+)?)\s*\)/i);if(!m){o.push(['Не найдено условие сравнения с порогом.','c-y']);return 1}
+ let thr;if(/^\$/.test(m[3])){const k=m[3].slice(1).toLowerCase();const ck=Object.keys(callArgs).find(x=>x===k);thr=ck!=null?parseFloat(callArgs[ck]):vars[k]}else thr=parseFloat(m[3]);
+ if(thr==null||isNaN(thr)){o.push([`Переменная ${m[3]} (порог) не задана.`,'c-r']);return 1}
+ const left=m[1].toLowerCase()===pvar?val:vars[m[1].toLowerCase()];const warn=psCmp(left,m[2].toLowerCase(),thr);
+ const ifPos=src.search(/if\s*\(/i);const elsePos=src.search(/\}\s*else\s*\{/i);const ifBlock=src.slice(ifPos,elsePos>0?elsePos:undefined);const elseBlock=elsePos>0?src.slice(elsePos):'';
+ const msgM=ifBlock.match(/\$(\w+)\s*=\s*"([^"]*)"/);if(msgM)vars[msgM[1].toLowerCase()]=psExpand(msgM[2],vars);
+ let lp=null;const lm=src.match(/\$(\w+)\s*=\s*"([^"]*\.(?:txt|log))"/i);
+ if(warn){const wh=writeHosts(ifBlock);wh.forEach(x=>{const t=x.startsWith('$')?(vars[x.slice(1).toLowerCase()]??''):psExpand(x,vars);o.push([String(t),'c-y'])});
+  const ac=ifBlock.match(/add-content\s+(?:-path\s+)?(\$\w+|"[^"]+"|\S+)\s+(?:-value\s+)?(\$\w+|"[^"]*")/i);if(ac){const p=resolveVal(ac[1],vars);if(p){lp=W.norm(SH.ps.cwd,p);if(!W.isDir(W.parent(lp)[0])){o.push([`Add-Content : Не удается найти часть пути "${lp}".`,'c-r']);return 1}const v=ac[2].startsWith('$')?(vars[ac[2].slice(1).toLowerCase()]??''):psExpand(ac[2].slice(1,-1),vars);W.write(lp,String(v)+'\r\n',true);ev('ps.diskLog')}}
+  ev('ps.diskWarn')}
+ else{const wh=writeHosts(elseBlock);wh.forEach(x=>o.push([psExpand(x,vars),'']));ev('ps.diskOk')}
+ return 0}
+
+/* ======================= BASH ======================= */
+const SH_UNKNOWN=n=>`${n}: команда не найдена`;
+function bTok(line){/* токены с признаком кавычек */const out=[];let cur=null,q=null;const push=()=>{if(cur){out.push(cur);cur=null}};const add=(s,qq)=>{if(!cur)cur={parts:[]};cur.parts.push({s,q:qq})};
+ for(let i=0;i<line.length;i++){const c=line[i];
+  if(q){if(c===q){q=null;continue}add(c,q);continue}
+  if(c==='"'||c==="'"){q=c;if(!cur)cur={parts:[]};continue}
+  if(c==='$'&&line[i+1]==='('){let d=0,j=i+1;for(;j<line.length;j++){if(line[j]==='(')d++;if(line[j]===')'){d--;if(!d)break}}add(line.slice(i,j+1),null);i=j;continue}
+  if(/\s/.test(c)){push();continue}
+  if(c==='>'||c==='|'||c==='<'){push();if(c==='>'&&line[i+1]==='>'){out.push({op:'>>'});i++}else out.push({op:c});continue}
+  add(c,null)}
+ push();return out}
+function bExpand(s,vars){return s.replace(/\$\(([^]*)\)$/,(m,c)=>bSub(c)).replace(/\$\{(\w+)\}|\$(\w+|\?)/g,(m,a,b)=>{const k=a||b;if(k==='?')return String(SH.sh.code);if(k==='HOME')return '/home/student';if(k==='USER')return 'student';if(k==='PWD')return SH.sh.cwd;return vars[k]!=null?vars[k]:''})}
+function bSub(c){const o=[];bLine(c,o,SH.sh.vars,{sub:true});return o.map(x=>x[0]).join('\n').replace(/\n+$/,'')}
+function bWord(tk,vars){let s='',glob=false;tk.parts.forEach(p=>{if(p.q==="'")s+=p.s;else{let x=p.s;if(p.q===null&&/[*?]/.test(x))glob=true;
+ x=x.replace(/\$\(([\s\S]*)\)/g,(m,c)=>bSub(c)).replace(/\$\{(\w+)\}|\$(\w+|\?)/g,(m,a,b)=>{const k=a||b;if(k==='?')return String(SH.sh.code);if(k==='HOME')return '/home/student';if(k==='USER')return 'student';if(k==='PWD')return SH.sh.cwd;return vars[k]!=null?vars[k]:''});s+=x}});
+ /* склеиваем части: подстановка в каждой части отдельно уже выполнена */
+ return {s,glob}}
+function bWords(toks,vars){const r=[];toks.forEach(t=>{if(t.op){r.push({op:t.op});return}
+ let s='',glob=false;t.parts.forEach(p=>{if(p.q==="'")s+=p.s;else{if(p.q===null&&/[*?]/.test(p.s))glob=true;s+=p.s}});
+ /* подстановка выполняется по склеенной строке, кроме одинарных кавычек */
+ let acc='';let buf='';t.parts.forEach(p=>{if(p.q==="'"){acc+=bExp(buf,vars);buf='';acc+=p.s}else buf+=p.s});acc+=bExp(buf,vars);
+ if(glob&&/[*?]/.test(acc)){const g=L.glob(SH.sh.cwd,acc);if(g.length){g.forEach(x=>r.push({s:acc.startsWith('/')?x:x.replace(SH.sh.cwd+'/','')}));return}}
+ r.push({s:acc})});return r}
+function bExp(s,vars){let out='',i=0;while(i<s.length){const c=s[i];if(c==='$'&&s[i+1]==='('){let d=0,j=i+1;for(;j<s.length;j++){if(s[j]==='(')d++;if(s[j]===')'){d--;if(!d)break}}out+=bSub(s.slice(i+2,j));i=j+1;continue}
+ if(c==='$'){const m=s.slice(i).match(/^\$\{(\w+)\}|^\$(\w+|\?)/);if(m){const k=m[1]||m[2];out+=k==='?'?String(SH.sh.code):k==='HOME'?'/home/student':k==='USER'?'student':k==='PWD'?SH.sh.cwd:(vars[k]!=null?vars[k]:'');i+=m[0].length;continue}}
+ out+=c;i++}return out}
+function bDate(fmt){const d=NOW();return fmt.replace(/%([dmYyHMSFTe])/g,(m,k)=>({d:pad(d.getDate()),e:String(d.getDate()).padStart(2,' '),m:pad(d.getMonth()+1),Y:String(d.getFullYear()),y:String(d.getFullYear()).slice(2),H:pad(d.getHours()),M:pad(d.getMinutes()),S:pad(d.getSeconds()),F:`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`,T:`${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`}[k]))}
+function bLine(line,o,vars,ctx){/* одна простая команда (с конвейером и перенаправлением) */
+ const toks=bTok(line);if(!toks.length)return 0;
+ /* присваивание */
+ if(toks.length===1&&!toks[0].op&&/^[A-Za-z_]\w*=/.test(toks[0].parts.map(p=>p.s).join(''))){const raw=toks[0].parts;const first=raw[0].s;const eq=raw.map(p=>p.s).join('').indexOf('=');const name=raw.map(p=>p.s).join('').slice(0,eq);
+  const ei=raw.findIndex(p=>p.q===null&&p.s==='=');const valTok={parts:raw.slice(ei+1)};
+  const w=bWords([valTok],vars);vars[name]=w.length?w[0].s:'';return 0}
+ if(toks.length>1&&!toks[0].op&&/^[A-Za-z_]\w*=$/.test(toks[0].parts.map(p=>p.s).join(''))){o.push([`bash: ${bWords(toks.slice(1,2),vars)[0].s}: команда не найдена`,'']);ev('sh.assignSpace');return 127}
+ if(toks.length>=2&&!toks[0].op&&!toks[1].op&&/^=/.test(toks[1].parts.map(p=>p.s).join(''))){o.push([`bash: ${toks[0].parts.map(p=>p.s).join('')}: команда не найдена`,'']);ev('sh.assignSpace');return 127}
+ const w=bWords(toks,vars);
+ /* разбиваем конвейер и перенаправление */
+ const segs=[[]];let rf=null,app=false;for(let i=0;i<w.length;i++){const x=w[i];if(x.op==='|'){segs.push([]);continue}if(x.op==='>'||x.op==='>>'){rf=w[i+1]&&w[i+1].s;app=x.op==='>>';i++;continue}if(x.op==='<'){i++;continue}segs[segs.length-1].push(x.s)}
+ let input=null,code=0;let buf=[];
+ segs.forEach((seg,k)=>{const oo=[];code=bCmd(seg,oo,input,vars,ctx);input=oo.map(x=>x[0]);buf=oo});
+ if(rf!=null){const p=L.norm(SH.sh.cwd,rf);if(!L.isDir(L.parent(p)[0])){o.push([`bash: ${rf}: Нет такого файла или каталога`,'']);return 1}if(L.isDir(p)){o.push([`bash: ${rf}: Это каталог`,'']);return 1}
+  L.write(p,buf.map(x=>x[0]).join('\n')+(buf.length?'\n':''),app);ev('sh.redir:'+p)}
+ else buf.forEach(x=>o.push(x));
+ SH.sh.code=code;return code}
+function lsLong(f){const d=f.m;const sz=f.t==='d'?4096:L.size(f);const mode=(f.t==='d'?'d':'-')+(f.t==='d'?'rwxr-xr-x':(f.mode||'rw-r--r--'));return `${mode} 1 student student ${String(sz).padStart(4)} ${MON[d.getMonth()]} ${String(d.getDate()).padStart(2)} ${hm(d)} ${f.n}`}
+function bCmd(a,o,input,vars,ctx){if(!a.length)return 0;const n=a[0];const args=a.slice(1);const flags=args.filter(x=>/^-[A-Za-z]/.test(x)).join('');const ops=args.filter(x=>!/^-[A-Za-z]/.test(x));const P=x=>L.norm(SH.sh.cwd,x);
+ switch(n){
+ case 'ls':{const tg=ops.length?ops:['.'];let c=0;tg.forEach(t=>{const p=P(t);const f=L.get(p);if(!f){o.push([`ls: невозможно получить доступ к '${t}': Нет такого файла или каталога`,'']);c=2;return}
+  const items=f.t==='d'?(L.list(p)||[]).filter(x=>/a/.test(flags)||!x.n.startsWith('.')):[f];if(tg.length>1&&f.t==='d')o.push([t+':','']);
+  if(/l/.test(flags)){if(f.t==='d')o.push(['итого '+items.length*4,'']);items.forEach(x=>o.push([lsLong(x),x.t==='d'?'c-b':(x.mode||'').includes('x')?'c-g':'']))}
+  else{const line=items.map(x=>x.n).join('  ');if(line)o.push([line,'']);}
+  ev('sh.ls:'+p)});return c}
+ case 'cd':{const p=P(ops[0]||'~');if(!L.isDir(p)){o.push([`bash: cd: ${ops[0]}: Нет такого файла или каталога`,'']);return 1}SH.sh.cwd=p;return 0}
+ case 'pwd':o.push([SH.sh.cwd,'']);return 0;
+ case 'mkdir':{let c=0;ops.forEach(x=>{const p=P(x);if(L.get(p)){if(!/p/.test(flags)){o.push([`mkdir: невозможно создать каталог «${x}»: Файл существует`,'']);c=1}return}const r=L.mkdir(p,/p/.test(flags));if(r==='noparent'){o.push([`mkdir: невозможно создать каталог «${x}»: Нет такого файла или каталога`,'']);c=1}});return c}
+ case 'touch':ops.forEach(x=>{const p=P(x);if(!L.get(p))L.write(p,'');else L.get(p).m=NOW()});return 0;
+ case 'cat':{if(!ops.length&&input){input.forEach(l=>o.push([l,'']));return 0}let c=0;ops.forEach(x=>{const p=P(x);const f=L.get(p);if(!f){o.push([`cat: ${x}: Нет такого файла или каталога`,'']);c=1;return}if(f.t==='d'){o.push([`cat: ${x}: Это каталог`,'']);c=1;return}f.s.replace(/\n$/,'').split('\n').forEach(l=>{if(f.s)o.push([l,''])});ev('sh.cat:'+p);ev('sh.catLines:'+p,L.lines(p).length)});return c}
+ case 'echo':{let e=args;const nl=e[0]==='-n';if(nl||e[0]==='-e')e=e.slice(1);o.push([e.join(' '),'']);return 0}
+ case 'cp':{const src=ops.slice(0,-1),dst=ops[ops.length-1];if(ops.length<2){o.push(['cp: пропущен операнд, задающий целевой файл','']);return 1}const dp=P(dst);let c=0;
+  if(src.length>1&&!L.isDir(dp)){o.push([`cp: указанная цель '${dst}' не является каталогом`,'']);return 1}
+  if(/\/$/.test(dst)&&!L.isDir(dp)){o.push([`cp: невозможно создать обычный файл '${dst}': Это не каталог`,'']);return 1}
+  src.forEach(x=>{const sp=P(x);const f=L.get(sp);if(!f){o.push([`cp: не удалось выполнить stat для '${x}': Нет такого файла или каталога`,'']);c=1;return}if(f.t==='d'){o.push([`cp: не указан -r; пропускается каталог '${x}'`,'']);c=1;return}
+   const t=L.isDir(dp)?dp+'/'+f.n:dp;if(!L.isDir(L.parent(t)[0])){o.push([`cp: невозможно создать обычный файл '${dst}': Нет такого файла или каталога`,'']);c=1;return}L.write(t,f.s);if(f.sz)L.get(t).sz=f.sz});ev('sh.cp');return c}
+ case 'mv':{if(ops.length<2)return 1;const sp=P(ops[0]),dp=P(ops[1]);const f=L.get(sp);if(!f){o.push([`mv: не удалось выполнить stat для '${ops[0]}'`,'']);return 1}const t=L.isDir(dp)?dp+'/'+f.n:dp;L.write(t,f.s);L.get(t).mode=f.mode;L.rm(sp);return 0}
+ case 'rm':{let c=0;ops.forEach(x=>{const p=P(x);const f=L.get(p);if(!f){if(!/f/.test(flags)){o.push([`rm: невозможно удалить '${x}': Нет такого файла или каталога`,'']);c=1}return}if(f.t==='d'&&!/r/.test(flags)){o.push([`rm: невозможно удалить '${x}': Это каталог`,'']);c=1;return}L.rm(p)});return c}
+ case 'chmod':{if(ops.length<2){o.push(['chmod: пропущен операнд','']);return 1}const md=ops[0];let c=0;ops.slice(1).forEach(x=>{const p=P(x);const f=L.get(p);if(!f){o.push([`chmod: невозможно получить доступ к '${x}': Нет такого файла или каталога`,'']);c=1;return}
+  let m=(f.mode||'rw-r--r--').split('');if(/^[0-7]{3}$/.test(md)){m=md.split('').map(d=>{d=+d;return (d&4?'r':'-')+(d&2?'w':'-')+(d&1?'x':'-')}).join('').split('')}
+  else{const mm=md.match(/^([ugoa]*)([+-=])([rwx]+)$/);if(!mm){o.push([`chmod: неверный режим: «${md}»`,'']);c=1;return}const who=mm[1]||'a';const idx={u:0,g:3,o:6};const tg=who.includes('a')?['u','g','o']:who.split('');
+   tg.forEach(wh=>mm[3].split('').forEach(b=>{const k=idx[wh]+'rwx'.indexOf(b);if(mm[2]==='-')m[k]='-';else m[k]=b}))}
+  f.mode=m.join('');ev('sh.chmod:'+p)});return c}
+ case 'nano':case 'pico':if(ctx.script)return 0;openEditor('nano',ops[0]?P(ops[0]):null);return 0;
+ case 'vi':case 'vim':o.push(['В тренажёре используйте редактор nano.','c-y']);return 0;
+ case 'date':{const f=args.find(x=>x.startsWith('+'));o.push([f?bDate(f.slice(1)):(['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][NOW().getDay()]+' '+bDate('%e')+' '+MON[NOW().getMonth()]+' '+bDate('%Y %T')+' MSK'),'']);return 0}
+ case 'whoami':o.push(['student','']);return 0;
+ case 'hostname':o.push(['srv','']);return 0;
+ case 'clear':SH.sh.out=[];return 0;
+ case 'df':o.push(['Файл.система  Размер Исп  Дост Исп% Смонт','']);o.push(['/dev/sda2       98G  83G   15G  85% /','']);return 0;
+ case 'grep':{const pat=ops[0]||'';const src=ops[1]?(L.read(P(ops[1]))||'').split('\n'):input||[];src.filter(l=>l.includes(pat)).forEach(l=>o.push([l,'']));return 0}
+ case 'wc':{const src=ops[0]?(L.read(P(ops[0]))||'').split('\n').filter(Boolean):input||[];o.push([String(src.length)+(ops[0]?' '+ops[0]:''),'']);return 0}
+ case 'head':case 'tail':{const k=parseInt((args.find(x=>/^-\d+$/.test(x))||'-10').slice(1));const ops2=ops.filter(x=>!/^-\d+$/.test(x));const ops=ops2;const src=ops[0]?(L.read(P(ops[0]))||'').split('\n').filter(Boolean):input||[];(n==='head'?src.slice(0,k):src.slice(-k)).forEach(l=>o.push([l,'']));return 0}
+ case 'crontab':{if(/l/.test(flags)){if(!S.cron.trim()){o.push(['no crontab for student','']);return 1}S.cron.replace(/\n$/,'').split('\n').forEach(l=>o.push([l,'']));ev('sh.cronList');return 0}
+  if(/r/.test(flags)){S.cron='';return 0}if(/e/.test(flags)){if(ctx.script)return 0;openEditor('cron');return 0}o.push(['crontab: используйте -e (изменить) или -l (показать)','']);return 1}
+ case 'sudo':o.push(['[sudo] пароль для student: в тренажёре права root не нужны.','c-y']);return 1;
+ case 'help':o.push(['Команды тренажёра Bash:','c-y']);o.push(['ls [-l], cd, pwd, mkdir [-p], cat, echo,','']);o.push(['cp, mv, rm, touch, chmod, nano, date,','']);o.push(['crontab -e / -l, df, grep, wc, head, tail','']);o.push(['Запуск сценария: ./имя.sh','']);return 0;
+ case 'exit':return 0;
+ case 'true':return 0;case 'false':return 1;
+ case 'test':case '[':return bTest(n==='['?args.slice(0,-1):args)?0:1;
+ case 'bash':case 'sh':{if(!ops[0]){o.push(['Интерактивная оболочка уже запущена.','c-m']);return 0}const p=P(ops[0]);if(!L.isFile(p)){o.push([`bash: ${ops[0]}: Нет такого файла или каталога`,'']);return 127}return runSh(p,o,ctx)}
+ case 'powershell':case 'cmd':o.push([SH_UNKNOWN(n),'']);o.push(['(это команда Windows — откройте вкладку CMD или PowerShell)','c-y']);return 127;
+ }
+ if(n.includes('/')){const p=P(n);const f=L.get(p);if(!f){o.push([`bash: ${n}: Нет такого файла или каталога`,'']);return 127}if(f.t==='d'){o.push([`bash: ${n}: Это каталог`,'']);return 126}
+  if(!(f.mode||'').includes('x')){o.push([`bash: ${n}: Отказано в доступе`,'']);ev('sh.denied');ev('sh.denied:'+p);return 126}return runSh(p,o,ctx)}
+ if(L.isFile(L.norm(SH.sh.cwd,n))&&/\.sh$/.test(n)){o.push([SH_UNKNOWN(n),'']);o.push([`Подсказка: для запуска из текущего каталога введите ./${n}`,'c-y']);ev('sh.noDotSlash');return 127}
+ o.push([SH_UNKNOWN(n),'']);return 127}
+function bTest(a){if(a[0]==='!')return !bTest(a.slice(1));if(a.length===2){const p=L.norm(SH.sh.cwd,a[1]);switch(a[0]){case '-d':return L.isDir(p);case '-f':return L.isFile(p);case '-e':return !!L.get(p);case '-z':return !a[1];case '-n':return !!a[1];case '-x':{const f=L.get(p);return !!f&&(f.mode||'').includes('x')}}}
+ if(a.length===1)return !!a[0];if(a.length===0)return false;
+ if(a.length===3){const [x,op,y]=a;const nx=parseFloat(x),ny=parseFloat(y);switch(op){case '=':case '==':return x===y;case '!=':return x!==y;case '-eq':return nx===ny;case '-ne':return nx!==ny;case '-gt':return nx>ny;case '-lt':return nx<ny;case '-ge':return nx>=ny;case '-le':return nx<=ny}}return false}
+/* сценарий bash: if/for/while — простой разбор блоков */
+function shStatements(src){const st=[];src.split('\n').forEach((raw,i)=>{let l=raw.replace(/\r$/,'');if(/^\s*#/.test(l))return;
+ /* убрать комментарий вне кавычек */let q=null,cut=l.length;for(let k=0;k<l.length;k++){const c=l[k];if(q){if(c===q)q=null;continue}if(c==='"'||c==="'"){q=c;continue}if(c==='#'&&(k===0||/\s/.test(l[k-1]))){cut=k;break}}l=l.slice(0,cut);
+ splitTop(l,';','"\'').forEach(s=>{s=s.trim();if(!s)return;let m;
+  if((m=s.match(/^(then|do|else)\s+(.+)$/))){st.push({k:m[1],line:i+1});st.push({k:'cmd',c:m[2],line:i+1});return}
+  st.push({k:/^(if|elif)\s/.test(s)?s.split(/\s/)[0]:/^(then|else|fi|do|done)$/.test(s)?s:/^for\s/.test(s)?'for':/^while\s/.test(s)?'while':'cmd',c:s,line:i+1})})});return st}
+function shParse(st){let i=0;const block=(ends)=>{const out=[];while(i<st.length){const s=st[i];if(ends.includes(s.k))return out;i++;
+  if(s.k==='if'){const node={t:'if',branches:[],els:null,line:s.line};let cond=s.c.replace(/^if\s+/,'');if(st[i]&&st[i].k==='then')i++;else throw {line:s.line,msg:'ожидается «then»'};
+   node.branches.push({cond,body:block(['elif','else','fi'])});while(st[i]&&st[i].k==='elif'){const c=st[i].c.replace(/^elif\s+/,'');i++;if(st[i]&&st[i].k==='then')i++;node.branches.push({cond:c,body:block(['elif','else','fi'])})}
+   if(st[i]&&st[i].k==='else'){i++;node.els=block(['fi'])}if(!st[i]||st[i].k!=='fi')throw {line:s.line,msg:'синтаксическая ошибка: неожиданный конец файла (нет «fi»)'};i++;out.push(node);continue}
+  if(s.k==='for'){const m=s.c.match(/^for\s+(\w+)\s+in\s+(.*)$/);if(!m)throw {line:s.line,msg:'синтаксическая ошибка в for'};if(st[i]&&st[i].k==='do')i++;else throw {line:s.line,msg:'ожидается «do»'};const body=block(['done']);if(!st[i])throw {line:s.line,msg:'нет «done»'};i++;out.push({t:'for',v:m[1],list:m[2],body});continue}
+  if(['then','fi','do','done','else','elif'].includes(s.k))throw {line:s.line,msg:`синтаксическая ошибка рядом с неожиданным маркером «${s.k}»`};
+  out.push({t:'cmd',c:s.c,line:s.line})}return out};const r=block([]);if(i<st.length)throw {line:st[i].line,msg:`синтаксическая ошибка рядом с неожиданным маркером «${st[i].k}»`};return r}
+function runSh(p,o,ctx){const f=L.get(p);S.runs.sh++;ev('sh.run:'+p);const vars=Object.assign({},SH.sh.vars);let ast;
+ if(/\r/.test(f.s)){}
+ try{ast=shParse(shStatements(f.s))}catch(e){o.push([`${p.replace('/home/student/','./')}: строка ${e.line}: ${e.msg}`,'']);S.runs.err++;ev('sh.syntax');return 2}
+ const keep=SH.sh.cwd;let errs=0;const c2={script:true};
+ const exec=(nodes)=>{for(const nd of nodes){if(nd.t==='cmd'){const c=bLine(nd.c,o,vars,c2);if(c&&!/^(\[|test)\s/.test(nd.c.trim()))errs++}
+  else if(nd.t==='if'){let done=false;for(const b of nd.branches){if(bLine(b.cond,[],vars,c2)===0){exec(b.body);done=true;break}}if(!done&&nd.els)exec(nd.els)}
+  else if(nd.t==='for'){const items=bWords(bTok(nd.list),vars).map(x=>x.s);items.forEach(v=>{vars[nd.v]=v;exec(nd.body)})}}};
+ exec(ast);SH.sh.cwd=keep;if(errs)S.runs.err++;return errs?1:0}
+
+/* ======================= РЕДАКТОР ======================= */
+let ED=null;
+function openEditor(kind,path){
+ if(kind==='np'){if(!path){toast('Укажите имя файла: notepad C:\\Scripts\\имя.bat',1);return}
+  if(!W.isDir(W.parent(path)[0])){out('cmd','Блокнот: не удается найти путь '+W.parent(path)[0],'c-r');dialog('Блокнот',`<p>Не удаётся найти папку <b>${esc(W.parent(path)[0])}</b>.</p><p>Сначала создайте её командой <b>mkdir</b>.</p>`,[{t:'OK'}]);return}
+  const exist=W.isFile(path);if(!exist){dialog('Блокнот',`<p>Не удаётся найти файл <b>${esc(path)}</b>.</p><p>Создать новый файл?</p>`,[{t:'Нет',cls:'g'},{t:'Да',fn:()=>{W.write(path,'');showEditor('np',path)}}]);return}
+  showEditor('np',path);return}
+ if(kind==='nano'){if(!path){toast('Укажите имя файла: nano backup.sh',1);return}if(!L.isDir(L.parent(path)[0])){toast('Нет такого каталога',1);return}showEditor('nano',path);return}
+ if(kind==='cron'){showEditor('cron',null)}}
+const CRON_HDR='# Изменение задач cron пользователя student\n# Формат: минута час день месяц день_недели команда\n# Пример: 30 18 * * 5 /home/student/report.sh\n';
+function showEditor(kind,path){const fs=kind==='np'?W:L;const text=kind==='cron'?(S.cron||CRON_HDR):(fs.read(path)||'');
+ ED={kind,path,orig:text,fs};const e=$('#ed');e.className='ed'+(kind==='np'?'':' nano');
+ const nm=kind==='cron'?'/tmp/crontab.student':path;
+ e.innerHTML=kind==='np'?`<div class="eh"><span class="nm" id="edn">${esc(W.parent(path)[1])} — Блокнот</span><button class="btn g" data-a="edwide" title="Шире">⇔</button></div><div class="em">Файл  Правка  Формат  Вид  Справка</div><textarea id="eta" spellcheck="false" wrap="soft"></textarea><div class="ef"><span class="st" id="eds">Ctrl+S — сохранить</span><button class="btn" data-a="edsave">Сохранить</button><button class="btn g" data-a="edclose">Закрыть</button></div>`
+ :`<div class="eh"><span class="nm" id="edn">GNU nano 7.2   ${esc(nm.replace('/home/student/',''))}</span><button class="btn g" data-a="edwide" title="Шире">⇔</button></div><textarea id="eta" spellcheck="false" wrap="soft"></textarea><div class="ef"><span class="st" id="eds"></span><button data-a="edsave">^O Записать</button><button data-a="edclose">^X Выход</button></div>`;
+ const ta=$('#eta');ta.value=text.replace(/\r\n/g,'\n');e.classList.remove('hidden');ta.focus();ta.setSelectionRange(ta.value.length,ta.value.length);
+ ta.addEventListener('input',()=>{const mod=ta.value!==ED.orig.replace(/\r\n/g,'\n');$('#edn').textContent=kind==='np'?(mod?'*':'')+W.parent(path)[1]+' — Блокнот':'GNU nano 7.2   '+nm.replace('/home/student/','')+(mod?'   Изменён':'')});
+ ta.addEventListener('keydown',ev2=>{if(ev2.key==='Tab'){ev2.preventDefault();const s=ta.selectionStart;ta.value=ta.value.slice(0,s)+'  '+ta.value.slice(ta.selectionEnd);ta.selectionStart=ta.selectionEnd=s+2}
+  if((ev2.ctrlKey||ev2.metaKey)&&(ev2.key==='s'||ev2.key==='ы'||ev2.key==='o'||ev2.key==='щ')){ev2.preventDefault();edSave()}
+  if(ev2.ctrlKey&&(ev2.key==='x'||ev2.key==='ч')&&kind!=='np'){ev2.preventDefault();edClose()}})}
+function edSave(){if(!ED)return;const ta=$('#eta');let v=ta.value;
+ if(ED.kind==='cron'){const bad=v.split('\n').map((l,i)=>[l.trim(),i+1]).filter(([l])=>l&&!l.startsWith('#')&&!/^\S+\s+\S+\s+\S+\s+\S+\s+\S+\s+\S+/.test(l));
+  if(bad.length){$('#eds').textContent=`Ошибка в строке ${bad[0][1]}: нужно 5 полей времени и команда`;ev('sh.cronErr');toast('crontab: ошибка в строке '+bad[0][1],1);return false}
+  const fl=v.split('\n').filter(l=>l.trim()&&!l.trim().startsWith('#'));for(const l of fl){const f=l.trim().split(/\s+/);const ok=[[0,59],[0,23],[1,31],[1,12],[0,7]].every((r,i)=>f[i]==='*'||/^\*\/\d+$/.test(f[i])||f[i].split(',').every(x=>/^\d+(-\d+)?$/.test(x)&&x.split('-').every(y=>+y>=r[0]&&+y<=r[1])));if(!ok){$('#eds').textContent='Ошибка: неверное значение поля времени';toast('crontab: неверное значение времени',1);return false}}
+  S.cron=v.endsWith('\n')?v:v+'\n';ED.orig=v;out('sh','crontab: installing new crontab','');ev('sh.cronSaved');$('#eds').textContent='Сохранено';$('#edn').textContent='GNU nano 7.2   /tmp/crontab.student';check();renderTerm();return true}
+ if(ED.kind==='np')v=v.replace(/\r?\n/g,'\r\n');ED.fs.write(ED.path,v);ED.orig=v;$('#eds').textContent=ED.kind==='np'?'Сохранено: '+ED.path:'[ Записано строк: '+v.split('\n').filter((x,i,arr)=>i<arr.length-1||x).length+' ]';
+ $('#edn').textContent=ED.kind==='np'?W.parent(ED.path)[1]+' — Блокнот':'GNU nano 7.2   '+ED.path.replace('/home/student/','');ev('ed.save:'+ED.path.toLowerCase());check();renderMis();return true}
+function edClose(force){if(!ED)return;const ta=$('#eta');const mod=ta&&ta.value!==ED.orig.replace(/\r\n/g,'\n');
+ if(mod&&!force){dialog(ED.kind==='np'?'Блокнот':'nano',`<p>Сохранить изменения${ED.path?' в файле <b>'+esc(ED.path)+'</b>':''}?</p>`,[{t:'Отмена',cls:'g'},{t:'Не сохранять',cls:'g',fn:()=>edClose(true)},{t:'Сохранить',fn:()=>{if(edSave()!==false)edClose(true)}}]);return}
+ $('#ed').classList.add('hidden');$('#ed').innerHTML='';ED=null;focusIn()}
+
+/* ======================= МИССИИ ======================= */
+const lc=s=>s.toLowerCase();
+const has=k=>!!S.ev[k];
+const bk='c:\\backup';
+const backupOk=()=>{const l=(W.list('C:\\Backup')||[]).map(x=>x.n.toLowerCase()).sort().join(',');return l==='notes.txt,report1.txt,report2.txt'};
+const tempOk=()=>{const l=(W.list('C:\\Temp')||[]).map(x=>x.n.toLowerCase()).sort().join(',');return l==='cache.tmp,fresh.tmp,setup.log'};
+const linBackupOk=()=>{const l=(L.list('/home/student/backup')||[]).map(x=>x.n).sort().join(',');return l==='notes.txt,report.txt'};
+const cronOk=()=>S.cron.split('\n').some(l=>{const f=l.trim().split(/\s+/);return f.length>=6&&!l.trim().startsWith('#')&&f[0]==='0'&&f[1]==='2'&&f[2]==='*'&&f[3]==='*'&&f[4]==='*'&&/(\/home\/student\/|~\/)backup\.sh$/.test(f.slice(5).join(' '))});
+const taskOk=()=>Object.values(S.tasks).some(t=>t.sc==='daily'&&t.st==='02:00'&&/c:\\scripts\\automate\.bat/i.test(t.tr.replace(/"/g,'')));
+const MIS=[
+ {id:1,sh:'cmd',t:'Разминка в командной строке',goal:'Освоиться в CMD: папки, файлы, переменные среды и перенаправление вывода.',steps:[
+  {p:2,t:'Перейдите в папку с данными и посмотрите список файлов',d:'Команда <b>cd</b> меняет текущую папку, <b>dir</b> показывает её содержимое.',code:'cd C:\\Data\ndir',ok:()=>has('cmd.dir:c:\\data')},
+  {p:2,t:'Откройте текстовый файл',d:'Команда <b>type</b> выводит содержимое текстового файла.',code:'type report1.txt',ok:()=>has('cmd.type:c:\\data\\report1.txt')},
+  {p:2,t:'Создайте папку для сценариев',d:'Все сценарии занятия будем хранить в C:\\Scripts.',code:'mkdir C:\\Scripts',ok:()=>W.isDir('C:\\Scripts')},
+  {p:2,t:'Узнайте дату и время из переменных среды',d:'Переменные окружены знаками %. Их значения подставляет CMD.',code:'echo %date% %time%',ok:()=>has('cmd.echoDate')},
+  {p:2,t:'Запишите строку в файл и прочитайте его',d:'Знак <b>&gt;</b> перенаправляет вывод команды в файл.',code:'echo Hello, automation! > C:\\Scripts\\test.txt\ntype C:\\Scripts\\test.txt',ok:()=>W.isFile('C:\\Scripts\\test.txt')&&has('cmd.type:c:\\scripts\\test.txt')}]},
+ {id:2,sh:'cmd',t:'Командный файл резервного копирования',goal:'Создать automate.bat: папка C:\\Backup, копия .txt из C:\\Data, запись в журнал.',steps:[
+  {p:3,t:'Создайте командный файл в Блокноте',d:'Откроется редактор. Наберите код и сохраните: кнопка «Сохранить» или Ctrl+S.',code:'notepad C:\\Scripts\\automate.bat',code2:'@echo off\nrem Резервное копирование отчётов\nset backupDir=C:\\Backup\nif not exist %backupDir% mkdir %backupDir%\nxcopy C:\\Data\\*.txt %backupDir% /y\necho %date% %time%: Backup completed >> C:\\Scripts\\backup_log.txt\necho Backup finished successfully.\npause',
+   ok:()=>{const s=W.read('C:\\Scripts\\automate.bat');return !!s&&/copy/i.test(s)},why:()=>W.isFile('C:\\Scripts\\automate.bat')&&!/copy/i.test(W.read('C:\\Scripts\\automate.bat'))?'В файле нет команды копирования xcopy. Сохраните код полностью.':''},
+  {p:3,t:'Запустите командный файл',d:'Перейдите в папку сценариев и введите имя файла.',code:'cd C:\\Scripts\nautomate.bat',ok:()=>has('bat.run:c:\\scripts\\automate.bat')&&W.isDir('C:\\Backup'),
+   why:()=>has('bat.run:c:\\scripts\\automate.bat')&&!W.isDir('C:\\Backup')?(has('cmd.setSpace')?'В команде set не ставят пробелы вокруг «=»: set backupDir=C:\\Backup':'Папка C:\\Backup не создана. Проверьте строку с if not exist … mkdir.'):''},
+  {p:4,t:'Проверьте, что скопированы только .txt',d:'В архиве должны быть три текстовых файла, без xlsx и jpg.',code:'dir C:\\Backup',ok:()=>backupOk()&&has('cmd.dir:'+bk),
+   why:()=>has('cmd.dir:'+bk)&&!backupOk()?'В C:\\Backup должны быть только report1.txt, report2.txt и notes.txt. Проверьте маску *.txt в xcopy.':''},
+  {p:4,t:'Проверьте журнал',d:'В журнале должна появиться строка с датой и временем.',code:'type C:\\Scripts\\backup_log.txt',ok:()=>W.lines('C:\\Scripts\\backup_log.txt').length>=1&&has('cmd.type:c:\\scripts\\backup_log.txt'),
+   why:()=>has('bat.run:c:\\scripts\\automate.bat')&&!W.isFile('C:\\Scripts\\backup_log.txt')?'Журнал не создан. Проверьте строку echo … >> C:\\Scripts\\backup_log.txt.':''},
+  {p:6,t:'Запустите ещё раз: запись должна дописаться',d:'Знак <b>&gt;&gt;</b> дописывает в конец файла. В журнале должно стать две строки.',code:'automate.bat\ntype C:\\Scripts\\backup_log.txt',ok:()=>W.lines('C:\\Scripts\\backup_log.txt').length>=2&&(S.ev['cmd.typeLines:c:\\scripts\\backup_log.txt']||0)>=2,
+   why:()=>(S.batRuns['c:\\scripts\\automate.bat']||0)>=2&&W.lines('C:\\Scripts\\backup_log.txt').length<2?'После двух запусков в журнале одна строка: вместо >> стоит >, и файл перезаписывается.':''}]},
+ {id:3,sh:'ps',t:'PowerShell: очистка временных файлов',goal:'Сценарий cleanup.ps1 удаляет .tmp старше 7 дней из C:\\Temp и ведёт журнал.',steps:[
+  {p:2,t:'Изучите папку C:\\Temp',d:'Обратите внимание на даты: какие .tmp старше 7 дней?',code:'Get-ChildItem C:\\Temp',ok:()=>has('ps.gci:c:\\temp')},
+  {p:3,t:'Создайте сценарий cleanup.ps1',d:'Наберите код в Блокноте и сохраните.',code:'notepad C:\\Scripts\\cleanup.ps1',code2:'$folder = "C:\\Temp"\n$logfile = "C:\\Scripts\\cleanup_log.txt"\n$limitDate = (Get-Date).AddDays(-7)\ntry {\n  $files = Get-ChildItem -Path $folder -Filter *.tmp |\n    Where-Object { $_.LastWriteTime -lt $limitDate }\n  foreach ($file in $files) {\n    Remove-Item $file.FullName -Force\n    Add-Content -Path $logfile -Value "$(Get-Date): Deleted file $($file.FullName)"\n  }\n  Write-Host "Cleanup completed successfully."\n} catch {\n  Write-Host "Error during cleanup: $_"\n}',
+   ok:()=>{const s=W.read('C:\\Scripts\\cleanup.ps1');return !!s&&/remove-item/i.test(s)}},
+  {p:2,t:'Попробуйте запустить — и прочитайте ошибку',d:'В PowerShell сценарий из текущей папки запускают с <b>.\\</b>. Политика выполнения пока запрещает сценарии.',code:'cd C:\\Scripts\n.\\cleanup.ps1',ok:()=>has('ps.policyErr')},
+  {p:3,t:'Разрешите запуск своих сценариев',d:'Политика <b>RemoteSigned</b> для текущего пользователя. На вопрос ответьте <b>Y</b>.',code:'Set-ExecutionPolicy RemoteSigned -Scope CurrentUser\nY',ok:()=>['RemoteSigned','Unrestricted','Bypass'].includes(SH.ps.policy),
+   why:()=>has('ps.policyDenied')&&SH.ps.policy==='Restricted'?'Без прав администратора нужен ключ -Scope CurrentUser.':''},
+  {p:6,t:'Запустите очистку',d:'Должны удалиться только old1.tmp и old2.tmp. Свежие .tmp и setup.log остаются.',code:'.\\cleanup.ps1\nGet-ChildItem C:\\Temp',ok:()=>has('ps.cleanupRun')&&tempOk(),
+   why:()=>{if(!has('ps.cleanupRun'))return '';const l=(W.list('C:\\Temp')||[]).map(x=>x.n.toLowerCase());if(!l.includes('setup.log'))return 'Удалён setup.log! Нужен фильтр -Filter *.tmp. Исправьте сценарий и восстановите папку кнопкой ниже.';if(!l.includes('fresh.tmp')||!l.includes('cache.tmp'))return 'Удалены свежие файлы! Проверьте условие: -lt (раньше) и AddDays(-7). Восстановите папку кнопкой ниже.';if(l.includes('old1.tmp'))return 'Старые файлы не удалены. Проверьте Remove-Item и условие отбора.';return ''},fix:'resetTemp'},
+  {p:4,t:'Проверьте журнал очистки',d:'В журнале — две строки об удалённых файлах.',code:'Get-Content C:\\Scripts\\cleanup_log.txt',ok:()=>W.lines('C:\\Scripts\\cleanup_log.txt').length>=2&&(S.ev['ps.gcLines:c:\\scripts\\cleanup_log.txt']||0)>=2}]},
+ {id:4,sh:'ps',t:'PowerShell: мониторинг диска с функцией',goal:'Функция проверяет свободное место на C: и при значении ниже 15 % пишет предупреждение в консоль и журнал.',steps:[
+  {p:2,t:'Посмотрите сведения о диске C:',d:'Сколько места занято и свободно?',code:'Get-PSDrive C',ok:()=>has('ps.psdrive')},
+  {p:3,t:'Создайте сценарий с функцией',d:'<b>Внимание:</b> в методичке процент считают как Free / Used — это ошибка. Делить нужно на весь объём: Used + Free.',code:'notepad C:\\Scripts\\disk_monitor.ps1',code2:'function Test-DiskSpace {\n  param([string]$Letter = "C", [int]$Threshold = 15)\n  $logfile = "C:\\Scripts\\disk_monitor_log.txt"\n  $drive = Get-PSDrive $Letter\n  $freePercent = $drive.Free / ($drive.Used + $drive.Free) * 100\n  if ($freePercent -lt $Threshold) {\n    $message = "$(Get-Date): Warning! Low disk space: $([math]::Round($freePercent,2))% free."\n    Write-Host $message\n    Add-Content -Path $logfile -Value $message\n  } else {\n    Write-Host "Disk space is sufficient."\n  }\n}\nTest-DiskSpace -Letter C -Threshold 15',
+   ok:()=>{const s=W.read('C:\\Scripts\\disk_monitor.ps1');return !!s&&/function\s+[\w-]+/i.test(s)&&/get-psdrive/i.test(s)},why:()=>{const s=W.read('C:\\Scripts\\disk_monitor.ps1');return s&&!/function/i.test(s)?'По заданию проверка оформляется функцией: function Имя { … }.':''}},
+  {p:6,t:'Запустите мониторинг',d:'Свободно 32 ГБ из 232 ГБ — должно появиться предупреждение (13.79 %).',code:'.\\disk_monitor.ps1',ok:()=>has('ps.diskWarn')&&Math.abs((S.ev['ps.diskPercent']||0)-13.79)<0.02,
+   why:()=>{if(has('ps.funcNotCalled')&&!has('ps.funcCalled'))return 'Функция объявлена, но не вызвана: добавьте в конце строку Test-DiskSpace -Letter C -Threshold 15.';const p=S.ev['ps.diskPercent'];if(p==null)return '';if(Math.abs(p-16)<0.02)return 'Получилось 16 % — это формула из методички (Free / Used). Делите на весь объём: Used + Free.';if(Math.abs(p-13.79)>=0.02)return `Получилось ${String(p).replace('.',',')} % — проверьте формулу.`;if(!has('ps.diskWarn'))return 'Процент верный, но предупреждения нет: проверьте условие -lt и порог 15.';return ''}},
+  {p:4,t:'Проверьте журнал мониторинга',d:'Предупреждение должно попасть в журнал.',code:'Get-Content C:\\Scripts\\disk_monitor_log.txt',ok:()=>W.lines('C:\\Scripts\\disk_monitor_log.txt').some(l=>/13[.,]79/.test(l))&&has('ps.gc:c:\\scripts\\disk_monitor_log.txt')}]},
+ {id:5,sh:'cmd',t:'Планировщик заданий: запуск каждую ночь',goal:'Задание «Ежедневный бэкап» запускает automate.bat ежедневно в 2:00.',steps:[
+  {p:5,t:'Создайте задание',d:'<b>/tn</b> — имя, <b>/tr</b> — что запускать, <b>/sc daily</b> — ежедневно, <b>/st</b> — время. В окне Планировщика это: «Создать задачу» → «Триггеры» → «Действия».',code:'schtasks /create /tn "Ежедневный бэкап" /tr C:\\Scripts\\automate.bat /sc daily /st 02:00',ok:()=>taskOk(),
+   why:()=>{const t=Object.values(S.tasks);if(!t.length)return '';const x=t[t.length-1];if(x.sc!=='daily')return 'Расписание должно быть ежедневным: /sc daily.';if(x.st!=='02:00')return 'Время запуска — 02:00: /st 02:00.';if(!/automate\.bat/i.test(x.tr))return 'Действие: путь C:\\Scripts\\automate.bat в /tr.';return ''}},
+  {p:2,t:'Проверьте задание',d:'Ключ <b>/query</b> показывает задание и время следующего запуска.',code:'schtasks /query /tn "Ежедневный бэкап"',ok:()=>has('task.query')&&taskOk()},
+  {p:3,t:'Запустите задание вручную и проверьте журнал',d:'Не ждём до 2:00: ключ <b>/run</b> запускает задание сейчас.',code:'schtasks /run /tn "Ежедневный бэкап"\ntype C:\\Scripts\\backup_log.txt',ok:()=>has('task.run')}]},
+ {id:6,sh:'sh',t:'Linux: сценарий Bash и cron',goal:'backup.sh копирует .txt из ~/data в ~/backup, пишет журнал и запускается cron в 2:00.',steps:[
+  {p:1,t:'Посмотрите файлы в каталоге data',d:'Ключ <b>-l</b> — подробный список с правами.',code:'ls -l data',ok:()=>has('sh.ls:/home/student/data')},
+  {p:2,t:'Создайте сценарий в редакторе nano',d:'Первая строка — shebang. Без пробелов вокруг «=»! Сохранить — ^O (Ctrl+O), выйти — ^X.',code:'nano backup.sh',code2:'#!/bin/bash\n# Резервное копирование отчётов\nSRC=/home/student/data\nDST=/home/student/backup\nLOG=/home/student/backup.log\nmkdir -p $DST\ncp $SRC/*.txt $DST/\necho "$(date \'+%d.%m.%Y %H:%M\') Backup done" >> $LOG\necho "Backup finished"',
+   ok:()=>{const s=L.read('/home/student/backup.sh');return !!s&&/\bcp\b/.test(s)}},
+  {p:1,t:'Попробуйте запустить',d:'Что сообщает Bash? Почему?',code:'./backup.sh',ok:()=>has('sh.denied:/home/student/backup.sh')},
+  {p:2,t:'Дайте право на выполнение',d:'<b>+x</b> — добавить право выполнения. Проверьте: в правах появится x.',code:'chmod +x backup.sh\nls -l backup.sh',ok:()=>((L.get('/home/student/backup.sh')||{}).mode||'').includes('x')},
+  {p:5,t:'Запустите сценарий и проверьте результат',d:'В ~/backup — только report.txt и notes.txt, в журнале — строка с датой.',code:'./backup.sh\nls backup\ncat backup.log',ok:()=>has('sh.run:/home/student/backup.sh')&&linBackupOk()&&L.lines('/home/student/backup.log').length>=1&&has('sh.cat:/home/student/backup.log'),
+   why:()=>{if(!has('sh.run:/home/student/backup.sh'))return '';if(has('sh.assignSpace'))return 'Bash не допускает пробелы вокруг «=»: SRC=/home/student/data.';if(!L.isDir('/home/student/backup'))return 'Каталог backup не создан: проверьте mkdir -p $DST.';if(!linBackupOk())return 'В ~/backup должны быть только report.txt и notes.txt: проверьте маску *.txt.';if(!L.isFile('/home/student/backup.log'))return 'Журнал не создан: проверьте строку echo … >> $LOG.';return ''}},
+  {p:4,t:'Добавьте задание cron на 2:00 каждый день',d:'Откроется редактор. Допишите строку, сохраните (^O) и выйдите (^X). Затем выведите список.',code:'crontab -e',code2:'0 2 * * * /home/student/backup.sh',code3:'crontab -l',ok:()=>cronOk()&&has('sh.cronList'),
+   why:()=>has('sh.cronSaved')&&!cronOk()?'Нужна строка: 0 2 * * * /home/student/backup.sh (минута 0, час 2).':''}]},
+ {id:7,sh:null,t:'Контрольные вопросы',goal:'10 вопросов по методичке. Сдаются один раз.',steps:[]}];
+MIS.forEach(m=>m.steps.forEach((s,i)=>s.id=m.id+'.'+(i+1)));
+const QUIZ=[
+ ['Как сохранить командный файл в Блокноте?',['Тип «Текстовые документы», имя automate.txt','Тип «Все файлы», имя automate.bat','Любой тип — расширение не важно'],1],
+ ['Чем <code>&gt;&gt;</code> отличается от <code>&gt;</code>?',['&gt;&gt; дописывает в конец файла, &gt; перезаписывает','&gt;&gt; перезаписывает, &gt; дописывает','Ничем'],0],
+ ['Как в командном файле проверить, что папки нет?',['<code>if not exist</code>','<code>if missing</code>','<code>check folder</code>'],0],
+ ['Как разрешить запуск своих сценариев PowerShell без прав администратора?',['<code>Set-ExecutionPolicy Restricted</code>','<code>Set-ExecutionPolicy RemoteSigned -Scope CurrentUser</code>','Переименовать .ps1 в .bat'],1],
+ ['Как обработать ошибку в сценарии PowerShell?',['Блоки <code>try { } catch { }</code>','Команда <code>pause</code>','Никак'],0],
+ ['Главное преимущество PowerShell перед batch:',['Работает с объектами: даты, размеры, свойства','Работает быстрее любой программы','Не требует интерпретатора'],0],
+ ['Почему формула Free / Used неверна?',['Нужно делить на весь объём: Used + Free','Нужно делить на 1024','Верна, ошибки нет'],0],
+ ['Какой ключ schtasks задаёт ежедневный запуск?',['<code>/st daily</code>','<code>/sc daily</code>','<code>/tn daily</code>'],1],
+ ['Bash сообщает «Отказано в доступе» при ./backup.sh. Что сделать?',['<code>chmod +x backup.sh</code>','Переименовать в backup.bat','Перезагрузить сервер'],0],
+ ['Что означает строка crontab <code>0 2 * * *</code>?',['Каждые 2 минуты','Каждый день в 2:00','2-го числа каждого месяца'],1]];
+
+/* ======================= БАЛЛЫ И ПРОВЕРКА ======================= */
+function stepPts(id){const [m,i]=id.split('.').map(Number);return MIS[m-1].steps[i-1].p}
+function misScore(m){if(m.id===7)return S.quiz.done?QUIZ.filter((q,i)=>S.quiz.a[i]===q[2]).length:0;return m.steps.reduce((s,x)=>s+(S.done[x.id]?x.p:0),0)}
+function misMax(m){return m.id===7?10:m.steps.reduce((s,x)=>s+x.p,0)}
+const total=()=>MIS.reduce((s,m)=>s+misScore(m),0);
+function check(){if(!S.t0||S.fin)return;const gained=[];MIS.forEach(m=>m.steps.forEach(s=>{if(!S.done[s.id]){let ok=false;try{ok=s.ok()}catch(e){}if(ok){S.done[s.id]=Date.now();gained.push(s)}}}));
+ if(gained.length){toast(gained.map(s=>`+${s.p} б. — ${s.t}`).join(' · '));renderTop();renderMis()}}
+function grade(t){return t>=85?[5,'отлично']:t>=70?[4,'хорошо']:t>=50?[3,'удовлетворительно']:[2,'неудовлетворительно']}
+function level(p){return p>=85?['Высокий','l4']:p>=70?['Достаточный','l3']:p>=50?['Базовый','l2']:['Низкий','l1']}
+
+/* ======================= ИНТЕРФЕЙС ======================= */
+const stage=$('#stage');
+function fit(){const s=Math.min(window.innerWidth/1280,window.innerHeight/720);stage.style.transform=`translate(${(window.innerWidth-1280*s)/2}px,${(window.innerHeight-720*s)/2}px) scale(${s})`}
+window.addEventListener('resize',fit);fit();
+stage.addEventListener('scroll',()=>{stage.scrollLeft=0;stage.scrollTop=0});
+let toastT;function toast(t,bad){const d=$('#toast');d.textContent=t;d.className=bad?'bad':'';clearTimeout(toastT);toastT=setTimeout(()=>d.classList.add('hidden'),bad?3600:3000)}
+let DLG=[];
+function dialog(title,html,buttons){DLG=buttons||[{t:'OK'}];const d=$('#dlg');d.innerHTML=`<div class="dbox">${title?`<h3>${esc(title)}</h3>`:''}<div>${html}</div><div class="dbtns">${DLG.map((b,k)=>`<button class="btn ${b.cls||''}" data-a="dlgb" data-v="${k}">${esc(b.t)}</button>`).join('')}</div></div>`;d.classList.remove('hidden');const f=$('.dbox input',d)||$('.dbtns .btn:last-child',d);if(f)f.focus()}
+function closeDlg(){$('#dlg').classList.add('hidden');$('#dlg').innerHTML='';focusIn()}
+function renderTop(){const c=total();$('#top').innerHTML=`<span class="logo">&gt;_</span><span class="ttl">Автоматизация</span><span class="chips">${MIS.map(m=>`<button class="${S.view===m.id?'on':''}${misScore(m)>=misMax(m)?' done':''}" data-a="mis" data-v="${m.id}"${S.t0?'':' disabled'} title="${esc(m.t)}">${m.id}</button>`).join('')}<button class="${S.view==='res'?'on':''}" data-a="mis" data-v="res"${S.t0?'':' disabled'}>Итоги</button></span><span class="sp"></span><span class="pill">${c} / 100</span><span class="pill clock" id="clock">90:00</span><button class="ib" data-a="full" title="Полный экран">⛶</button>`;tick()}
+function codeBlock(c,lab){return `<pre class="code">${esc(c)}</pre>`}
+function renderMis(){const el=$('#mis');if(typeof S.view!=='number'){el.innerHTML='';return}const m=MIS[S.view-1];const sc=misScore(m),mx=misMax(m);
+ let body='';
+ if(m.id===7){body=`<p>${esc(m.goal)}</p><p class="muted">Вопросы — справа. Выберите ответ на каждый и нажмите «Сдать ответы».</p>`}
+ else{const cur=m.steps.find(s=>!S.done[s.id]);
+  body=`<p class="muted" style="margin:0 0 6px">${esc(m.goal)}</p>`+m.steps.map((s,i)=>{const d=!!S.done[s.id];const open=s===cur||S.open===s.id;const why=!d&&s.why?s.why():'';
+   return `<div class="step${d?' done':''}${s===cur?' cur':''}"><button class="sh" data-a="stepopen" data-v="${s.id}"><span class="ic">${d?'✓':i+1}</span><span class="stt">${esc(s.t)}</span><span class="pts">${s.p} б.</span></button>${open?`<div class="sd"><p>${s.d}</p>${codeBlock(s.code)}${s.code2?`<p>Код сценария:</p>${codeBlock(s.code2)}<button class="zoom" data-a="zoom" data-v="${s.id}">⤢ Код крупно</button>`:''}${s.code3?`<p>Затем проверьте:</p>${codeBlock(s.code3)}`:''}${why?`<div class="why">${esc(why)}</div>`:''}${why&&s.fix?`<button class="btn o" data-a="${s.fix}">⟲ Восстановить C:\\Temp</button>`:''}${d?'<div class="okmsg">Шаг выполнен ✓</div>':''}</div>`:''}</div>`}).join('')}
+ el.innerHTML=`<div class="mh"><span class="mn">Миссия ${m.id} из 7 · ${m.sh?{cmd:'CMD',ps:'PowerShell',sh:'Bash'}[m.sh]:'тест'}</span><div class="row"><b>${esc(m.t)}</b><span class="badge${sc>=mx?' ok':''}">${sc}/${mx}</span></div></div><div class="mb" id="mb">${body}</div><div class="mf"><button class="btn g" data-a="mis" data-v="${m.id-1}"${m.id===1?' disabled':''}>◀</button><span class="sp"></span><button class="btn o" data-a="mis" data-v="${m.id===7?'res':m.id+1}">${m.id===7?'Итоги':'Миссия '+(m.id+1)} ▶</button></div>`;
+ const cur=$('.step.cur',el);if(cur&&!S.keepScroll){const mb=$('#mb');mb.scrollTop=Math.max(0,cur.offsetTop-mb.offsetTop-6)}S.keepScroll=false}
+function renderTabs(){$('#ttabs').innerHTML=[['cmd','CMD'],['ps','PowerShell'],['sh','Bash']].map(([k,l])=>`<button class="tb ${k}${S.tab===k?' on':''}" data-a="tab" data-v="${k}"><span class="ti"></span>${l}</button>`).join('')+`<span class="sp"></span><button class="ib" data-a="wide" title="Расширить терминал">${S.wide?'⇥ Задание':'⇔ Шире'}</button>`}
+function renderTerm(){const sh=S.tab;const t=$('#term');t.className='term '+sh;const o=$('#tout');o.innerHTML=SH[sh].out.map(([l,c])=>`<div${c?` class="${c}"`:''}>${esc(l)}</div>`).join('');o.scrollTop=o.scrollHeight;$('#tpr').textContent=prompt(sh)}
+function focusIn(){if(ED){const ta=$('#eta');if(ta)ta.focus();return}const i=$('#tin');if(i&&!$('#pane').classList.contains('hidden'))return;if(i&&$('#dlg').classList.contains('hidden'))i.focus({preventScroll:true})}
+function renderRight(){const pane=$('#pane');if(S.view===7||S.view==='res'){pane.classList.remove('hidden');pane.innerHTML=S.view===7?quizHTML():resHTML();applyW(pane)}else{pane.classList.add('hidden');pane.innerHTML=''}$('#main').classList.toggle('wide',S.wide||S.view==='res')}
+function render(){renderTop();renderMis();renderTabs();renderTerm();renderRight();focusIn()}
+function applyW(r){$$('[data-w]',r).forEach(e=>{e.style.width=e.dataset.w+'%';if(e.dataset.c)e.style.background=e.dataset.c})}
+
+/* ---------- ввод команд ---------- */
+function exec(sh,line){const s=SH[sh];if(!S.t0){toast('Сначала зарегистрируйтесь',1);return}
+ if(S.fin){out(sh,prompt(sh)+line);out(sh,'Работа сдана — команды не выполняются.','c-y');renderTerm();return}
+ const pr=prompt(sh);out(sh,pr+line,'');if(line.trim()&&!s.pending){s.hist.push(line);s.hp=s.hist.length;S.cmds++;S.hist.push([sh,line,new Date()]);if(S.hist.length>300)S.hist.shift()}
+ let code=0;
+ if(sh==='cmd'){const o=[];code=cmdLine(cmdExpand(line,false),{batch:false,o,depth:0});o.forEach(x=>out('cmd',x[0],x[1]));if(code)S.errs.cmd++;if(line.trim())out('cmd','')}
+ else if(sh==='ps'){const o=[];code=psLine(line,o);o.forEach(x=>out('ps',x[0],x[1]))}
+ else{const o=[];code=shRunLine(line,o);o.forEach(x=>out('sh',x[0],x[1]));if(code&&line.trim())S.errs.sh++}
+ check();renderTerm();renderMis();renderTop()}
+function shRunLine(line,o){const t=line.trim();if(!t)return 0;let code=0;
+ if(/^(if|for|while)\s/.test(t)){try{const ast=shParse(shStatements(t));const vars=SH.sh.vars;const ex=(nodes)=>{for(const nd of nodes){if(nd.t==='cmd')code=bLine(nd.c,o,vars,{});else if(nd.t==='if'){let done=false;for(const b of nd.branches){if(bLine(b.cond,[],vars,{})===0){ex(b.body);done=true;break}}if(!done&&nd.els)ex(nd.els)}else if(nd.t==='for'){bWords(bTok(nd.list),vars).map(x=>x.s).forEach(v=>{vars[nd.v]=v;ex(nd.body)})}}};ex(ast)}catch(e){o.push(['bash: '+e.msg,''])}return code}
+ splitTop(t,';','"\'').forEach(seg=>{if(!seg.trim())return;const parts=seg.split(/\s*&&\s*/);for(const p of parts){code=bLine(p,o,SH.sh.vars,{});if(code)break}});return code}
+const tin=$('#tin');
+tin.addEventListener('keydown',e=>{const sh=S.tab,s=SH[sh];
+ if(e.key==='Enter'){e.preventDefault();const v=tin.value;tin.value='';exec(sh,v);return}
+ if(e.key==='ArrowUp'){e.preventDefault();if(s.hp>0){s.hp--;tin.value=s.hist[s.hp]||''}return}
+ if(e.key==='ArrowDown'){e.preventDefault();if(s.hp<s.hist.length){s.hp++;tin.value=s.hist[s.hp]||''}return}
+ if(e.key==='Tab'){e.preventDefault();complete();return}
+ if(e.key==='l'&&e.ctrlKey){e.preventDefault();SH[sh].out=[];renderTerm()}});
+function complete(){const v=tin.value;const m=v.match(/(^|\s)(\S*)$/);if(!m)return;const part=m[2].replace(/^["']/,'');const sh=S.tab;const fs=sh==='sh'?L:W;const sep=sh==='sh'?'/':'\\';
+ const idx=Math.max(part.lastIndexOf('\\'),part.lastIndexOf('/'));const dirPart=idx>=0?part.slice(0,idx+1):'';const base=idx>=0?part.slice(idx+1):part;
+ const dir=fs.norm(SH[sh].cwd,dirPart||'.');const items=(fs.list(dir)||[]).filter(x=>x.n.toLowerCase().startsWith(base.toLowerCase()));
+ if(items.length===1){let rep=dirPart+items[0].n+(items[0].t==='d'?sep:'');if(sh==='ps'&&!dirPart&&items[0].t==='f'&&/\.ps1$/i.test(items[0].n)&&m.index===0&&!m[1])rep='.\\'+rep;tin.value=v.slice(0,v.length-m[2].length)+rep}
+ else if(items.length>1){out(sh,prompt(sh)+v);out(sh,items.map(x=>x.n).join('  '),'c-m');renderTerm()}}
+$('#term').addEventListener('mouseup',()=>{if(!String(window.getSelection())){tin.focus({preventScroll:true})}});
+
+/* ---------- вопросы ---------- */
+function quizHTML(){const Q=S.quiz,c=Q.cur,q=QUIZ[c],d=Q.done;
+ const nums=`<div class="nums">${QUIZ.map((x,i)=>`<button class="${i===c?'cur ':''}${d?(Q.a[i]===x[2]?'ok':'bad'):(Q.a[i]!=null?'ans':'')}" data-a="qgo" data-v="${i}">${i+1}</button>`).join('')}</div>`;
+ return `<div class="ph"><b>Контрольные вопросы</b><span class="badge${d?' ok':''}">${d?misScore(MIS[6])+' / 10':Object.keys(Q.a).length+' из 10'}</span></div><div class="pb">${nums}<div class="qtxt">${c+1}. ${q[0]}</div><div class="opts">${q[1].map((o,j)=>`<button class="opt${d?(j===q[2]?' ok':(Q.a[c]===j?' bad':'')):(Q.a[c]===j?' on':'')}" data-a="qans" data-v="${j}">${o}</button>`).join('')}</div></div><div class="pf"><span class="st">${d?'Ответы сданы.':'Выберите ответ — откроется следующий вопрос.'}</span>${d||S.fin?'':'<button class="btn" data-a="qsubmit">Сдать ответы</button>'}<button class="btn o" data-a="mis" data-v="res">Итоги ▶</button></div>`}
+/* ---------- итоги ---------- */
+function used(){if(!S.t0)return '0 мин';const e=Math.min(S.limit,Math.floor(((S.fin?S.tEnd:Date.now())-S.t0)/1000));return `${Math.floor(e/60)} мин ${e%60} с`}
+function analysis(){const rows=MIS.map(m=>{const v=misScore(m),mx=misMax(m),p=Math.round(v/mx*100);return {m,v,mx,p,lv:level(p)}});
+ const miss=[];MIS.forEach(m=>m.steps.forEach(s=>{if(!S.done[s.id])miss.push({m,s,why:s.why?s.why():''})}));
+ const errAll=S.errs.cmd+S.errs.ps+S.errs.sh;return {rows,miss,errAll}}
+const COMP={1:'Работа в CMD',2:'Командные файлы',3:'Сценарии PowerShell',4:'Функции и вычисления',5:'Планирование заданий',6:'Сценарии Bash и cron',7:'Теория (вопросы)'};
+const REC={1:'Повторите команды cd, dir, type, mkdir и перенаправление > (теория, слайды 6–11).',2:'Повторите создание и запуск командных файлов, разницу > и >> (слайды 7–12).',3:'Повторите политику выполнения и обработку ошибок try/catch (слайды 14–18).',4:'Повторите функции и формулу процента свободного места (слайды 10, 19).',5:'Повторите Планировщик заданий: триггер и действие (слайды 21–22).',6:'Повторите права x, shebang и формат crontab (слайды 23–25).',7:'Перечитайте контрольные вопросы методички и теорию (слайды 5–28).'};
+function resHTML(){const T=total(),[g,gt]=grade(T),A=analysis();
+ const tabs=`<div class="tabs2">${['Результат','Анализ','Статистика'].map((x,i)=>`<button class="${S.rtab===i?'on':''}" data-a="rtab" data-v="${i}">${x}</button>`).join('')}</div>`;
+ let body='';
+ if(S.rtab===0)body=`<div class="res"><div><div class="grade g${g}">${g}</div><p><span class="big">${T}</span> из 100</p><p>Оценка: <b>${g}</b> (${gt})</p><p class="muted">Время: ${used()}</p></div><div class="bars">${A.rows.map(r=>`<div class="bar"><span>${r.m.id}. ${esc(COMP[r.m.id])}</span><span class="tr"><i data-w="${r.p}" data-c="${r.p>=85?'#15803D':r.p>=70?'#0F766E':r.p>=50?'#CA8A04':'#B91C1C'}"></i></span><span class="v">${r.v}/${r.mx}</span></div>`).join('')}</div></div>`;
+ else if(S.rtab===1){const weak=A.rows.filter(r=>r.p<70);body=`<table class="tb"><tr><th>Миссия</th><th class="c">%</th><th>Уровень</th></tr>${A.rows.map(r=>`<tr><td>${r.m.id}. ${esc(COMP[r.m.id])}</td><td class="c">${r.p}</td><td><span class="lv ${r.lv[1]}">${r.lv[0]}</span></td></tr>`).join('')}</table>
+  <p style="margin-top:8px"><b>Рекомендации:</b> ${weak.length?weak.map(r=>esc(REC[r.m.id])).slice(0,2).join(' '):'все миссии выполнены на достаточном уровне. Отличная работа!'}${weak.length>2?' Полный список — в отчёте.':''}</p>`}
+ else body=`<table class="tb"><tr><th>Показатель</th><th class="c">Значение</th></tr><tr><td>Введено команд</td><td class="c">${S.cmds}</td></tr><tr><td>Команды с ошибкой (CMD / PS / Bash)</td><td class="c">${S.errs.cmd} / ${S.errs.ps} / ${S.errs.sh}</td></tr><tr><td>Запусков сценариев (bat / ps1 / sh)</td><td class="c">${S.runs.bat} / ${S.runs.ps} / ${S.runs.sh}</td></tr><tr><td>Запусков с ошибкой</td><td class="c">${S.runs.err}</td></tr><tr><td>Шагов выполнено</td><td class="c">${Object.keys(S.done).length} из ${MIS.reduce((s,m)=>s+m.steps.length,0)}</td></tr></table><p class="muted" style="margin-top:8px">Невыполненные шаги и подсказки — в отчёте.</p>`;
+ return `<div class="ph"><b>Итоги и анализ</b>${S.fin?'<span class="badge ok">работа сдана</span>':''}</div><div class="pb">${tabs}${body}</div><div class="pf"><span class="st">${S.fin?'Сохраните отчёт.':'Несданные вопросы — 0 баллов.'}</span><button class="btn g" data-a="mis" data-v="7">◀ Вопросы</button>${S.fin?'':'<button class="btn r" data-a="finish">Сдать работу</button>'}<button class="btn" data-a="report">Отчёт</button><button class="btn o" data-a="print">Печать</button></div>`}
+
+/* ======================= ОТЧЁТ ======================= */
+const FILES=[['C:\\Scripts\\automate.bat',W],['C:\\Scripts\\cleanup.ps1',W],['C:\\Scripts\\disk_monitor.ps1',W],['/home/student/backup.sh',L]];
+function scripts(){return [['C:\\Scripts\\automate.bat','w'],['C:\\Scripts\\cleanup.ps1','w'],['C:\\Scripts\\disk_monitor.ps1','w'],['/home/student/backup.sh','l']].map(([p,k])=>[p,(k==='w'?W:L).read(p)]).concat([['crontab (student)',S.cron||null]])}
+function reportHTML(){const T=total(),[g,gt]=grade(T),A=analysis(),dt=new Date().toLocaleString('ru-RU');const weak=A.rows.filter(r=>r.p<70);
+ return `<!DOCTYPE html><html lang="ru"><head><meta charset="utf-8"><title>Отчёт — ${esc(S.name||'студент')}</title><style>
+body{font-family:"Times New Roman",serif;font-size:14pt;color:#000;max-width:190mm;margin:10mm auto;line-height:1.35}h1{font-size:18pt;text-align:center;margin:0 0 4mm}h2{font-size:15pt;margin:6mm 0 2mm}
+table{border-collapse:collapse;width:100%;font-size:12pt}th,td{border:1px solid #000;padding:2px 6px;vertical-align:top;text-align:left}th{background:#eee}
+pre{font-family:Consolas,"Courier New",monospace;font-size:11pt;background:#f4f4f4;border:1px solid #999;padding:4px 8px;white-space:pre-wrap}
+.ok{color:#15803d;font-weight:bold}.no{color:#b91c1c;font-weight:bold}.sig{margin-top:12mm;display:flex;justify-content:space-between}.small{font-size:11pt}
+</style></head><body>
+<h1>Отчёт о выполнении практической работы</h1>
+<p><b>Тема:</b> Автоматизация работы в ОС: командные файлы и сценарии Windows (bat, PowerShell) и Linux (Bash)<br><b>Студент:</b> ${esc(S.name||'—')} &nbsp; <b>Группа:</b> ${esc(S.group||'—')}<br><b>Дата:</b> ${dt} &nbsp; <b>Время работы:</b> ${used()} из 90 мин &nbsp; <b>Статус:</b> ${S.fin?'работа сдана':'промежуточный отчёт'}</p>
+<h2>1. Результаты по миссиям</h2><table><tr><th>№</th><th>Миссия</th><th>Баллы</th><th>%</th><th>Уровень</th></tr>${A.rows.map(r=>`<tr><td>${r.m.id}</td><td>${esc(r.m.t)}</td><td>${r.v} / ${r.mx}</td><td>${r.p}</td><td>${r.lv[0]}</td></tr>`).join('')}<tr><th></th><th>Итого</th><th>${T} / 100</th><th colspan="2">Оценка: ${g} (${gt})</th></tr></table>
+<h2>2. Выполнение шагов</h2><table><tr><th>Шаг</th><th>Содержание</th><th>Баллы</th><th></th></tr>${MIS.flatMap(m=>m.steps.map(s=>`<tr><td>${s.id}</td><td>${esc(s.t)}${!S.done[s.id]&&s.why&&s.why()?`<br><i class="small">${esc(s.why())}</i>`:''}</td><td>${S.done[s.id]?s.p:0} / ${s.p}</td><td class="${S.done[s.id]?'ok':'no'}">${S.done[s.id]?'✓':'✗'}</td></tr>`)).join('')}</table>
+<h2>3. Контрольные вопросы</h2><table><tr><th>№</th><th>Вопрос</th><th>Ответ студента</th><th>Верный ответ</th><th></th></tr>${QUIZ.map((q,i)=>`<tr><td>${i+1}</td><td>${q[0]}</td><td>${S.quiz.a[i]!=null?q[1][S.quiz.a[i]]:'—'}</td><td>${q[1][q[2]]}</td><td class="${S.quiz.done&&S.quiz.a[i]===q[2]?'ok':'no'}">${S.quiz.done&&S.quiz.a[i]===q[2]?'✓':'✗'}</td></tr>`).join('')}</table>
+<h2>4. Анализ</h2><p>Введено команд: ${S.cmds}; с ошибкой: CMD — ${S.errs.cmd}, PowerShell — ${S.errs.ps}, Bash — ${S.errs.sh}. Запусков сценариев: bat — ${S.runs.bat}, ps1 — ${S.runs.ps}, sh — ${S.runs.sh}; из них с ошибкой — ${S.runs.err}.</p>
+${weak.length?'<p><b>Рекомендации:</b></p><ul>'+weak.map(r=>`<li><b>${esc(COMP[r.m.id])}:</b> ${esc(REC[r.m.id])}</li>`).join('')+'</ul>':'<p>Все миссии выполнены на уровне «достаточный» и выше.</p>'}
+<h2>5. Сценарии студента</h2>${scripts().map(([p,c])=>`<p><b>${esc(p)}</b></p>${c?`<pre>${esc(c)}</pre>`:'<p class="small">— файл не создан —</p>'}`).join('')}
+<h2>6. Журнал команд (последние ${Math.min(80,S.hist.length)})</h2><pre>${esc(S.hist.slice(-80).map(([sh,l,t])=>`${pad(t.getHours())}:${pad(t.getMinutes())} [${{cmd:'CMD',ps:'PS',sh:'Bash'}[sh]}] ${l}`).join('\n'))||'—'}</pre>
+<div class="sig"><span>Студент: ____________ / ${esc(S.name||'')}</span><span>Преподаватель: ____________</span></div>
+</body></html>`}
+function reportTXT(){const T=total(),[g,gt]=grade(T),A=analysis();return `ОТЧЁТ О ВЫПОЛНЕНИИ ПРАКТИЧЕСКОЙ РАБОТЫ
+Тема: Автоматизация работы в ОС: командные файлы и сценарии (bat, PowerShell, Bash)
+Студент: ${S.name||'—'}   Группа: ${S.group||'—'}
+Дата: ${new Date().toLocaleString('ru-RU')}   Время: ${used()} из 90 мин
+Статус: ${S.fin?'работа сдана':'промежуточный отчёт'}
+
+${A.rows.map(r=>`${r.m.id}. ${r.m.t}: ${r.v} / ${r.mx} (${r.p} %, ${r.lv[0]})`).join('\n')}
+ИТОГО: ${T} / 100   ОЦЕНКА: ${g} (${gt})
+
+Невыполненные шаги:
+${A.miss.length?A.miss.map(x=>`- ${x.s.id} ${x.s.t}${x.why?' — '+x.why:''}`).join('\n'):'- нет'}
+
+Статистика: команд ${S.cmds}; ошибок CMD/PS/Bash ${S.errs.cmd}/${S.errs.ps}/${S.errs.sh}; запусков bat/ps1/sh ${S.runs.bat}/${S.runs.ps}/${S.runs.sh}, с ошибкой ${S.runs.err}
+
+${scripts().map(([p,c])=>`=== ${p} ===\n${c?c.replace(/\r\n/g,'\n'):'— файл не создан —'}`).join('\n\n')}
+`}
+function download(name,text,type){try{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\ufeff'+text],{type:type+';charset=utf-8'}));a.download=name;document.body.appendChild(a);a.click();a.remove();toast('Файл отчёта сохраняется…')}catch(e){toast('Скачивание недоступно — используйте «Копировать»',1)}}
+const fname=ext=>`Отчёт_автоматизация_${(S.name||'студент').replace(/\s+/g,'_')}.${ext}`;
+let REPORT='';
+function copyRep(){const t=$('#rep');let ok=false;try{if(navigator.clipboard){navigator.clipboard.writeText(REPORT);ok=true}}catch(e){}if(!ok&&t){t.select();try{ok=document.execCommand('copy')}catch(e){}}toast(ok?'Отчёт скопирован':'Выделите текст и скопируйте вручную',!ok)}
+
+/* ======================= ДЕЙСТВИЯ ======================= */
+const ACT={
+ mis(v){if(!S.t0)return;if(v==='res'){S.view='res';S.rtab=0}else{const n=+v;if(n<1||n>7)return;S.view=n;const m=MIS[n-1];if(m.sh&&S.tab!==m.sh){S.tab=m.sh}}if(ED&&S.view!=='res'&&S.view!==7){}else if(ED)edClose(true);S.open=null;render()},
+ tab(v){S.tab=v;if(ED&&((v==='cmd'||v==='ps')!==(ED.kind==='np')))edClose(true);renderTabs();renderTerm();focusIn()},
+ wide(){S.wide=!S.wide;renderTabs();$('#main').classList.toggle('wide',S.wide||S.view==='res');focusIn()},
+ edwide(){ACT.wide()},
+ stepopen(v){S.open=S.open===v?null:v;S.keepScroll=true;renderMis()},
+ zoom(v){const [m,i]=v.split('.').map(Number);const s=MIS[m-1].steps[i-1];dialog(s.t,`<pre class="code">${esc(s.code2)}</pre>`,[{t:'Закрыть'}])},
+ resetTemp(){resetTemp();(W.read('C:\\Scripts\\cleanup_log.txt')!=null)&&W.write('C:\\Scripts\\cleanup_log.txt','');delete S.ev['ps.cleanupRun'];toast('Папка C:\\Temp восстановлена, журнал очистки очищен');renderMis()},
+ edsave(){edSave()},edclose(){edClose()},
+ dlgb(v){const b=DLG[+v];closeDlg();b&&b.fn&&b.fn()},
+ start(){const n=$('#fn').value.trim(),g=$('#fg').value.trim();if(!n||!g){toast('Введите фамилию, имя и группу',1);return}S.name=n;S.group=g;S.t0=Date.now();closeDlg();
+  out('cmd','Microsoft Windows [Version 10.0.26100]');out('cmd','(c) Корпорация Майкрософт. Все права защищены.');out('cmd','');
+  out('ps','Windows PowerShell');out('ps','(C) Корпорация Майкрософт. Все права защищены.');out('ps','');
+  out('sh','Добро пожаловать на сервер srv (Ubuntu 24.04 LTS)');out('sh','Введите help — список команд.','c-m');out('sh','');render();toast('Работа начата. Удачи!')},
+ full(){const el=document.documentElement;if(document.fullscreenElement){try{document.exitFullscreen()}catch(e){}return}const fail=()=>toast('Полный экран недоступен в этом окне',1);try{if(document.fullscreenEnabled&&el.requestFullscreen){const r=el.requestFullscreen();r&&r.catch&&r.catch(fail)}else fail()}catch(e){fail()}},
+ qgo(v){S.quiz.cur=+v;renderRight()},
+ qans(v){if(S.quiz.done||S.fin)return;S.quiz.a[S.quiz.cur]=+v;const nx=QUIZ.findIndex((q,i)=>S.quiz.a[i]==null);if(nx>=0)S.quiz.cur=nx;renderRight();renderMis()},
+ qsubmit(){const n=Object.keys(S.quiz.a).length;dialog('Сдать ответы?',`<p>Отвечено: ${n} из 10. Изменить ответы будет нельзя.</p>`,[{t:'Отмена',cls:'g'},{t:'Сдать',fn:()=>{S.quiz.done=true;render();toast(`Вопросы: ${misScore(MIS[6])} из 10`)}}])},
+ rtab(v){S.rtab=+v;renderRight()},
+ finish(){dialog('Сдать работу?','<p>После сдачи команды выполняться не будут. Несданные вопросы получат 0 баллов.</p>',[{t:'Отмена',cls:'g'},{t:'Сдать работу',cls:'r',fn:()=>finish(false)}])},
+ report(){REPORT=reportTXT();dialog('Отчёт',`<textarea id="rep" readonly>${esc(REPORT)}</textarea>`,[{t:'Закрыть',cls:'g'},{t:'Копировать',cls:'o',fn:copyRep},{t:'Скачать .txt',cls:'o',fn:()=>download(fname('txt'),reportTXT(),'text/plain')},{t:'Скачать .html',fn:()=>download(fname('html'),reportHTML(),'text/html')}])},
+ print(){const pa=$('#printArea');const h=reportHTML();pa.innerHTML=h.slice(h.indexOf('<h1>'),h.lastIndexOf('</body>'));try{window.print()}catch(e){toast('Печать недоступна — скачайте отчёт .html',1)}}
+};
+stage.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||b.disabled)return;const f=ACT[b.dataset.a];if(f){e.preventDefault();f(b.dataset.v,b,e)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#dlg').classList.contains('hidden')&&S.t0){closeDlg()}
+ if(e.key==='Enter'&&!S.t0&&(e.target.id==='fn'||e.target.id==='fg')){e.preventDefault();ACT.start()}});
+window.addEventListener('beforeunload',e=>{if(S.t0&&!S.fin){e.preventDefault();e.returnValue=''}});
+function tick(){const el=$('#clock');if(!el)return;if(!S.t0){el.textContent='90:00';return}const now=S.fin?S.tEnd:Date.now();const rem=Math.max(0,S.limit-Math.floor((now-S.t0)/1000));el.textContent=`${pad(Math.floor(rem/60))}:${pad(rem%60)}`;el.className='pill clock'+(rem<=300?' crit':rem<=900?' warn':'');if(rem<=0&&!S.fin)finish(true)}
+setInterval(tick,500);
+function finish(byTime){if(S.fin)return;if(ED)edClose(true);S.fin=true;S.tEnd=Date.now();S.view='res';S.rtab=0;render();dialog(byTime?'Время вышло':'Работа сдана',`<p>Результат: <b>${total()} из 100</b>. Сохраните отчёт кнопкой «Отчёт».</p>`,[{t:'К итогам'}])}
+
+/* ======================= СТАРТ ======================= */
+seedFS();render();
+dialog('',`<div class="intro"><div><h3>Практикум: автоматизация в ОС</h3><p>Вы — системный администратор ООО «СетьСервис». За 90 минут автоматизируйте рутину:</p><ul><li>командный файл резервного копирования;</li><li>сценарии PowerShell: очистка и мониторинг диска;</li><li>запуск по расписанию в Windows и Linux;</li><li>контрольные вопросы.</li></ul><p class="muted">Слева — задание по шагам с кодом, справа — терминал. Шаги засчитываются автоматически.</p></div><div><p><b>Регистрация</b></p><p>Фамилия и имя</p><input type="text" id="fn" autocomplete="off"><p style="margin-top:8px">Группа</p><input type="text" id="fg" autocomplete="off"><div class="dbtns"><button class="btn" data-a="start">▶ Начать (90 минут)</button></div></div></div>`,[]);
+$('.dbtns:last-child',$('#dlg'))&&($('#dlg .dbox>.dbtns').style.display='none');
+setTimeout(()=>{const f=$('#fn');if(f)f.focus()},50);
+window.APP={S,SH,W:()=>W,L:()=>L,exec,ACT,MIS,QUIZ,total,misScore,check,edSave,edClose,reportHTML,reportTXT,render,resetTemp,
+ setEditor:v=>{const t=$('#eta');t.value=v;t.dispatchEvent(new Event('input'))}};
+})();
+</script>
+</body>
+</html>
