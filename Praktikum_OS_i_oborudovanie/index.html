@@ -1,0 +1,1115 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Практикум: ОС и оборудование</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans:wght@400;700&family=PT+Serif:wght@700&display=swap">
+<style>
+/* Layout: sticky navy status bar (timer, score) + left task rail + one task panel at a time; rail turns into a horizontal strip on phones */
+:root{
+  --bg:#F2F5FA; --surface:#FDFDFB; --surface-2:#E9EFF8; --field:#FFFFFE;
+  --fg:#101828; --muted:#475467; --line:#D3DCE8; --line-strong:#9AA9BF;
+  --accent:#C2410C; --accent-soft:#FDE7D9; --on-accent:#FFFBF6;
+  --blue:#1560D0; --blue-soft:#DCE8FB; --on-blue:#FBFDFF;
+  --grey:#5B6B82; --grey-soft:#E4E9F0;
+  --ok:#0F7A3D; --ok-soft:#DDF3E5; --bad:#B42318; --bad-soft:#FDE3E1;
+  --navy:#0F1B33; --bar-fg:#F3F5FA; --bar-muted:#AFC0DA; --bar-accent:#FF9A55;
+  --font-display:'PT Serif', Georgia, 'Times New Roman', serif;
+  --font-body:'PT Sans', 'Segoe UI', Arial, sans-serif;
+  --font-mono:'PT Mono', Consolas, 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1322; --surface:#121D33; --surface-2:#1A2843; --field:#0E182C;
+    --fg:#F1F4FA; --muted:#AEB9CC; --line:#2A3A5C; --line-strong:#4A5E86;
+    --accent:#FF8A3D; --accent-soft:#3A2414; --on-accent:#1A1006;
+    --blue:#7DB6FF; --blue-soft:#17305A; --on-blue:#08142B;
+    --grey:#A3B0C4; --grey-soft:#25314A;
+    --ok:#4ADE80; --ok-soft:#10301F; --bad:#FF8A80; --bad-soft:#3A1717;
+    --navy:#08101F;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1322; --surface:#121D33; --surface-2:#1A2843; --field:#0E182C;
+  --fg:#F1F4FA; --muted:#AEB9CC; --line:#2A3A5C; --line-strong:#4A5E86;
+  --accent:#FF8A3D; --accent-soft:#3A2414; --on-accent:#1A1006;
+  --blue:#7DB6FF; --blue-soft:#17305A; --on-blue:#08142B;
+  --grey:#A3B0C4; --grey-soft:#25314A;
+  --ok:#4ADE80; --ok-soft:#10301F; --bad:#FF8A80; --bad-soft:#3A1717;
+  --navy:#08101F;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-display);font-weight:700;margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:clamp(28px,3.4vw,40px)}
+h2{font-size:clamp(25px,3vw,34px)}
+h3{font-size:21px}
+p{margin:0}
+ol,ul{margin:0;padding-left:1.4em}
+li+li{margin-top:6px}
+code,.mono{font-family:var(--font-mono)}
+code{font-size:.92em;background:var(--surface-2);padding:1px 6px;border-radius:5px}
+kbd{font-family:var(--font-mono);font-size:15px;padding:1px 7px;border:1px solid var(--line-strong);border-bottom-width:3px;border-radius:6px;background:var(--surface-2);white-space:nowrap}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--navy);color:var(--bar-fg)}
+.bar-in{max-width:1320px;margin:0 auto;padding:12px 20px;display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;justify-content:space-between}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand-kicker{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--bar-accent);font-weight:700}
+.brand-title{font-family:var(--font-display);font-weight:700;font-size:21px;line-height:1.2}
+.bar-stats{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center}
+.stat{display:flex;flex-direction:column;line-height:1.2}
+.stat-l{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--bar-muted)}
+.stat-v{font-weight:700;font-size:21px;font-variant-numeric:tabular-nums}
+.timer{display:flex;align-items:center;gap:12px}
+.timer.low .stat-v{color:var(--bar-accent)}
+.btn-bar{font:inherit;font-weight:700;font-size:15px;padding:7px 14px;border-radius:8px;border:1.5px solid var(--bar-muted);background:transparent;color:var(--bar-fg);cursor:pointer}
+.btn-bar:hover{border-color:var(--bar-fg)}
+.btn-bar.go{background:var(--bar-accent);border-color:var(--bar-accent);color:#1A1006}
+
+.app{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:24px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:28px;align-items:start}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 96px)}
+#nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+#nav li{margin:0}
+.nav-btn{width:100%;display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border:1.5px solid transparent;border-radius:10px;background:none;color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.nav-btn:hover{background:var(--surface-2)}
+.nav-btn[aria-current="true"]{background:var(--surface);border-color:var(--line)}
+.nav-num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.nav-btn[aria-current="true"] .nav-num{background:var(--blue);color:var(--on-blue)}
+.nav-title{font-weight:700;font-size:16px;line-height:1.25;min-width:0}
+.nav-min{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.nav-chip{font-size:13px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.nav-chip.good{background:var(--ok-soft);color:var(--ok)}
+.nav-chip.mid{background:var(--accent-soft);color:var(--accent)}
+.nav-chip:empty{display:none}
+.rail-note{margin-top:14px;font-size:14px;color:var(--muted);padding:0 10px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;gap:26px;min-width:0}
+.task-head{display:flex;flex-direction:column;gap:10px}
+.kicker{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:20px;max-width:70ch}
+.prose{max-width:74ch}
+.muted{color:var(--muted)}
+.block{display:flex;flex-direction:column;gap:14px;min-width:0}
+.note{background:var(--blue-soft);border-radius:12px;padding:14px 18px;max-width:80ch}
+.note.warm{background:var(--accent-soft)}
+
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.lbl{font-weight:700;font-size:16px}
+.hint{font-size:14px;color:var(--muted)}
+input[type=text],select,textarea{font:inherit;font-size:17px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:10px;background:var(--field);color:var(--fg);width:100%;min-width:0}
+textarea{min-height:110px;resize:vertical;line-height:1.5}
+input.short{max-width:240px}
+select.inline{width:auto;max-width:100%}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+fieldset{border:1.5px solid var(--line);border-radius:14px;padding:18px 20px 20px;margin:0;display:flex;flex-direction:column;gap:14px;min-width:0}
+legend{font-family:var(--font-display);font-weight:700;font-size:20px;padding:0 8px}
+.where{font-size:15px;color:var(--muted)}
+
+.btn{font:inherit;font-weight:700;font-size:17px;padding:10px 18px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--fg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.btn.small{font-size:15px;padding:7px 12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;padding-top:18px;border-top:1px solid var(--line)}
+.actions .spacer{flex:1}
+.result{font-weight:700;font-size:18px}
+.result.good{color:var(--ok)}
+.result.mid{color:var(--accent)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:17px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+th{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* задание 1 */
+.pool{display:flex;flex-wrap:wrap;gap:10px;padding:16px;border:2px dashed var(--line-strong);border-radius:14px;min-height:76px;align-items:flex-start}
+.pool-empty{color:var(--muted);font-size:16px;align-self:center}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.cat{border:2px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:160px;background:var(--surface-2);cursor:pointer;text-align:left}
+.cat.armed{border-color:var(--blue);border-style:dashed}
+.cat.over{border-color:var(--blue);background:var(--blue-soft)}
+.cat-t{font-family:var(--font-display);font-weight:700;font-size:19px;line-height:1.2}
+.cat-d{font-size:14px;color:var(--muted)}
+.cat-list{display:flex;flex-wrap:wrap;gap:8px}
+.card{font:inherit;font-weight:700;font-size:16px;padding:8px 14px;border-radius:999px;border:2px solid var(--line-strong);background:var(--surface);color:var(--fg);cursor:grab;line-height:1.3}
+.card[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);box-shadow:0 0 0 3px var(--blue-soft)}
+.card.ok{border-color:var(--ok);background:var(--ok-soft)}
+.card.ok::after{content:"  ✓";color:var(--ok)}
+.card.bad{border-color:var(--bad);background:var(--bad-soft)}
+.card.bad::after{content:"  ✗";color:var(--bad)}
+
+/* задание 2 */
+.order-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.order-list li{margin:0}
+.order-item{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.order-item.ok{border-color:var(--ok)}
+.order-item.bad{border-color:var(--bad)}
+.pos{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-weight:700;background:var(--surface);border:1.5px solid var(--line-strong);font-variant-numeric:tabular-nums}
+.oname{font-weight:700;font-size:18px}
+.omark{font-size:14px;font-weight:700;display:block}
+.omark.ok{color:var(--ok)} .omark.bad{color:var(--bad)}
+.mv-group{display:flex;gap:6px}
+.mv{width:42px;height:42px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--fg);font:inherit;font-weight:700;font-size:20px;cursor:pointer;line-height:1}
+.mv:disabled{opacity:.35;cursor:not-allowed}
+.layer-tag{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+
+/* задание 3: замещение страниц */
+.sim-top{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:end}
+.refs{display:flex;flex-wrap:wrap;gap:6px}
+.ref{min-width:46px;height:46px;padding:0 6px;border-radius:10px;display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:19px;border:2px solid var(--line-strong);background:var(--surface);color:var(--fg)}
+.ref.done{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+.ref.cur{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.pr td,.pr th{text-align:center;padding:8px 6px;font-family:var(--font-mono);font-size:17px;min-width:46px;border-right:1px solid var(--line)}
+.pr th:first-child,.pr td:first-child{text-align:left;font-family:var(--font-body);font-weight:700;font-size:15px;white-space:nowrap;padding-left:12px;min-width:120px}
+.pr th{letter-spacing:0;text-transform:none;font-size:15px}
+.pr td.new{background:var(--accent-soft);font-weight:700}
+.pr td.hit{background:var(--blue-soft);font-weight:700}
+.pr td.res-f{color:var(--accent);font-weight:700}
+.pr td.res-h{color:var(--blue);font-weight:700}
+.pr td.cur-col,.pr th.cur-col{box-shadow:inset 0 0 0 2px var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.tile{border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--surface-2)}
+.tile-l{font-size:14px;color:var(--muted);font-weight:700}
+.tile-v{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.sim-msg{font-size:18px;padding:12px 16px;border-radius:12px;background:var(--surface-2);border-left:6px solid var(--accent)}
+.sim-ctrl{display:flex;flex-wrap:wrap;gap:10px}
+
+/* вопросы */
+.qs{display:flex;flex-direction:column;gap:14px}
+.q{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:2px solid var(--line);border-radius:12px;min-width:0}
+.q.ok{border-color:var(--ok)}
+.q.bad{border-color:var(--bad)}
+.q-t{font-weight:700}
+.q-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.q-unit{color:var(--muted);font-weight:700}
+.q-mark{font-weight:700;font-size:16px}
+.q-mark.ok{color:var(--ok)} .q-mark.bad{color:var(--bad)}
+.opts{display:grid;gap:4px}
+label.opt{display:flex;gap:10px;align-items:flex-start;padding:7px 10px;border-radius:8px;cursor:pointer;font-weight:400}
+label.opt:hover{background:var(--surface-2)}
+input[type=radio]{width:20px;height:20px;accent-color:var(--blue);margin:3px 0 0;flex:none}
+details.help{border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--surface-2)}
+details.help summary{font-weight:700;cursor:pointer}
+details.help[open] summary{margin-bottom:10px}
+.formula{font-family:var(--font-mono);font-size:16px;background:var(--surface);border-radius:8px;padding:6px 12px;display:inline-block}
+.steps li{padding-left:4px}
+.pt td,.pt th{text-align:center;font-family:var(--font-mono);padding:8px 10px}
+.pt th:first-child,.pt td:first-child{text-align:left;font-family:var(--font-body);font-weight:700;white-space:nowrap}
+
+.confirm{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;border-radius:12px;background:var(--bad-soft)}
+.report-text{min-height:260px;font-family:var(--font-mono);font-size:15px}
+.copy-msg{font-weight:700;color:var(--ok)}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:16px 48px}
+  .rail{position:static;overflow-x:auto;margin-inline:-20px;padding-inline:20px}
+  #nav{flex-direction:row;gap:6px;width:max-content}
+  .nav-btn{width:auto;grid-template-columns:30px auto;white-space:nowrap;padding:7px 10px}
+  .nav-min,.nav-chip{display:none}
+  .rail-note{display:none}
+}
+@media (max-width:620px){
+  .brand-title{font-size:18px}
+  .order-item{grid-template-columns:40px minmax(0,1fr)}
+  .order-item .mv-group{grid-column:2}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media print{
+  body{background:#fff;color:#000;font-size:12pt}
+  .bar,.rail,.no-print{display:none!important}
+  .panel{display:none!important;border:none;padding:0}
+  #report,#report[hidden]{display:flex!important}
+  .app{display:block;padding:0}
+}
+</style>
+
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand">
+      <span class="brand-kicker">Практическая работа · 120 минут</span>
+      <span class="brand-title">Взаимодействие ОС с аппаратным обеспечением</span>
+    </div>
+    <div class="bar-stats">
+      <div class="stat"><span class="stat-l">Вариант</span><span class="stat-v" id="barVariant">1</span></div>
+      <div class="stat"><span class="stat-l">Автопроверка</span><span class="stat-v" id="barScore">0 / 70</span></div>
+      <div class="timer" id="timerBox">
+        <div class="stat"><span class="stat-l">Осталось</span><span class="stat-v" id="timerText">2:00:00</span></div>
+        <button type="button" class="btn-bar go" id="timerBtn">Старт</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <nav class="rail" aria-label="Задания">
+    <ol id="nav"></ol>
+    <p class="rail-note">Ответы сохраняются автоматически в этом браузере.</p>
+  </nav>
+
+  <main id="main">
+
+    <section class="panel" id="intro" data-panel>
+      <div class="task-head">
+        <p class="kicker">Инструкция · 5 минут</p>
+        <h1>Как операционная система управляет оборудованием</h1>
+        <p class="lead"><b>Цель работы:</b> разобраться, как ОС взаимодействует с аппаратурой через драйверы, как управляет оперативной и виртуальной памятью, организует ввод-вывод и обрабатывает прерывания, и исследовать эти механизмы на своём компьютере.</p>
+      </div>
+
+      <fieldset>
+        <legend>Данные студента</legend>
+        <div class="grid-3">
+          <div class="field"><label for="student_name">Фамилия, имя</label><input type="text" id="student_name" data-k="student_name" placeholder="Иванов Иван" autocomplete="name"></div>
+          <div class="field"><label for="student_group">Группа / класс</label><input type="text" id="student_group" data-k="student_group" placeholder="ИТ-21"></div>
+          <div class="field"><label for="student_variant">Вариант</label>
+            <select id="student_variant" data-k="student_variant">
+              <option value="1">Вариант 1</option><option value="2">Вариант 2</option><option value="3">Вариант 3</option><option value="4">Вариант 4</option><option value="5">Вариант 5</option>
+              <option value="6">Вариант 6</option><option value="7">Вариант 7</option><option value="8">Вариант 8</option><option value="9">Вариант 9</option><option value="10">Вариант 10</option>
+            </select>
+            <span class="hint">Последняя цифра номера в журнале; цифра 0 — вариант 10.</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="block">
+        <h3>План работы</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>№</th><th>Задание</th><th class="num">Время</th><th class="num">Баллы</th><th>Проверка</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Уровни вычислительной системы: от программ до аппаратуры</td><td class="num">15 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>2</td><td>Путь запроса ввода-вывода: этапы чтения файла с диска</td><td class="num">10 мин</td><td class="num">8</td><td>автоматически</td></tr>
+              <tr><td>3</td><td>Симулятор виртуальной памяти: алгоритмы замещения страниц FIFO и LRU</td><td class="num">25 мин</td><td class="num">20</td><td>автоматически</td></tr>
+              <tr><td>4</td><td>Расчёты: страницы, смещения и физические адреса</td><td class="num">15 мин</td><td class="num">15</td><td>автоматически</td></tr>
+              <tr><td>5</td><td>Исследование драйверов, прерываний и памяти в Windows</td><td class="num">25 мин</td><td class="num">20</td><td>преподаватель</td></tr>
+              <tr><td>6</td><td>Итоговый тест (15 вопросов)</td><td class="num">15 мин</td><td class="num">15</td><td>автоматически</td></tr>
+              <tr><td>7</td><td>Контрольные вопросы и вывод</td><td class="num">10 мин</td><td class="num">10</td><td>преподаватель</td></tr>
+              <tr><td></td><td><b>Итого</b> (с учётом 5 минут на инструкцию)</td><td class="num"><b>120 мин</b></td><td class="num"><b>100</b></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="block">
+          <h3>Порядок работы</h3>
+          <ol class="steps">
+            <li>Введите фамилию, группу и выберите вариант.</li>
+            <li>Нажмите <b>«Старт»</b> в верхней панели — запустится таймер на 2 часа.</li>
+            <li>Выполняйте задания по порядку. В заданиях с автопроверкой нажимайте <b>«Проверить»</b>; число проверок попадает в отчёт.</li>
+            <li>Ответы сохраняются автоматически: страницу можно закрыть и открыть снова в этом же браузере.</li>
+            <li>В конце откройте раздел <b>«Отчёт»</b>, скопируйте его и отправьте преподавателю.</li>
+          </ol>
+        </div>
+        <div class="block">
+          <h3>Оборудование</h3>
+          <ul>
+            <li>Компьютер с Windows 10 или 11 (для задания 5).</li>
+            <li>Яндекс Браузер или другой современный браузер.</li>
+            <li>Конспект лекции «Взаимодействие ОС с аппаратным обеспечением».</li>
+          </ul>
+          <h3>Критерии оценки</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Баллы</th><th>Оценка</th></tr></thead>
+              <tbody>
+                <tr><td>90–100</td><td>«5», отлично</td></tr>
+                <tr><td>75–89</td><td>«4», хорошо</td></tr>
+                <tr><td>60–74</td><td>«3», удовлетворительно</td></tr>
+                <tr><td>менее 60</td><td>«2», работа на доработку</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint">Для 10-балльной шкалы: баллы ÷ 10 с округлением.</p>
+        </div>
+      </div>
+
+      <div class="actions"><span class="spacer"></span><button type="button" class="btn blue" data-go="t1">К заданию 1 →</button></div>
+    </section>
+
+    <section class="panel" id="t1" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 1 · 15 минут · 12 баллов</p>
+        <h2>Уровни вычислительной системы</h2>
+        <p class="prose">Распределите 12 компонентов по уровням системы. Нажмите на карточку, затем на нужный уровень. На компьютере карточки можно перетаскивать мышью. Чтобы вернуть карточку назад, выберите её и нажмите на область «Нераспределённые».</p>
+      </div>
+      <div class="block">
+        <span class="lbl">Нераспределённые</span>
+        <div class="pool" id="t1pool" data-drop="pool"></div>
+      </div>
+      <div class="cats" id="t1cats"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t1">Проверить</button>
+        <span class="result" id="res-t1" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t2">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t2" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 2 · 10 минут · 8 баллов</p>
+        <h2>Путь запроса ввода-вывода</h2>
+        <p class="prose">Программа читает файл с SSD. Расставьте восемь этапов в правильном порядке кнопками ↑ и ↓: от вызова функции в программе до получения данных. За каждый этап на своём месте — 1 балл.</p>
+      </div>
+      <ol class="order-list" id="t2list"></ol>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t2">Проверить</button>
+        <span class="result" id="res-t2" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t3">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t3" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 3 · 25 минут · 20 баллов</p>
+        <h2>Симулятор виртуальной памяти</h2>
+        <p class="prose">Процесс по очереди обращается к виртуальным страницам. В ОЗУ для него выделено несколько кадров. Если страница уже в кадре — это <b>попадание</b>; если нет — <b>страничное прерывание</b>, и ОС загружает страницу, при необходимости вытесняя другую. Пройдите последовательность своего варианта для алгоритмов FIFO и LRU и ответьте на вопросы.</p>
+      </div>
+
+      <details class="help">
+        <summary>Как работают алгоритмы замещения</summary>
+        <ul>
+          <li><b>FIFO</b> («первым пришёл — первым ушёл»): вытесняется страница, которая была загружена в память раньше всех.</li>
+          <li><b>LRU</b> (Least Recently Used): вытесняется страница, к которой дольше всех не обращались.</li>
+          <li><b>OPT</b> (оптимальный): вытесняется страница, которая дольше всех не понадобится. В реальной ОС невозможен, так как требует знать будущее, но полезен для сравнения.</li>
+        </ul>
+      </details>
+
+      <div class="sim-top">
+        <div class="field"><label for="simAlg">Алгоритм</label>
+          <select id="simAlg" class="inline"><option value="fifo">FIFO</option><option value="lru">LRU</option><option value="opt">OPT (для сравнения)</option></select>
+        </div>
+        <div class="field"><label for="simFrames">Кадров в ОЗУ</label>
+          <select id="simFrames" class="inline"><option value="3">3 кадра</option><option value="4">4 кадра</option></select>
+        </div>
+        <div class="sim-ctrl">
+          <button type="button" class="btn primary" id="simStep">Следующее обращение</button>
+          <button type="button" class="btn" id="simRun">До конца</button>
+          <button type="button" class="btn" id="simReset">Сначала</button>
+        </div>
+      </div>
+
+      <div class="block">
+        <span class="lbl">Последовательность обращений к страницам (вариант <span id="simVar">1</span>)</span>
+        <div class="refs" id="simRefs"></div>
+      </div>
+
+      <p class="sim-msg" id="simMsg" aria-live="polite"></p>
+
+      <div class="table-wrap">
+        <table class="pr" id="simTable"></table>
+      </div>
+      <p class="hint">«П» — страничное прерывание, «Н» — страница найдена в памяти. Оранжевым выделена загруженная страница, синим — найденная.</p>
+
+      <div class="tiles">
+        <div class="tile"><div class="tile-l">Обращений</div><div class="tile-v" id="stN">0 / 12</div></div>
+        <div class="tile"><div class="tile-l">Страничных прерываний</div><div class="tile-v" id="stF">0</div></div>
+        <div class="tile"><div class="tile-l">Попаданий</div><div class="tile-v" id="stH">0</div></div>
+        <div class="tile"><div class="tile-l">Доля попаданий</div><div class="tile-v" id="stR">—</div></div>
+      </div>
+
+      <div class="block">
+        <h3>Вопросы (для 3 кадров)</h3>
+        <div class="qs" id="t3qs"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t3">Проверить</button>
+        <span class="result" id="res-t3" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t4">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t4" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 4 · 15 минут · 15 баллов</p>
+        <h2>Расчёты для страничной памяти</h2>
+        <p class="prose">Решите пять задач своего варианта. Ответы — целые числа. Решение запишите в тетрадь. Каждая задача — 3 балла.</p>
+      </div>
+      <details class="help" open>
+        <summary>Справка: формулы и пример</summary>
+        <div class="block">
+          <p>Число страниц процесса: <span class="formula">⌈размер процесса ÷ размер страницы⌉</span> — округление вверх.</p>
+          <p>Номер страницы: <span class="formula">⌊адрес ÷ размер страницы⌋</span> — целая часть; смещение — остаток от деления.</p>
+          <p>Физический адрес: <span class="formula">номер кадра × размер страницы + смещение</span>.</p>
+          <p>Число записей в таблице страниц: <span class="formula">2<sup>разрядность адреса</sup> ÷ размер страницы в байтах</span>.</p>
+          <p class="muted"><b>Пример.</b> Страница 4096 байт, адрес 9000: 9000 ÷ 4096 = 2 (страница 2), смещение 9000 − 2 × 4096 = 808. Если страница 2 лежит в кадре 5: 5 × 4096 + 808 = 21 288.</p>
+        </div>
+      </details>
+      <div class="block">
+        <span class="lbl">Таблица страниц процесса (размер страницы 4 КБ = 4096 байт)</span>
+        <div class="table-wrap"><table class="pt" id="ptTable"></table></div>
+      </div>
+      <div class="qs" id="t4qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t4">Проверить</button>
+        <span class="result" id="res-t4" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t5">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t5" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 5 · 25 минут · 20 баллов</p>
+        <h2>Исследование ОС на своём компьютере</h2>
+        <p class="prose">С помощью стандартных средств Windows изучите драйверы, прерывания и использование памяти на компьютере, за которым вы работаете. Задание оценивает преподаватель: по 1 баллу за каждое верно заполненное поле.</p>
+      </div>
+      <div class="block">
+        <h3>Где искать сведения</h3>
+        <ol class="steps">
+          <li><kbd>Win</kbd> + <kbd>X</kbd> → <b>«Диспетчер устройств»</b>. Разверните «Видеоадаптеры», щёлкните устройство правой кнопкой → <b>«Свойства»</b> → вкладка <b>«Драйвер»</b>: поставщик, дата и версия. То же для раздела «Сетевые адаптеры».</li>
+          <li>Там же проверьте, нет ли устройств с жёлтым значком. Скрытые устройства показывает меню «Вид» → «Показать скрытые устройства».</li>
+          <li><kbd>Win</kbd> + <kbd>R</kbd> → <code>msinfo32</code> → <b>«Аппаратные ресурсы»</b> → <b>«Прерывания IRQ»</b>: номера прерываний и устройства.</li>
+          <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> → <b>«Производительность»</b> → <b>«Память»</b>: «Используется», «Доступно», «Выделено», «Кэшировано», «Невыгружаемый пул».</li>
+          <li><kbd>Win</kbd> + <kbd>R</kbd> → <code>resmon</code> → вкладка <b>«Память»</b>: столбец «Ошибок отсутствия страницы/с» (Hard Faults/sec). Отсортируйте по нему. Если везде 0, запустите браузер или другую программу и посмотрите снова.</li>
+          <li><kbd>Win</kbd> + <kbd>R</kbd> → <code>sysdm.cpl</code> → «Дополнительно» → «Быстродействие: Параметры» → «Дополнительно» → «Виртуальная память»: общий объём файла подкачки.</li>
+        </ol>
+        <p class="note">Работаете на Linux? Драйверы — <code>lspci -k</code>, прерывания — <code>cat /proc/interrupts</code>, память — <code>free -h</code> и <code>vmstat 1</code>, подкачка — <code>swapon --show</code>.</p>
+      </div>
+      <div class="block" id="t5fields"></div>
+      <div class="actions">
+        <span class="result" id="res-t5" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t6">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t6" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 6 · 15 минут · 15 баллов</p>
+        <h2>Итоговый тест</h2>
+        <p class="prose">Выберите один правильный ответ в каждом вопросе. После проверки отмечается, верен ли ответ, но правильный вариант не показывается.</p>
+      </div>
+      <div class="qs" id="t6qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t6">Проверить</button>
+        <span class="result" id="res-t6" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t7">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t7" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 7 · 10 минут · 10 баллов</p>
+        <h2>Контрольные вопросы и вывод</h2>
+        <p class="prose">Ответьте развёрнуто, 2–4 предложения на вопрос. Опирайтесь на результаты заданий 3 и 5. По 2 балла за каждый ответ и за вывод.</p>
+      </div>
+      <div class="block" id="t7fields"></div>
+      <div class="actions">
+        <span class="result" id="res-t7" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="report">К отчёту →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="report" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Отчёт</p>
+        <h2>Результаты практической работы</h2>
+        <p class="prose" id="repWho"></p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Задание</th><th class="num">Баллы</th><th class="num">Проверок</th><th>Проверка</th></tr></thead>
+          <tbody id="repTable"></tbody>
+        </table>
+      </div>
+      <p class="note" id="repNote"></p>
+      <div class="block no-print">
+        <label class="lbl" for="reportText">Текст отчёта для преподавателя</label>
+        <textarea id="reportText" class="report-text" readonly></textarea>
+        <div class="q-row">
+          <button type="button" class="btn primary" id="copyBtn">Скопировать отчёт</button>
+          <span class="copy-msg" id="copyMsg" aria-live="polite"></span>
+        </div>
+        <p class="hint">Вставьте отчёт в письмо или сообщение преподавателю. Чтобы распечатать или сохранить PDF, откройте файл практикума в Яндекс Браузере и нажмите <kbd>Ctrl</kbd> + <kbd>P</kbd>.</p>
+      </div>
+      <div class="actions no-print">
+        <button type="button" class="btn" id="resetBtn">Начать работу заново</button>
+        <div class="confirm" id="resetConfirm" hidden>
+          <span><b>Удалить все ответы и сбросить таймер?</b></span>
+          <button type="button" class="btn small primary" id="resetYes">Да, удалить</button>
+          <button type="button" class="btn small" id="resetNo">Отмена</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(s, r){ return (r || document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+
+/* ---------- данные ---------- */
+var TASKS = [
+  {id:'intro', n:'i', t:'Инструкция', min:5},
+  {id:'t1', n:'1', t:'Уровни системы', min:15, max:12, auto:true},
+  {id:'t2', n:'2', t:'Путь запроса ввода-вывода', min:10, max:8, auto:true},
+  {id:'t3', n:'3', t:'Замещение страниц', min:25, max:20, auto:true},
+  {id:'t4', n:'4', t:'Расчёты адресов', min:15, max:15, auto:true},
+  {id:'t5', n:'5', t:'Исследование ОС', min:25, max:20},
+  {id:'t6', n:'6', t:'Итоговый тест', min:15, max:15, auto:true},
+  {id:'t7', n:'7', t:'Выводы', min:10, max:10},
+  {id:'report', n:'Σ', t:'Отчёт'}
+];
+var AUTO_MAX = 70, TEACHER_MAX = 30;
+
+var T1_CATS = [
+  {id:'app', t:'Прикладные программы', d:'работают в режиме пользователя'},
+  {id:'kernel', t:'Ядро ОС', d:'распределяет ресурсы системы'},
+  {id:'drv', t:'Драйверы устройств', d:'управляют конкретным оборудованием'},
+  {id:'hw', t:'Аппаратура', d:'физические устройства'}
+];
+var T1_CARDS = {
+  editor:['Текстовый редактор','app'], browser:['Яндекс Браузер','app'], game:['Компьютерная игра','app'],
+  sched:['Планировщик процессов','kernel'], mm:['Менеджер памяти','kernel'], disp:['Диспетчер прерываний','kernel'],
+  gpu:['Драйвер видеокарты','drv'], prn:['Драйвер принтера','drv'], usbd:['Драйвер USB-контроллера','drv'],
+  apic:['Контроллер прерываний APIC','hw'], ram:['Модуль ОЗУ','hw'], nic:['Сетевой адаптер','hw']
+};
+var T1_ORDER = ['gpu','editor','apic','sched','ram','prn','browser','mm','nic','usbd','game','disp'];
+
+var T2_STEPS = {
+  a:['Программа вызывает функцию чтения файла (ReadFile)','программа'],
+  b:['Системный вызов переключает процессор в режим ядра','ядро'],
+  c:['Файловая система определяет, какие блоки диска прочитать','ядро'],
+  d:['Драйвер диска отправляет команду контроллеру накопителя','драйвер'],
+  e:['Контроллер по DMA копирует данные в оперативную память','аппаратура'],
+  f:['Контроллер посылает процессору запрос прерывания','аппаратура'],
+  g:['Обработчик прерывания драйвера сообщает ядру о завершении','драйвер'],
+  h:['Ядро передаёт данные программе и возвращает ей управление','ядро']
+};
+var T2_CORRECT = ['a','b','c','d','e','f','g','h'];
+var T2_START = ['d','a','f','c','h','b','g','e'];
+
+var REFS = [
+  [1,2,3,4,1,2,5,1,2,3,4,5],[2,3,2,1,5,2,4,5,3,2,5,2],[1,3,4,3,5,6,3,1,6,3,5,4],[6,1,2,6,3,1,4,6,2,3,1,4],[1,2,3,2,4,1,5,2,3,4,1,2],
+  [3,4,3,1,2,4,5,3,4,1,6,5],[5,1,2,5,3,4,1,5,2,6,1,3],[2,6,1,2,3,6,4,2,1,5,6,2],[4,3,2,1,4,3,5,4,3,2,1,5],[1,6,2,6,3,1,5,6,2,4,1,3]
+];
+var ALG_NAME = {fifo:'FIFO', lru:'LRU', opt:'OPT'};
+var PT_FRAMES = [5,9,2,14,7,11,3,0,12,6,15,1,8];
+
+var T5_GROUPS = [
+  {t:'Драйвер видеоадаптера', where:'Диспетчер устройств → Видеоадаптеры → Свойства → Драйвер', f:[
+    ['t5_gpu_name','Устройство','например, Intel UHD Graphics 730'],
+    ['t5_gpu_vendor','Поставщик драйвера','Intel Corporation'],
+    ['t5_gpu_date','Дата разработки','12.03.2025'],
+    ['t5_gpu_ver','Версия драйвера','31.0.101.5333']]},
+  {t:'Драйвер сетевого адаптера', where:'Диспетчер устройств → Сетевые адаптеры → Свойства → Драйвер', f:[
+    ['t5_nic_name','Устройство','например, Realtek PCIe GbE'],
+    ['t5_nic_vendor','Поставщик драйвера','Realtek'],
+    ['t5_nic_date','Дата разработки',''],
+    ['t5_nic_ver','Версия драйвера','']]},
+  {t:'Прерывания', where:'msinfo32 → Аппаратные ресурсы → Прерывания IRQ', f:[
+    ['t5_irq1','IRQ и устройство № 1','например, IRQ 1 — клавиатура'],
+    ['t5_irq2','IRQ и устройство № 2',''],
+    ['t5_irq_shared','Есть ли номер IRQ, общий для нескольких устройств? Какой?','','area']]},
+  {t:'Оперативная память', where:'Диспетчер задач → Производительность → Память', f:[
+    ['t5_mem_used','Используется, ГБ','7,9'],
+    ['t5_mem_avail','Доступно, ГБ','7,8'],
+    ['t5_mem_commit','Выделено (занято / предел), ГБ','10,2 / 18,7'],
+    ['t5_mem_cached','Кэшировано, ГБ','6,1'],
+    ['t5_mem_npp','Невыгружаемый пул, МБ','480']]},
+  {t:'Виртуальная память', where:'resmon → Память; sysdm.cpl → Виртуальная память', f:[
+    ['t5_hf_proc','Процесс с наибольшим числом ошибок отсутствия страницы','например, chrome.exe'],
+    ['t5_hf_val','Ошибок отсутствия страницы в секунду','3'],
+    ['t5_pagefile','Размер файла подкачки, МБ','4096'],
+    ['t5_problem','Устройства с жёлтым значком (если есть) и их состояние','','area']]}
+];
+
+var T6 = [
+  ['Драйвер устройства — это…', ['устройство для подключения периферии','программа, через которую ОС управляет конкретным устройством','микросхема на материнской плате','раздел реестра Windows'], 1],
+  ['В каком режиме процессора работает ядро ОС?', ['В пользовательском','В режиме ядра (привилегированном)','В безопасном режиме','В режиме энергосбережения'], 1],
+  ['Как прикладная программа получает доступ к устройству?', ['Напрямую через порты контроллера','Через системный вызов операционной системы','Через настройки BIOS','Только через диспетчер задач'], 1],
+  ['Прерывание — это…', ['ошибка в программе, после которой она закрывается','сигнал, по которому процессор приостанавливает текущую программу для обработки события','отключение питания компьютера','команда перехода в программе'], 1],
+  ['К какому виду прерываний относится деление на ноль?', ['Внутренние (исключения)','Внешние аппаратные','Программные','Немаскируемые от блока питания'], 0],
+  ['Таблица, связывающая номер прерывания с адресом обработчика, называется…', ['таблицей страниц','таблицей векторов прерываний','файловой таблицей','реестром устройств'], 1],
+  ['Что процессор сохраняет перед переходом к обработчику прерывания?', ['Содержимое всего ОЗУ','Контекст: счётчик команд, флаги и регистры','Только номер устройства','Файл подкачки'], 1],
+  ['Страничное прерывание возникает, когда…', ['программа обращается к странице, которой нет в ОЗУ','страница заполнена данными','на диске закончилось место','программа завершилась'], 0],
+  ['Какой алгоритм вытесняет страницу, к которой дольше всех не обращались?', ['FIFO','OPT','LRU','Случайный выбор'], 2],
+  ['Что даёт виртуальная память?', ['Ускоряет работу процессора в 2 раза','Позволяет использовать больше памяти, чем установлено, и изолирует процессы','Заменяет жёсткий диск','Отключает файл подкачки'], 1],
+  ['Какой блок процессора преобразует виртуальный адрес в физический?', ['АЛУ','Контроллер DMA','MMU','Контроллер прерываний'], 2],
+  ['Зачем ОС использует буферизацию при вводе-выводе?', ['Чтобы сгладить разницу в скорости процессора и устройства','Чтобы шифровать данные','Чтобы освободить место на диске','Чтобы обновлять драйверы'], 0],
+  ['Где в Windows можно посмотреть, обновить или откатить драйвер?', ['В Диспетчере устройств','В Проводнике','В Блокноте','В Корзине'], 0],
+  ['Что означает технология Plug and Play?', ['Игровой режим Windows','Автоматическое обнаружение устройства и установка драйвера','Подключение только по Wi-Fi','Ручную настройку прерываний'], 1],
+  ['Как называется файл подкачки Windows?', ['config.sys','boot.ini','pagefile.sys','autoexec.bat'], 2]
+];
+
+var T7_FIELDS = [
+  ['t7_q1','1. Зачем операционной системе драйверы? Почему программы не обращаются к устройствам напрямую?'],
+  ['t7_q2','2. Опишите по шагам, что делают процессор и ОС при аппаратном прерывании.'],
+  ['t7_q3','3. Сравните FIFO и LRU по результатам задания 3. Как изменилось число страничных прерываний при 4 кадрах вместо 3?'],
+  ['t7_q4','4. Какие показатели из задания 5 говорят о том, хватает ли компьютеру оперативной памяти?'],
+  ['t7_concl','Вывод по работе']
+];
+
+/* ---------- состояние ---------- */
+var KEY = 'os-hw-practicum-v1';
+function defaults(){ return {v:{}, t1:{}, t2:T2_START.slice(), attempts:{}, checked:{}, timer:{left:7200, running:false, at:0}, active:'intro'}; }
+function load(){ try { var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; } }
+var S = (function(){
+  var d = defaults(), s = load();
+  if (!s || typeof s !== 'object') return d;
+  for (var k in d) if (!(k in s)) s[k] = d[k];
+  if (!Array.isArray(s.t2) || s.t2.length !== T2_START.length) s.t2 = d.t2;
+  return s;
+})();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function variant(){ var n = parseInt(S.v.student_variant, 10); return n >= 1 && n <= 10 ? n : 1; }
+function num(s){ if (s == null) return NaN; var t = String(s).replace(/\s+/g,'').replace(',', '.'); return t === '' ? NaN : Number(t); }
+function eq(a, b){ return isFinite(a) && Math.abs(a - b) < 1e-9; }
+function filled(k){ return String(S.v[k] || '').trim() !== ''; }
+
+/* ---------- алгоритмы замещения ---------- */
+function simulate(refs, n, alg){
+  var frames = [], load = [], last = {}, steps = [];
+  for (var s = 0; s < n; s++){ frames.push(null); load.push(-1); }
+  refs.forEach(function(p, i){
+    var at = frames.indexOf(p);
+    if (at >= 0){ last[p] = i; steps.push({p:p, fault:false, slot:at, ev:null, frames:frames.slice()}); return; }
+    var slot = frames.indexOf(null), why = '';
+    if (slot < 0){
+      if (alg === 'fifo'){ slot = 0; for (var a = 1; a < n; a++) if (load[a] < load[slot]) slot = a; why = 'загружена раньше всех'; }
+      else if (alg === 'lru'){ slot = 0; for (var b = 1; b < n; b++) if (last[frames[b]] < last[frames[slot]]) slot = b; why = 'дольше всех не использовалась'; }
+      else {
+        var best = -1;
+        for (var c = 0; c < n; c++){
+          var nx = refs.indexOf(frames[c], i + 1); if (nx < 0) nx = Infinity;
+          if (nx > best){ best = nx; slot = c; }
+        }
+        why = best === Infinity ? 'больше не понадобится' : 'понадобится позже всех';
+      }
+    }
+    var ev = frames[slot];
+    frames[slot] = p; load[slot] = i; last[p] = i;
+    steps.push({p:p, fault:true, slot:slot, ev:ev, why:why, frames:frames.slice()});
+  });
+  return steps;
+}
+function faults(steps){ return steps.filter(function(s){ return s.fault; }).length; }
+function firstEvicted(steps){ for (var i = 0; i < steps.length; i++) if (steps[i].ev != null) return steps[i].ev; return null; }
+
+/* ---------- вопросы с ответами ---------- */
+function t3Questions(v){
+  var refs = REFS[v - 1], f = faults(simulate(refs, 3, 'fifo')), l = faults(simulate(refs, 3, 'lru'));
+  return [
+    {k:'t3_q1', t:'Сколько страничных прерываний произойдёт при алгоритме FIFO и 3 кадрах? Первые загрузки в пустые кадры тоже считаются.', ans:f, unit:'прерываний'},
+    {k:'t3_q2', t:'Сколько страничных прерываний произойдёт при алгоритме LRU и 3 кадрах?', ans:l, unit:'прерываний'},
+    {k:'t3_q3', t:'Какой алгоритм дал меньше страничных прерываний для вашей последовательности?', type:'select', opts:[['fifo','FIFO'],['lru','LRU'],['eq','Одинаково']], ans:f < l ? 'fifo' : (l < f ? 'lru' : 'eq')},
+    {k:'t3_q4', t:'Какую страницу алгоритм LRU (3 кадра) вытеснит самой первой?', ans:firstEvicted(simulate(refs, 3, 'lru')), unit:'номер страницы'},
+    {k:'t3_q5', t:'Что делает ОС при страничном прерывании?', type:'select', opts:[['a','Завершает программу с ошибкой'],['b','Загружает нужную страницу с диска в кадр ОЗУ и повторяет команду'],['c','Перезагружает компьютер'],['d','Удаляет страницу из таблицы страниц']], ans:'b'}
+  ];
+}
+function t4Data(v){
+  var i5 = (v - 1) % 5, X = 10 + 7 * v, p = v + 2, off = 100 * v + 37, A = 4096 * p + off;
+  var PS = [4,8,16,2,64][i5], PSB = PS * 1024;
+  return {X:X, p:p, off:off, A:A, PS:PS, ent:Math.pow(2, 32) / PSB};
+}
+function t4Problems(v){
+  var d = t4Data(v);
+  return [
+    {k:'t4_p1', t:'Процессу нужно <b>' + d.X + ' КБ</b> памяти, размер страницы — 4 КБ. Сколько страниц ему потребуется?', unit:'страниц', ans:Math.ceil(d.X / 4)},
+    {k:'t4_p2', t:'Процесс обращается к виртуальному адресу <b>' + d.A + '</b>. Размер страницы — 4096 байт. Какой это номер страницы?', unit:'', ans:d.p},
+    {k:'t4_p3', t:'Каково смещение адреса <b>' + d.A + '</b> внутри страницы?', unit:'байт', ans:d.off},
+    {k:'t4_p4', t:'Найдите физический адрес для виртуального адреса <b>' + d.A + '</b>, используя таблицу страниц выше.', unit:'', ans:PT_FRAMES[d.p] * 4096 + d.off},
+    {k:'t4_p5', t:'Адрес 32-разрядный, размер страницы — <b>' + d.PS + ' КБ</b>. Сколько записей должно быть в таблице страниц, чтобы описать всё адресное пространство?', unit:'записей', ans:d.ent}
+  ];
+}
+
+/* ---------- оценки ---------- */
+function scoreT1(){ var s = 0; for (var id in T1_CARDS) if (S.t1[id] === T1_CARDS[id][1]) s++; return s; }
+function scoreT2(){ var s = 0; S.t2.forEach(function(id, i){ if (T2_CORRECT[i] === id) s++; }); return s; }
+function qOk(q){ return q.type === 'select' ? S.v[q.k] === q.ans : eq(num(S.v[q.k]), q.ans); }
+function scoreT3(){ return t3Questions(variant()).filter(qOk).length * 4; }
+function scoreT4(){ return t4Problems(variant()).filter(qOk).length * 3; }
+function scoreT6(){ var s = 0; T6.forEach(function(q, i){ if (S.v['t6_' + i] === String(q[2])) s++; }); return s; }
+function score(id){ return {t1:scoreT1, t2:scoreT2, t3:scoreT3, t4:scoreT4, t6:scoreT6}[id](); }
+function t5Keys(){ var k = []; T5_GROUPS.forEach(function(g){ g.f.forEach(function(f){ k.push(f[0]); }); }); return k; }
+function t7Keys(){ return T7_FIELDS.map(function(f){ return f[0]; }); }
+function fillCount(keys){ return keys.filter(filled).length; }
+function autoTotal(){ return scoreT1() + scoreT2() + scoreT3() + scoreT4() + scoreT6(); }
+
+/* ---------- навигация ---------- */
+function renderNav(){
+  $('#nav').innerHTML = TASKS.map(function(t){
+    var chip = '', cls = '';
+    if (t.auto){
+      if (S.attempts[t.id]){ var s = score(t.id); chip = s + '/' + t.max; cls = s >= t.max * 0.75 ? 'good' : 'mid'; }
+    } else if (t.id === 't5' || t.id === 't7'){
+      var keys = t.id === 't5' ? t5Keys() : t7Keys(), f = fillCount(keys);
+      if (f){ chip = f + '/' + keys.length; cls = f === keys.length ? 'good' : 'mid'; }
+    }
+    return '<li><button type="button" class="nav-btn" data-go="' + t.id + '" aria-current="' + (S.active === t.id) + '">' +
+      '<span class="nav-num">' + t.n + '</span><span class="nav-title">' + t.t + (t.min ? '<span class="nav-min">' + t.min + ' мин</span>' : '') + '</span>' +
+      '<span class="nav-chip ' + cls + '">' + chip + '</span></button></li>';
+  }).join('');
+}
+function go(id, noScroll){
+  if (!document.getElementById(id)) id = 'intro';
+  S.active = id; save();
+  $$('[data-panel]').forEach(function(p){ p.hidden = p.id !== id; });
+  renderNav();
+  if (id === 'report') renderReport();
+  try { history.replaceState(null, '', '#' + id); } catch(e){}
+  if (!noScroll) window.scrollTo(0, 0);
+}
+function updateBar(){ $('#barVariant').textContent = variant(); $('#barScore').textContent = autoTotal() + ' / ' + AUTO_MAX; }
+
+/* ---------- поля ---------- */
+function fillValues(root){
+  $$('[data-k]', root).forEach(function(el){
+    var val = S.v[el.dataset.k];
+    if (val == null) return;
+    if (el.type === 'radio') el.checked = el.value === val; else el.value = val;
+  });
+}
+function onField(e){
+  var el = e.target, k = el.dataset && el.dataset.k;
+  if (!k) return;
+  if (el.type === 'radio' && !el.checked) return;
+  if (S.v[k] === el.value) return;
+  S.v[k] = el.value;
+  var task = k.split('_')[0];
+  if (S.checked[task]){ S.checked[task] = false; feedback(task); }
+  if (k === 'student_variant') onVariant();
+  if (task === 't5') setFillResult('t5');
+  if (task === 't7') setFillResult('t7');
+  save(); updateBar(); renderNav();
+}
+document.addEventListener('input', onField);
+document.addEventListener('change', onField);
+
+function setResult(id){
+  var el = $('#res-' + id), t = TASKS.filter(function(x){ return x.id === id; })[0];
+  if (!el) return;
+  el.className = 'result';
+  if (S.checked[id]){
+    var s = score(id);
+    el.textContent = 'Результат: ' + s + ' из ' + t.max + ' · проверок: ' + S.attempts[id];
+    el.classList.add(s >= t.max * 0.75 ? 'good' : 'mid');
+  } else if (S.attempts[id]) el.textContent = 'Ответы изменены — нажмите «Проверить» ещё раз.';
+  else el.textContent = '';
+}
+function markQ(list){
+  list.forEach(function(q){
+    var box = document.querySelector('[data-q="' + q.k + '"]');
+    if (!box) return;
+    var task = q.k.split('_')[0], m = $('.q-mark', box);
+    box.classList.remove('ok','bad'); m.className = 'q-mark'; m.textContent = '';
+    if (!S.checked[task]) return;
+    var ok = qOk(q);
+    box.classList.add(ok ? 'ok' : 'bad'); m.classList.add(ok ? 'ok' : 'bad');
+    m.textContent = ok ? '✓ Верно' : '✗ Неверно';
+  });
+}
+function feedback(id){
+  if (id === 't1') renderT1();
+  else if (id === 't2') renderT2();
+  else if (id === 't3') markQ(t3Questions(variant()));
+  else if (id === 't4') markQ(t4Problems(variant()));
+  else if (id === 't6') markQ(T6.map(function(q, i){ return {k:'t6_' + i, type:'select', ans:String(q[2])}; }));
+  setResult(id);
+}
+
+/* ---------- задание 1 ---------- */
+var t1Sel = null;
+function cardHtml(id){
+  var cls = 'card';
+  if (S.checked.t1 && S.t1[id]) cls += S.t1[id] === T1_CARDS[id][1] ? ' ok' : ' bad';
+  return '<button type="button" class="' + cls + '" draggable="true" data-card="' + id + '" aria-pressed="' + (t1Sel === id) + '">' + T1_CARDS[id][0] + '</button>';
+}
+function renderT1(){
+  var pool = T1_ORDER.filter(function(id){ return !S.t1[id]; });
+  $('#t1pool').innerHTML = pool.length ? pool.map(cardHtml).join('') : '<span class="pool-empty">Все карточки распределены</span>';
+  $('#t1cats').innerHTML = T1_CATS.map(function(c){
+    var items = T1_ORDER.filter(function(id){ return S.t1[id] === c.id; });
+    return '<div class="cat' + (t1Sel ? ' armed' : '') + '" data-drop="' + c.id + '" role="button" tabindex="0" aria-label="Поместить в группу ' + c.t + '">' +
+      '<span class="cat-t">' + c.t + '</span><span class="cat-d">' + c.d + '</span><div class="cat-list">' + items.map(cardHtml).join('') + '</div></div>';
+  }).join('');
+  setResult('t1');
+}
+function placeT1(id, target){
+  if (!T1_CARDS[id]) return;
+  if (target === 'pool') delete S.t1[id]; else S.t1[id] = target;
+  t1Sel = null; S.checked.t1 = false;
+  save(); renderT1(); updateBar(); renderNav();
+}
+$('#t1').addEventListener('click', function(e){
+  var card = e.target.closest('[data-card]');
+  if (card){ e.stopPropagation(); var id = card.dataset.card; t1Sel = t1Sel === id ? null : id; renderT1(); return; }
+  var drop = e.target.closest('[data-drop]');
+  if (drop && t1Sel) placeT1(t1Sel, drop.dataset.drop);
+});
+$('#t1').addEventListener('keydown', function(e){
+  var drop = e.target.closest('.cat[data-drop]');
+  if (drop && (e.key === 'Enter' || e.key === ' ') && t1Sel){ e.preventDefault(); placeT1(t1Sel, drop.dataset.drop); }
+});
+$('#t1').addEventListener('dragstart', function(e){
+  var card = e.target.closest('[data-card]'); if (!card) return;
+  try { e.dataTransfer.setData('text/plain', card.dataset.card); e.dataTransfer.effectAllowed = 'move'; } catch(err){}
+});
+$('#t1').addEventListener('dragover', function(e){
+  var drop = e.target.closest('[data-drop]'); if (!drop) return;
+  e.preventDefault(); $$('.over', $('#t1')).forEach(function(x){ if (x !== drop) x.classList.remove('over'); }); drop.classList.add('over');
+});
+$('#t1').addEventListener('dragleave', function(e){ var drop = e.target.closest('[data-drop]'); if (drop && !drop.contains(e.relatedTarget)) drop.classList.remove('over'); });
+$('#t1').addEventListener('drop', function(e){
+  var drop = e.target.closest('[data-drop]'); if (!drop) return;
+  e.preventDefault(); var id = ''; try { id = e.dataTransfer.getData('text/plain'); } catch(err){}
+  placeT1(id, drop.dataset.drop);
+});
+
+/* ---------- задание 2 ---------- */
+function renderT2(){
+  $('#t2list').innerHTML = S.t2.map(function(id, i){
+    var cls = 'order-item', mark = '';
+    if (S.checked.t2){
+      var ok = T2_CORRECT[i] === id;
+      cls += ok ? ' ok' : ' bad';
+      mark = '<span class="omark ' + (ok ? 'ok' : 'bad') + '">' + (ok ? '✓ на своём месте' : '✗ не на своём месте') + '</span>';
+    }
+    return '<li class="' + cls + '"><span class="pos">' + (i + 1) + '</span>' +
+      '<div><span class="layer-tag">' + T2_STEPS[id][1] + '</span><br><span class="oname">' + T2_STEPS[id][0] + '</span>' + mark + '</div>' +
+      '<div class="mv-group"><button type="button" class="mv" data-mv="' + i + '" data-dir="-1" aria-label="Выше" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
+      '<button type="button" class="mv" data-mv="' + i + '" data-dir="1" aria-label="Ниже" ' + (i === S.t2.length - 1 ? 'disabled' : '') + '>↓</button></div></li>';
+  }).join('');
+  setResult('t2');
+}
+$('#t2list').addEventListener('click', function(e){
+  var b = e.target.closest('[data-mv]'); if (!b) return;
+  var i = +b.dataset.mv, j = i + (+b.dataset.dir);
+  if (j < 0 || j >= S.t2.length) return;
+  var tmp = S.t2[i]; S.t2[i] = S.t2[j]; S.t2[j] = tmp;
+  S.checked.t2 = false; save(); renderT2(); updateBar(); renderNav();
+  var again = document.querySelector('[data-mv="' + j + '"][data-dir="' + b.dataset.dir + '"]') || document.querySelector('[data-mv="' + j + '"]');
+  if (again && !again.disabled) again.focus();
+});
+
+/* ---------- задание 3: симулятор ---------- */
+var sim = {pos:0, steps:[], refs:[], n:3, alg:'fifo'};
+function resetSim(){
+  sim.refs = REFS[variant() - 1];
+  sim.n = +$('#simFrames').value || 3;
+  sim.alg = $('#simAlg').value || 'fifo';
+  sim.steps = simulate(sim.refs, sim.n, sim.alg);
+  sim.pos = 0;
+  renderSim();
+}
+function renderSim(){
+  var refs = sim.refs, n = sim.n, pos = sim.pos;
+  $('#simVar').textContent = variant();
+  $('#simRefs').innerHTML = refs.map(function(p, i){
+    var c = 'ref'; if (i < pos - 1) c += ' done'; if (i === pos - 1) c += ' cur';
+    return '<span class="' + c + '" title="Обращение ' + (i + 1) + '">' + p + '</span>';
+  }).join('');
+  var head = '<tr><th>Обращение</th>' + refs.map(function(p, i){ return '<th class="' + (i === pos - 1 ? 'cur-col' : '') + '">' + (i + 1) + '</th>'; }).join('') + '</tr>';
+  var pageRow = '<tr><td>Страница</td>' + refs.map(function(p, i){ return '<td class="' + (i === pos - 1 ? 'cur-col' : '') + '">' + (i < pos ? p : '') + '</td>'; }).join('') + '</tr>';
+  var rows = '';
+  for (var f = 0; f < n; f++){
+    rows += '<tr><td>Кадр ' + (f + 1) + '</td>' + sim.steps.map(function(s, i){
+      if (i >= pos) return '<td></td>';
+      var v = s.frames[f], c = [];
+      if (i === pos - 1) c.push('cur-col');
+      if (s.slot === f) c.push(s.fault ? 'new' : 'hit');
+      return '<td class="' + c.join(' ') + '">' + (v == null ? '—' : v) + '</td>';
+    }).join('') + '</tr>';
+  }
+  var res = '<tr><td>Итог</td>' + sim.steps.map(function(s, i){
+    if (i >= pos) return '<td></td>';
+    return '<td class="' + (s.fault ? 'res-f' : 'res-h') + (i === pos - 1 ? ' cur-col' : '') + '">' + (s.fault ? 'П' : 'Н') + '</td>';
+  }).join('') + '</tr>';
+  $('#simTable').innerHTML = '<thead>' + head + '</thead><tbody>' + pageRow + rows + res + '</tbody>';
+  var done = sim.steps.slice(0, pos), fl = faults(done), ht = done.length - fl;
+  $('#stN').textContent = pos + ' / ' + refs.length;
+  $('#stF').textContent = fl;
+  $('#stH').textContent = ht;
+  $('#stR').textContent = pos ? Math.round(ht / pos * 100) + '%' : '—';
+  var msg;
+  if (!pos) msg = 'Алгоритм ' + ALG_NAME[sim.alg] + ', кадров: ' + n + '. Нажмите «Следующее обращение».';
+  else {
+    var s = sim.steps[pos - 1];
+    msg = 'Обращение ' + pos + ' к странице ' + s.p + ': ';
+    if (!s.fault) msg += 'страница уже в кадре ' + (s.slot + 1) + ' — попадание.';
+    else if (s.ev == null) msg += 'страничное прерывание, страница загружена в свободный кадр ' + (s.slot + 1) + '.';
+    else msg += 'страничное прерывание. Из кадра ' + (s.slot + 1) + ' вытеснена страница ' + s.ev + ' (' + s.why + ').';
+    if (pos === refs.length) msg += ' Последовательность пройдена: ' + fl + ' страничных прерываний при ' + ALG_NAME[sim.alg] + ' и ' + n + ' кадрах.';
+  }
+  $('#simMsg').textContent = msg;
+  $('#simStep').disabled = $('#simRun').disabled = pos >= refs.length;
+}
+$('#simStep').addEventListener('click', function(){ if (sim.pos < sim.refs.length){ sim.pos++; renderSim(); } });
+$('#simRun').addEventListener('click', function(){ sim.pos = sim.refs.length; renderSim(); });
+$('#simReset').addEventListener('click', resetSim);
+$('#simAlg').addEventListener('change', resetSim);
+$('#simFrames').addEventListener('change', resetSim);
+
+function qHtml(q){
+  var input;
+  if (q.type === 'select'){
+    input = '<select id="' + q.k + '" data-k="' + q.k + '" style="max-width:560px"><option value="">Выберите ответ…</option>' +
+      q.opts.map(function(o){ return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('') + '</select>';
+  } else {
+    input = '<input type="text" inputmode="numeric" class="short" id="' + q.k + '" data-k="' + q.k + '" autocomplete="off">' + (q.unit ? '<span class="q-unit">' + q.unit + '</span>' : '');
+  }
+  return '<div class="q" data-q="' + q.k + '"><label class="q-t" for="' + q.k + '">' + q.t + '</label><div class="q-row">' + input + '<span class="q-mark"></span></div></div>';
+}
+function renderT3Q(){ $('#t3qs').innerHTML = t3Questions(variant()).map(function(q, i){ q.t = (i + 1) + '. ' + q.t; return qHtml(q); }).join(''); fillValues($('#t3qs')); feedback('t3'); }
+
+/* ---------- задание 4 ---------- */
+function renderT4(){
+  var head = '<tr><th>Страница</th>' + PT_FRAMES.map(function(f, i){ return '<th>' + i + '</th>'; }).join('') + '</tr>';
+  var row = '<tr><td>Кадр ОЗУ</td>' + PT_FRAMES.map(function(f){ return '<td>' + f + '</td>'; }).join('') + '</tr>';
+  $('#ptTable').innerHTML = '<thead>' + head + '</thead><tbody>' + row + '</tbody>';
+  $('#t4qs').innerHTML = t4Problems(variant()).map(function(q, i){ q.t = 'Задача ' + (i + 1) + '. ' + q.t; return qHtml(q); }).join('');
+  fillValues($('#t4qs')); feedback('t4');
+}
+
+/* ---------- задание 5 ---------- */
+function fieldHtml(f){
+  var k = f[0], ph = f[2] ? ' placeholder="' + esc(f[2]) + '"' : '';
+  var ctl = f[3] === 'area' ? '<textarea id="' + k + '" data-k="' + k + '"' + ph + ' style="min-height:84px"></textarea>' : '<input type="text" id="' + k + '" data-k="' + k + '"' + ph + ' autocomplete="off">';
+  return '<div class="field"><label for="' + k + '">' + f[1] + '</label>' + ctl + '</div>';
+}
+function renderT5(){
+  $('#t5fields').innerHTML = T5_GROUPS.map(function(g){
+    return '<fieldset><legend>' + g.t + '</legend><span class="where">' + g.where + '</span><div class="grid-2">' + g.f.map(fieldHtml).join('') + '</div></fieldset>';
+  }).join('');
+  fillValues($('#t5fields')); setFillResult('t5');
+}
+function setFillResult(id){
+  var keys = id === 't5' ? t5Keys() : t7Keys();
+  $('#res-' + id).textContent = (id === 't5' ? 'Заполнено полей: ' : 'Отвечено: ') + fillCount(keys) + ' из ' + keys.length;
+}
+
+/* ---------- задание 6 ---------- */
+function renderT6(){
+  $('#t6qs').innerHTML = T6.map(function(q, i){
+    var k = 't6_' + i;
+    return '<div class="q" data-q="' + k + '" role="radiogroup" aria-labelledby="' + k + '_t"><span class="q-t" id="' + k + '_t">' + (i + 1) + '. ' + q[0] + '</span><div class="opts">' +
+      q[1].map(function(o, j){ return '<label class="opt"><input type="radio" name="' + k + '" value="' + j + '" data-k="' + k + '"><span>' + o + '</span></label>'; }).join('') +
+      '</div><span class="q-mark"></span></div>';
+  }).join('');
+  fillValues($('#t6qs')); feedback('t6');
+}
+
+/* ---------- задание 7 ---------- */
+function renderT7(){
+  $('#t7fields').innerHTML = T7_FIELDS.map(function(f){ return '<div class="field"><label for="' + f[0] + '">' + f[1] + '</label><textarea id="' + f[0] + '" data-k="' + f[0] + '"></textarea></div>'; }).join('');
+  fillValues($('#t7fields')); setFillResult('t7');
+}
+
+/* ---------- проверка и переходы ---------- */
+document.addEventListener('click', function(e){
+  var g = e.target.closest('[data-go]'); if (g){ go(g.dataset.go); return; }
+  var c = e.target.closest('[data-check]'); if (!c) return;
+  var id = c.dataset.check;
+  S.attempts[id] = (S.attempts[id] || 0) + 1; S.checked[id] = true;
+  save(); feedback(id); updateBar(); renderNav();
+});
+
+/* ---------- таймер ---------- */
+function fmtTime(sec){ sec = Math.max(0, Math.round(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
+function tick(){
+  var T = S.timer;
+  if (T.running){
+    var now = Date.now(); T.left = Math.max(0, T.left - (now - T.at) / 1000); T.at = now;
+    if (T.left <= 0) T.running = false;
+    save();
+  }
+  $('#timerText').textContent = T.left <= 0 ? 'Время вышло' : fmtTime(T.left);
+  $('#timerBox').classList.toggle('low', T.left < 900);
+  var b = $('#timerBtn'); b.textContent = T.running ? 'Пауза' : (T.left < 7200 && T.left > 0 ? 'Продолжить' : 'Старт');
+  b.classList.toggle('go', !T.running); b.disabled = T.left <= 0;
+}
+$('#timerBtn').addEventListener('click', function(){ var T = S.timer; if (T.left <= 0) return; T.running = !T.running; T.at = Date.now(); save(); tick(); });
+setInterval(tick, 1000);
+
+/* ---------- отчёт ---------- */
+function grade(p){ return p >= 90 ? '«5»' : p >= 75 ? '«4»' : p >= 60 ? '«3»' : '«2»'; }
+function renderReport(){
+  var v = variant(), name = (S.v.student_name || '').trim() || 'не указано', grp = (S.v.student_group || '').trim() || 'не указана';
+  var used = 7200 - S.timer.left, rows = [], lines = [];
+  $('#repWho').innerHTML = '<b>' + esc(name) + '</b>, группа ' + esc(grp) + ', вариант ' + v + '. Время работы: ' + fmtTime(used) + '.';
+  lines.push('ПРАКТИЧЕСКАЯ РАБОТА «ВЗАИМОДЕЙСТВИЕ ОС С АППАРАТНЫМ ОБЕСПЕЧЕНИЕМ»');
+  lines.push('Студент: ' + name + '; группа: ' + grp + '; вариант: ' + v);
+  lines.push('Дата: ' + new Date().toLocaleDateString('ru-RU') + '; время работы: ' + fmtTime(used));
+  lines.push('');
+  lines.push('БАЛЛЫ АВТОПРОВЕРКИ');
+  TASKS.forEach(function(t){
+    if (!t.max) return;
+    if (t.auto){
+      var s = score(t.id), a = S.attempts[t.id] || 0;
+      rows.push('<tr><td>' + t.n + '. ' + t.t + '</td><td class="num">' + s + ' / ' + t.max + '</td><td class="num">' + a + '</td><td>автоматически' + (a ? '' : ' — не проверялось') + '</td></tr>');
+      lines.push('Задание ' + t.n + '. ' + t.t + ': ' + s + ' из ' + t.max + ' (проверок: ' + a + ')');
+    } else {
+      var keys = t.id === 't5' ? t5Keys() : t7Keys();
+      rows.push('<tr><td>' + t.n + '. ' + t.t + '</td><td class="num">… / ' + t.max + '</td><td class="num">—</td><td>преподаватель · заполнено ' + fillCount(keys) + ' из ' + keys.length + '</td></tr>');
+    }
+  });
+  var tot = autoTotal();
+  rows.push('<tr><td><b>Итого автопроверка</b></td><td class="num"><b>' + tot + ' / ' + AUTO_MAX + '</b></td><td></td><td></td></tr>');
+  $('#repTable').innerHTML = rows.join('');
+  $('#repNote').innerHTML = 'Автопроверка: <b>' + tot + ' из ' + AUTO_MAX + '</b>. Ещё до ' + TEACHER_MAX + ' баллов преподаватель выставит за задания 5 и 7. Если они оценены полностью, итог составит ' + (tot + TEACHER_MAX) + ' баллов — оценка ' + grade(tot + TEACHER_MAX) + '.';
+  lines.push('Итого автопроверка: ' + tot + ' из ' + AUTO_MAX);
+  lines.push('');
+  lines.push('ЗАДАНИЕ 5. ИССЛЕДОВАНИЕ ОС');
+  T5_GROUPS.forEach(function(g){ lines.push('— ' + g.t); g.f.forEach(function(f){ lines.push('  ' + f[1] + ': ' + ((S.v[f[0]] || '').trim() || '—')); }); });
+  lines.push('');
+  lines.push('ЗАДАНИЕ 7. КОНТРОЛЬНЫЕ ВОПРОСЫ И ВЫВОД');
+  T7_FIELDS.forEach(function(f){ lines.push(f[1]); lines.push('  ' + ((S.v[f[0]] || '').trim() || '—')); });
+  $('#reportText').value = lines.join('\n');
+  $('#copyMsg').textContent = '';
+}
+$('#copyBtn').addEventListener('click', function(){
+  var ta = $('#reportText'), msg = $('#copyMsg');
+  function fallback(){ ta.focus(); ta.select(); msg.textContent = 'Текст выделен — нажмите Ctrl + C.'; }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(function(){ msg.textContent = 'Отчёт скопирован.'; }, fallback);
+    else fallback();
+  } catch(e){ fallback(); }
+});
+$('#resetBtn').addEventListener('click', function(){ $('#resetConfirm').hidden = false; $('#resetBtn').hidden = true; });
+$('#resetNo').addEventListener('click', function(){ $('#resetConfirm').hidden = true; $('#resetBtn').hidden = false; });
+$('#resetYes').addEventListener('click', function(){
+  S = defaults(); save(); t1Sel = null;
+  $$('[data-k]').forEach(function(el){ if (el.type === 'radio') el.checked = false; else if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; });
+  $('#resetConfirm').hidden = true; $('#resetBtn').hidden = false;
+  renderAll(); go('intro');
+});
+
+/* ---------- запуск ---------- */
+function onVariant(){ resetSim(); S.checked.t3 = false; S.checked.t4 = false; renderT3Q(); renderT4(); updateBar(); }
+function renderAll(){
+  fillValues(document);
+  if (!S.v.student_variant) $('#student_variant').value = '1';
+  renderT1(); renderT2(); resetSim(); renderT3Q(); renderT4(); renderT5(); renderT6(); renderT7();
+  updateBar(); tick();
+}
+renderAll();
+var h = (location.hash || '').replace('#', '');
+go(h && document.getElementById(h) ? h : (S.active || 'intro'), true);
+})();
+</script>
+
+</body>
+</html>
