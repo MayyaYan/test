@@ -1,0 +1,1181 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Практикум по архитектуре ПК</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans:wght@400;700&family=PT+Serif:wght@700&display=swap">
+<style>
+/* Layout: sticky navy status bar (timer, score) + left task rail + one task panel at a time; rail turns into a horizontal strip on phones */
+:root{
+  --bg:#F2F5FA; --surface:#FDFDFB; --surface-2:#E9EFF8; --field:#FFFFFE;
+  --fg:#101828; --muted:#475467; --line:#D3DCE8; --line-strong:#9AA9BF;
+  --accent:#C2410C; --accent-soft:#FDE7D9; --on-accent:#FFFBF6;
+  --blue:#1560D0; --blue-soft:#DCE8FB; --on-blue:#FBFDFF;
+  --grey:#5B6B82; --grey-soft:#E4E9F0;
+  --ok:#0F7A3D; --ok-soft:#DDF3E5; --bad:#B42318; --bad-soft:#FDE3E1;
+  --navy:#0F1B33; --bar-fg:#F3F5FA; --bar-muted:#AFC0DA; --bar-accent:#FF9A55;
+  --sim-bg:#0F1B33; --sim-2:#1B2C52; --sim-fg:#F3F5FA; --sim-muted:#B6C4DC; --sim-accent:#FF9A55; --sim-blue:#8CC2FF;
+  --font-display:'PT Serif', Georgia, 'Times New Roman', serif;
+  --font-body:'PT Sans', 'Segoe UI', Arial, sans-serif;
+  --font-mono:'PT Mono', Consolas, 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1322; --surface:#121D33; --surface-2:#1A2843; --field:#0E182C;
+    --fg:#F1F4FA; --muted:#AEB9CC; --line:#2A3A5C; --line-strong:#4A5E86;
+    --accent:#FF8A3D; --accent-soft:#3A2414; --on-accent:#1A1006;
+    --blue:#7DB6FF; --blue-soft:#17305A; --on-blue:#08142B;
+    --grey:#A3B0C4; --grey-soft:#25314A;
+    --ok:#4ADE80; --ok-soft:#10301F; --bad:#FF8A80; --bad-soft:#3A1717;
+    --navy:#08101F; --sim-bg:#08101F; --sim-2:#16233F;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1322; --surface:#121D33; --surface-2:#1A2843; --field:#0E182C;
+  --fg:#F1F4FA; --muted:#AEB9CC; --line:#2A3A5C; --line-strong:#4A5E86;
+  --accent:#FF8A3D; --accent-soft:#3A2414; --on-accent:#1A1006;
+  --blue:#7DB6FF; --blue-soft:#17305A; --on-blue:#08142B;
+  --grey:#A3B0C4; --grey-soft:#25314A;
+  --ok:#4ADE80; --ok-soft:#10301F; --bad:#FF8A80; --bad-soft:#3A1717;
+  --navy:#08101F; --sim-bg:#08101F; --sim-2:#16233F;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-display);font-weight:700;margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:clamp(28px,3.4vw,40px)}
+h2{font-size:clamp(25px,3vw,34px)}
+h3{font-size:21px}
+p{margin:0}
+ol,ul{margin:0;padding-left:1.4em}
+li+li{margin-top:6px}
+code,.mono{font-family:var(--font-mono)}
+code{font-size:.92em;background:var(--surface-2);padding:1px 6px;border-radius:5px}
+kbd{font-family:var(--font-mono);font-size:15px;padding:1px 7px;border:1px solid var(--line-strong);border-bottom-width:3px;border-radius:6px;background:var(--surface-2);white-space:nowrap}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+/* status bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--navy);color:var(--bar-fg)}
+.bar-in{max-width:1320px;margin:0 auto;padding:12px 20px;display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;justify-content:space-between}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand-kicker{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--bar-accent);font-weight:700}
+.brand-title{font-family:var(--font-display);font-weight:700;font-size:21px;line-height:1.2}
+.bar-stats{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center}
+.stat{display:flex;flex-direction:column;line-height:1.2}
+.stat-l{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--bar-muted)}
+.stat-v{font-weight:700;font-size:21px;font-variant-numeric:tabular-nums}
+.timer{display:flex;align-items:center;gap:12px}
+.timer.low .stat-v{color:var(--bar-accent)}
+.btn-bar{font:inherit;font-weight:700;font-size:15px;padding:7px 14px;border-radius:8px;border:1.5px solid var(--bar-muted);background:transparent;color:var(--bar-fg);cursor:pointer}
+.btn-bar:hover{border-color:var(--bar-fg)}
+.btn-bar.go{background:var(--bar-accent);border-color:var(--bar-accent);color:#1A1006}
+
+/* frame */
+.app{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:24px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:28px;align-items:start}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 96px)}
+#nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+#nav li{margin:0}
+.nav-btn{width:100%;display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border:1.5px solid transparent;border-radius:10px;background:none;color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.nav-btn:hover{background:var(--surface-2)}
+.nav-btn[aria-current="true"]{background:var(--surface);border-color:var(--line)}
+.nav-num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.nav-btn[aria-current="true"] .nav-num{background:var(--blue);color:var(--on-blue)}
+.nav-title{font-weight:700;font-size:16px;line-height:1.25;min-width:0}
+.nav-min{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.nav-chip{font-size:13px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.nav-chip.good{background:var(--ok-soft);color:var(--ok)}
+.nav-chip.mid{background:var(--accent-soft);color:var(--accent)}
+.nav-chip:empty{display:none}
+.rail-note{margin-top:14px;font-size:14px;color:var(--muted);padding:0 10px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;gap:26px;min-width:0}
+.task-head{display:flex;flex-direction:column;gap:10px}
+.kicker{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:20px;max-width:70ch}
+.prose{max-width:74ch}
+.muted{color:var(--muted)}
+.block{display:flex;flex-direction:column;gap:14px}
+.note{background:var(--blue-soft);border-radius:12px;padding:14px 18px;max-width:80ch}
+.note.warm{background:var(--accent-soft)}
+
+/* forms */
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.lbl{font-weight:700;font-size:16px}
+.hint{font-size:14px;color:var(--muted)}
+input[type=text],select,textarea{font:inherit;font-size:17px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:10px;background:var(--field);color:var(--fg);width:100%;min-width:0}
+textarea{min-height:110px;resize:vertical;line-height:1.5}
+input.short{max-width:220px}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+fieldset{border:1.5px solid var(--line);border-radius:14px;padding:18px 20px 20px;margin:0;display:flex;flex-direction:column;gap:14px;min-width:0}
+legend{font-family:var(--font-display);font-weight:700;font-size:20px;padding:0 8px}
+.where{font-size:15px;color:var(--muted)}
+
+.btn{font:inherit;font-weight:700;font-size:17px;padding:10px 18px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--fg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.btn.small{font-size:15px;padding:7px 12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;padding-top:18px;border-top:1px solid var(--line)}
+.actions .spacer{flex:1}
+.result{font-weight:700;font-size:18px}
+.result.good{color:var(--ok)}
+.result.mid{color:var(--accent)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:17px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+th{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* task 1 */
+.pool{display:flex;flex-wrap:wrap;gap:10px;padding:16px;border:2px dashed var(--line-strong);border-radius:14px;min-height:76px;align-items:flex-start}
+.pool-empty{color:var(--muted);font-size:16px;align-self:center}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:14px}
+.cat{border:2px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:150px;background:var(--surface-2);cursor:pointer;text-align:left}
+.cat.armed{border-color:var(--blue);border-style:dashed}
+.cat.over{border-color:var(--blue);background:var(--blue-soft)}
+.cat-t{font-family:var(--font-display);font-weight:700;font-size:19px;line-height:1.2}
+.cat-d{font-size:14px;color:var(--muted)}
+.cat-list{display:flex;flex-wrap:wrap;gap:8px}
+.card{font:inherit;font-weight:700;font-size:16px;padding:8px 14px;border-radius:999px;border:2px solid var(--line-strong);background:var(--surface);color:var(--fg);cursor:grab;line-height:1.3}
+.card[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);box-shadow:0 0 0 3px var(--blue-soft)}
+.card.ok{border-color:var(--ok);background:var(--ok-soft)}
+.card.ok::after{content:"  ✓";color:var(--ok)}
+.card.bad{border-color:var(--bad);background:var(--bad-soft)}
+.card.bad::after{content:"  ✗";color:var(--bad)}
+
+/* task 2 */
+.order-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.order-list li{margin:0}
+.order-item{display:grid;grid-template-columns:44px minmax(0,1fr) auto minmax(170px,220px);gap:12px;align-items:center;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.order-item.ok{border-color:var(--ok)}
+.order-item.bad{border-color:var(--bad)}
+.pos{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-weight:700;background:var(--surface);border:1.5px solid var(--line-strong);font-variant-numeric:tabular-nums}
+.oname{font-weight:700;font-size:18px}
+.omark{font-size:14px;font-weight:700;display:block}
+.omark.ok{color:var(--ok)} .omark.bad{color:var(--bad)}
+.mv-group{display:flex;gap:6px}
+.mv{width:42px;height:42px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--fg);font:inherit;font-weight:700;font-size:20px;cursor:pointer;line-height:1}
+.mv:disabled{opacity:.35;cursor:not-allowed}
+.axis{display:flex;justify-content:space-between;font-size:15px;font-weight:700;color:var(--muted);padding:0 4px}
+
+/* task 3 simulator */
+.sim{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}
+.cpu{background:var(--sim-bg);color:var(--sim-fg);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.cpu-t{font-size:13px;letter-spacing:.09em;text-transform:uppercase;font-weight:700;color:var(--sim-accent)}
+.regs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.reg{background:var(--sim-2);border-radius:10px;padding:10px 12px;min-width:0}
+.reg-l{font-size:13px;color:var(--sim-muted);font-weight:700;letter-spacing:.04em}
+.reg-v{font-family:var(--font-mono);font-size:22px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reg.flash .reg-v{color:var(--sim-accent)}
+.units{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.unit{background:var(--sim-2);border-radius:10px;padding:10px 12px;min-height:84px}
+.unit-t{font-size:14px;font-weight:700;color:var(--sim-blue)}
+.unit-v{font-size:16px;line-height:1.4}
+.phases{display:flex;flex-wrap:wrap;gap:8px}
+.phase{padding:5px 12px;border-radius:999px;border:1.5px solid var(--sim-muted);font-weight:700;font-size:14px;color:var(--sim-muted)}
+.phase.now{background:var(--sim-accent);border-color:var(--sim-accent);color:#1A1006}
+.phase.next{border-color:var(--sim-blue);border-style:dashed;color:var(--sim-blue)}
+.buses{display:flex;flex-direction:column;gap:8px}
+.bus{display:grid;grid-template-columns:170px minmax(0,1fr);gap:10px;align-items:center;padding:8px 12px;border-radius:10px;border:2px solid var(--line);background:var(--surface)}
+.bus-n{font-weight:700;font-size:16px}
+.bus-v{font-family:var(--font-mono);font-size:17px;color:var(--muted)}
+.bus.on .bus-v{color:var(--fg);font-weight:700}
+.bus-addr.on{border-color:var(--blue);background:var(--blue-soft)}
+.bus-data.on{border-color:var(--accent);background:var(--accent-soft)}
+.bus-ctrl.on{border-color:var(--grey);background:var(--grey-soft)}
+.sim-ctrl{display:flex;flex-wrap:wrap;gap:10px}
+.mem td{font-family:var(--font-mono);font-size:16px;padding:6px 12px}
+.mem th{padding:7px 12px}
+.mem tr.is-pc td{background:var(--blue-soft)}
+.mem tr.is-op td{background:var(--accent-soft)}
+.mem .tag{font-family:var(--font-body);font-size:13px;font-weight:700;color:var(--muted)}
+.log{max-height:230px;overflow:auto;font-family:var(--font-mono);font-size:15px;background:var(--surface-2);border-radius:10px;padding:10px 14px 10px 36px;margin:0}
+.log li+li{margin-top:3px}
+.log-empty{font-family:var(--font-body);color:var(--muted);list-style:none;margin-left:-22px}
+
+/* questions */
+.qs{display:flex;flex-direction:column;gap:14px}
+.q{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:2px solid var(--line);border-radius:12px;min-width:0}
+.q.ok{border-color:var(--ok)}
+.q.bad{border-color:var(--bad)}
+.q-t{font-weight:700}
+.q-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.q-unit{color:var(--muted);font-weight:700}
+.q-mark{font-weight:700;font-size:16px}
+.q-mark.ok{color:var(--ok)} .q-mark.bad{color:var(--bad)}
+.opts{display:grid;gap:4px}
+label.opt{display:flex;gap:10px;align-items:flex-start;padding:7px 10px;border-radius:8px;cursor:pointer;font-weight:400}
+label.opt:hover{background:var(--surface-2)}
+input[type=radio]{width:20px;height:20px;accent-color:var(--blue);margin:3px 0 0;flex:none}
+details.help{border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--surface-2)}
+details.help summary{font-weight:700;cursor:pointer}
+details.help[open] summary{margin-bottom:10px}
+.formula{font-family:var(--font-mono);font-size:16px;background:var(--surface);border-radius:8px;padding:8px 12px;display:inline-block}
+.steps li{padding-left:4px}
+.calc{font-weight:700}
+
+.confirm{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;border-radius:12px;background:var(--bad-soft)}
+.report-text{min-height:260px;font-family:var(--font-mono);font-size:15px}
+.copy-msg{font-weight:700;color:var(--ok)}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:16px 48px}
+  .rail{position:static;overflow-x:auto;margin-inline:-20px;padding-inline:20px}
+  #nav{flex-direction:row;gap:6px;width:max-content}
+  .nav-btn{width:auto;grid-template-columns:30px auto;white-space:nowrap;padding:7px 10px}
+  .nav-min,.nav-chip{display:none}
+  .rail-note{display:none}
+  .sim{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:620px){
+  .order-item{grid-template-columns:44px minmax(0,1fr) auto}
+  .order-item select{grid-column:1 / -1}
+  .bus{grid-template-columns:minmax(0,1fr)}
+  .regs{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .units{grid-template-columns:minmax(0,1fr)}
+  .brand-title{font-size:18px}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media print{
+  body{background:#fff;color:#000;font-size:12pt}
+  .bar,.rail,.no-print{display:none!important}
+  .panel{display:none!important;border:none;padding:0}
+  #report,#report[hidden]{display:flex!important}
+  .app{display:block;padding:0}
+}
+</style>
+
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand">
+      <span class="brand-kicker">Практическая работа · 120 минут</span>
+      <span class="brand-title">Архитектура аппаратных средств</span>
+    </div>
+    <div class="bar-stats">
+      <div class="stat"><span class="stat-l">Вариант</span><span class="stat-v" id="barVariant">1</span></div>
+      <div class="stat"><span class="stat-l">Автопроверка</span><span class="stat-v" id="barScore">0 / 72</span></div>
+      <div class="timer" id="timerBox">
+        <div class="stat"><span class="stat-l">Осталось</span><span class="stat-v" id="timerText">2:00:00</span></div>
+        <button type="button" class="btn-bar go" id="timerBtn">Старт</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <nav class="rail" aria-label="Задания">
+    <ol id="nav"></ol>
+    <p class="rail-note">Ответы сохраняются автоматически в этом браузере.</p>
+  </nav>
+
+  <main id="main">
+
+    <!-- ИНСТРУКЦИЯ -->
+    <section class="panel" id="intro" data-panel>
+      <div class="task-head">
+        <p class="kicker">Инструкция · 5 минут</p>
+        <h1>Исследование архитектуры персонального компьютера</h1>
+        <p class="lead"><b>Цель работы:</b> закрепить знания об основных компонентах вычислительной системы — процессоре, памяти, шинах и устройствах ввода-вывода — и изучить конфигурацию реального компьютера.</p>
+      </div>
+
+      <fieldset>
+        <legend>Данные студента</legend>
+        <div class="grid-3">
+          <div class="field"><label for="student_name">Фамилия, имя</label><input type="text" id="student_name" data-k="student_name" placeholder="Иванов Иван" autocomplete="name"></div>
+          <div class="field"><label for="student_group">Группа / класс</label><input type="text" id="student_group" data-k="student_group" placeholder="ИТ-21"></div>
+          <div class="field"><label for="student_variant">Вариант</label>
+            <select id="student_variant" data-k="student_variant">
+              <option value="1">Вариант 1</option><option value="2">Вариант 2</option><option value="3">Вариант 3</option><option value="4">Вариант 4</option><option value="5">Вариант 5</option>
+              <option value="6">Вариант 6</option><option value="7">Вариант 7</option><option value="8">Вариант 8</option><option value="9">Вариант 9</option><option value="10">Вариант 10</option>
+            </select>
+            <span class="hint">Последняя цифра номера в журнале; цифра 0 — вариант 10.</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="block">
+        <h3>План работы</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>№</th><th>Задание</th><th class="num">Время</th><th class="num">Баллы</th><th>Проверка</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Классификация компонентов вычислительной системы</td><td class="num">15 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>2</td><td>Иерархия памяти: порядок уровней и время доступа</td><td class="num">10 мин</td><td class="num">10</td><td>автоматически</td></tr>
+              <tr><td>3</td><td>Симулятор процессора: цикл выполнения команды и работа шин</td><td class="num">25 мин</td><td class="num">20</td><td>автоматически</td></tr>
+              <tr><td>4</td><td>Расчёты: разрядность шины адреса и пропускная способность</td><td class="num">15 мин</td><td class="num">15</td><td>автоматически</td></tr>
+              <tr><td>5</td><td>Исследование конфигурации своего компьютера</td><td class="num">25 мин</td><td class="num">20</td><td>преподаватель</td></tr>
+              <tr><td>6</td><td>Итоговый тест (15 вопросов)</td><td class="num">15 мин</td><td class="num">15</td><td>автоматически</td></tr>
+              <tr><td>7</td><td>Ответы на контрольные вопросы и вывод</td><td class="num">10 мин</td><td class="num">8</td><td>преподаватель</td></tr>
+              <tr><td></td><td><b>Итого</b> (с учётом 5 минут на инструкцию)</td><td class="num"><b>120 мин</b></td><td class="num"><b>100</b></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="block">
+          <h3>Порядок работы</h3>
+          <ol class="steps">
+            <li>Введите фамилию, группу и выберите вариант.</li>
+            <li>Нажмите <b>«Старт»</b> в верхней панели — запустится таймер на 2 часа.</li>
+            <li>Выполняйте задания по порядку. В заданиях с автопроверкой нажимайте <b>«Проверить»</b>; число проверок попадает в отчёт.</li>
+            <li>Ответы сохраняются автоматически: страницу можно закрыть и открыть снова в этом же браузере.</li>
+            <li>В конце откройте раздел <b>«Отчёт»</b>, скопируйте его и отправьте преподавателю.</li>
+          </ol>
+        </div>
+        <div class="block">
+          <h3>Оборудование</h3>
+          <ul>
+            <li>Компьютер с Windows 10 или 11 (для задания 5).</li>
+            <li>Яндекс Браузер или другой современный браузер.</li>
+            <li>Конспект лекции «Архитектура аппаратных средств».</li>
+          </ul>
+          <h3>Критерии оценки</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Баллы</th><th>Оценка</th></tr></thead>
+              <tbody>
+                <tr><td>90–100</td><td>«5», отлично</td></tr>
+                <tr><td>75–89</td><td>«4», хорошо</td></tr>
+                <tr><td>60–74</td><td>«3», удовлетворительно</td></tr>
+                <tr><td>менее 60</td><td>«2», работа на доработку</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint">Для 10-балльной шкалы: баллы ÷ 10 с округлением.</p>
+        </div>
+      </div>
+
+      <div class="actions"><span class="spacer"></span><button type="button" class="btn blue" data-go="t1">К заданию 1 →</button></div>
+    </section>
+
+    <!-- ЗАДАНИЕ 1 -->
+    <section class="panel" id="t1" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 1 · 15 минут · 12 баллов</p>
+        <h2>Компоненты вычислительной системы</h2>
+        <p class="prose">Распределите 12 устройств по группам. Нажмите на карточку, затем на нужную группу. На компьютере карточки можно перетаскивать мышью. Чтобы вернуть карточку назад, выберите её и нажмите на область «Нераспределённые».</p>
+      </div>
+      <div class="block">
+        <span class="lbl">Нераспределённые</span>
+        <div class="pool" id="t1pool" data-drop="pool"></div>
+      </div>
+      <div class="cats" id="t1cats"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t1">Проверить</button>
+        <span class="result" id="res-t1" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t2">Далее →</button>
+      </div>
+    </section>
+
+    <!-- ЗАДАНИЕ 2 -->
+    <section class="panel" id="t2" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 2 · 10 минут · 10 баллов</p>
+        <h2>Иерархия памяти</h2>
+        <p class="prose">Расставьте уровни памяти от самого быстрого (вверху) к самому медленному (внизу) кнопками ↑ и ↓. Для каждого уровня выберите типичное время доступа. За каждую верную позицию — 1 балл, за каждое верное время — 1 балл.</p>
+      </div>
+      <div class="block">
+        <div class="axis"><span>↑ быстрее, дороже, меньше</span></div>
+        <ol class="order-list" id="t2list"></ol>
+        <div class="axis"><span>↓ медленнее, дешевле, больше</span></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t2">Проверить</button>
+        <span class="result" id="res-t2" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t3">Далее →</button>
+      </div>
+    </section>
+
+    <!-- ЗАДАНИЕ 3 -->
+    <section class="panel" id="t3" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 3 · 25 минут · 20 баллов</p>
+        <h2>Симулятор процессора</h2>
+        <p class="prose">Учебный процессор с одним регистром-аккумулятором (ACC) выполняет программу из памяти. Выполняйте её по фазам кнопкой <b>«Следующая фаза»</b> и наблюдайте, как меняются регистры и какие шины работают. Затем ответьте на вопросы.</p>
+      </div>
+
+      <details class="help">
+        <summary>Система команд учебного процессора</summary>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Команда</th><th>Действие</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">LOAD a</td><td>ACC ← M[a] — загрузить в аккумулятор число из ячейки a</td></tr>
+              <tr><td class="mono">ADD a</td><td>ACC ← ACC + M[a]</td></tr>
+              <tr><td class="mono">SUB a</td><td>ACC ← ACC − M[a]</td></tr>
+              <tr><td class="mono">STORE a</td><td>M[a] ← ACC — записать аккумулятор в ячейку a</td></tr>
+              <tr><td class="mono">HALT</td><td>остановить процессор</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="hint" style="margin-top:10px">PC — счётчик команд (адрес следующей команды), IR — регистр команд (текущая команда), ACC — аккумулятор. M[a] — содержимое ячейки памяти с адресом a.</p>
+      </details>
+
+      <div class="sim">
+        <div class="block">
+          <div class="cpu" aria-label="Состояние процессора">
+            <span class="cpu-t">Центральный процессор</span>
+            <div class="phases" id="simPhases"></div>
+            <div class="regs">
+              <div class="reg" id="regPC"><div class="reg-l">PC</div><div class="reg-v">0</div></div>
+              <div class="reg" id="regIR"><div class="reg-l">IR</div><div class="reg-v">—</div></div>
+              <div class="reg" id="regACC"><div class="reg-l">ACC</div><div class="reg-v">0</div></div>
+            </div>
+            <div class="units">
+              <div class="unit"><div class="unit-t">Устройство управления</div><div class="unit-v" id="simCU">Ожидает начала работы</div></div>
+              <div class="unit"><div class="unit-t">АЛУ</div><div class="unit-v" id="simALU">—</div></div>
+            </div>
+          </div>
+          <div class="buses" aria-label="Системная шина">
+            <div class="bus bus-addr" id="busAddr"><span class="bus-n">Шина адреса</span><span class="bus-v">—</span></div>
+            <div class="bus bus-data" id="busData"><span class="bus-n">Шина данных</span><span class="bus-v">—</span></div>
+            <div class="bus bus-ctrl" id="busCtrl"><span class="bus-n">Шина управления</span><span class="bus-v">—</span></div>
+          </div>
+          <div class="sim-ctrl">
+            <button type="button" class="btn primary" id="simStep">Следующая фаза</button>
+            <button type="button" class="btn" id="simInstr">Выполнить команду</button>
+            <button type="button" class="btn" id="simRun">До конца</button>
+            <button type="button" class="btn" id="simReset">Сначала</button>
+          </div>
+          <div class="block">
+            <span class="lbl">Журнал работы</span>
+            <ol class="log" id="simLog"></ol>
+          </div>
+        </div>
+        <div class="block">
+          <span class="lbl">Оперативная память</span>
+          <div class="table-wrap">
+            <table class="mem">
+              <thead><tr><th class="num">Адрес</th><th>Содержимое</th><th></th></tr></thead>
+              <tbody id="simMem"></tbody>
+            </table>
+          </div>
+          <p class="hint">Синим выделена ячейка, на которую указывает PC; оранжевым — ячейка, к которой процессор обращается сейчас.</p>
+        </div>
+      </div>
+
+      <div class="block">
+        <h3>Вопросы</h3>
+        <div class="qs" id="t3qs"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t3">Проверить</button>
+        <span class="result" id="res-t3" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t4">Далее →</button>
+      </div>
+    </section>
+
+    <!-- ЗАДАНИЕ 4 -->
+    <section class="panel" id="t4" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 4 · 15 минут · 15 баллов</p>
+        <h2>Расчёты для шин и памяти</h2>
+        <p class="prose">Решите пять задач своего варианта. Ответ вводите числом; дробную часть можно отделять запятой. Решение запишите в тетрадь. Каждая задача — 3 балла.</p>
+      </div>
+      <details class="help" open>
+        <summary>Справка: формулы и пример</summary>
+        <div class="block">
+          <p>Число адресуемых ячеек (по 1 байту): <span class="formula">2<sup>N</sup></span>, где N — разрядность шины адреса.</p>
+          <p>1 КБ = 2<sup>10</sup> байт, 1 МБ = 2<sup>20</sup> байт, 1 ГБ = 2<sup>30</sup> байт.</p>
+          <p>Пропускная способность: <span class="formula">B = (разрядность, бит ÷ 8) × частота, МТ/с ÷ 1000</span> ГБ/с.</p>
+          <p>Время передачи: <span class="formula">t = объём ÷ скорость</span>; 1 байт = 8 бит.</p>
+          <p class="muted"><b>Пример.</b> Шина адреса 10 разрядов → 2<sup>10</sup> = 1024 байт = 1 КБ. Модуль DDR4-2666 (64 бита): 8 × 2666 ÷ 1000 ≈ 21,3 ГБ/с.</p>
+        </div>
+      </details>
+      <div class="qs" id="t4qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t4">Проверить</button>
+        <span class="result" id="res-t4" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t5">Далее →</button>
+      </div>
+    </section>
+
+    <!-- ЗАДАНИЕ 5 -->
+    <section class="panel" id="t5" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 5 · 25 минут · 20 баллов</p>
+        <h2>Исследование своего компьютера</h2>
+        <p class="prose">С помощью стандартных средств Windows определите конфигурацию компьютера, за которым вы работаете, и заполните поля. Задание оценивает преподаватель: по 1 баллу за каждое верно заполненное поле.</p>
+      </div>
+      <div class="block">
+        <h3>Где искать сведения</h3>
+        <ol class="steps">
+          <li>Откройте <b>Диспетчер задач</b>: <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> → вкладка <b>«Производительность»</b>. Если вкладок не видно, нажмите «Подробнее».</li>
+          <li>Раздел <b>ЦП</b>: модель, базовая скорость, ядра, логические процессоры, кэш L1, L2, L3.</li>
+          <li>Раздел <b>Память</b>: объём, скорость, «Использовано гнёзд». Тип памяти (DDR4, DDR5) Windows 11 показывает в правом верхнем углу.</li>
+          <li>Раздел <b>Диск 0</b>: тип (SSD или HDD) и модель накопителя.</li>
+          <li><kbd>Win</kbd> + <kbd>R</kbd> → введите <code>msinfo32</code> → <b>«Сведения о системе»</b>: тип системы, режим BIOS, изготовитель и модель.</li>
+          <li><kbd>Win</kbd> + <kbd>X</kbd> → <b>«Диспетчер устройств»</b>: разделы «Клавиатуры», «Мыши и иные указывающие устройства», «Мониторы», «Аудиовходы и аудиовыходы», «Контроллеры USB».</li>
+        </ol>
+        <p class="note">Работаете на Linux? Используйте команды <code>lscpu</code>, <code>free -h</code>, <code>lsblk</code>, <code>lsusb</code>. На macOS: меню Apple → «Об этом Mac» → «Отчёт о системе».</p>
+      </div>
+      <div class="block" id="t5fields"></div>
+      <div class="actions">
+        <span class="result" id="res-t5" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t6">Далее →</button>
+      </div>
+    </section>
+
+    <!-- ЗАДАНИЕ 6 -->
+    <section class="panel" id="t6" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 6 · 15 минут · 15 баллов</p>
+        <h2>Итоговый тест</h2>
+        <p class="prose">Выберите один правильный ответ в каждом вопросе. После проверки отмечается, верен ли ответ, но правильный вариант не показывается.</p>
+      </div>
+      <div class="qs" id="t6qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t6">Проверить</button>
+        <span class="result" id="res-t6" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t7">Далее →</button>
+      </div>
+    </section>
+
+    <!-- ЗАДАНИЕ 7 -->
+    <section class="panel" id="t7" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 7 · 10 минут · 8 баллов</p>
+        <h2>Контрольные вопросы и вывод</h2>
+        <p class="prose">Ответьте развёрнуто, 2–4 предложения на вопрос. Опирайтесь на результаты заданий 3–5. По 1,5 балла за вопрос и 2 балла за вывод.</p>
+      </div>
+      <div class="block" id="t7fields"></div>
+      <div class="actions">
+        <span class="result" id="res-t7" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="report">К отчёту →</button>
+      </div>
+    </section>
+
+    <!-- ОТЧЁТ -->
+    <section class="panel" id="report" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Отчёт</p>
+        <h2>Результаты практической работы</h2>
+        <p class="prose" id="repWho"></p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Задание</th><th class="num">Баллы</th><th class="num">Проверок</th><th>Проверка</th></tr></thead>
+          <tbody id="repTable"></tbody>
+        </table>
+      </div>
+      <p class="note" id="repNote"></p>
+      <div class="block no-print">
+        <label class="lbl" for="reportText">Текст отчёта для преподавателя</label>
+        <textarea id="reportText" class="report-text" readonly></textarea>
+        <div class="q-row">
+          <button type="button" class="btn primary" id="copyBtn">Скопировать отчёт</button>
+          <span class="copy-msg" id="copyMsg" aria-live="polite"></span>
+        </div>
+        <p class="hint">Вставьте отчёт в письмо или сообщение преподавателю. Чтобы распечатать или сохранить PDF, откройте файл практикума в Яндекс Браузере и нажмите <kbd>Ctrl</kbd> + <kbd>P</kbd>.</p>
+      </div>
+      <div class="actions no-print">
+        <button type="button" class="btn" id="resetBtn">Начать работу заново</button>
+        <div class="confirm" id="resetConfirm" hidden>
+          <span><b>Удалить все ответы и сбросить таймер?</b></span>
+          <button type="button" class="btn small primary" id="resetYes">Да, удалить</button>
+          <button type="button" class="btn small" id="resetNo">Отмена</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(s, r){ return (r || document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+
+/* ---------- данные заданий ---------- */
+var TASKS = [
+  {id:'intro', n:'i', t:'Инструкция', min:5},
+  {id:'t1', n:'1', t:'Компоненты ПК', min:15, max:12, auto:true},
+  {id:'t2', n:'2', t:'Иерархия памяти', min:10, max:10, auto:true},
+  {id:'t3', n:'3', t:'Симулятор процессора', min:25, max:20, auto:true},
+  {id:'t4', n:'4', t:'Расчёты для шин', min:15, max:15, auto:true},
+  {id:'t5', n:'5', t:'Исследование ПК', min:25, max:20},
+  {id:'t6', n:'6', t:'Итоговый тест', min:15, max:15, auto:true},
+  {id:'t7', n:'7', t:'Выводы', min:10, max:8},
+  {id:'report', n:'Σ', t:'Отчёт'}
+];
+var AUTO_MAX = 72;
+
+var T1_CATS = [
+  {id:'cpu', t:'Процессор', d:'блоки центрального процессора'},
+  {id:'int', t:'Внутренняя память', d:'напрямую доступна процессору'},
+  {id:'ext', t:'Внешняя память', d:'долговременное хранение данных'},
+  {id:'bus', t:'Шины и интерфейсы', d:'связь между устройствами'},
+  {id:'in', t:'Устройства ввода', d:'из внешнего мира в компьютер'},
+  {id:'out', t:'Устройства вывода', d:'из компьютера во внешний мир'}
+];
+var T1_CARDS = {
+  alu:['АЛУ','cpu'], cu:['Устройство управления','cpu'],
+  ram:['Модуль ОЗУ DDR5','int'], rom:['Микросхема ПЗУ (UEFI)','int'],
+  ssd:['SSD-накопитель NVMe','ext'], hdd:['Жёсткий диск HDD','ext'],
+  pcie:['Шина PCI Express','bus'], usb:['Интерфейс USB','bus'],
+  kbd:['Клавиатура','in'], scan:['Сканер','in'],
+  mon:['Монитор','out'], prn:['Принтер','out']
+};
+var T1_ORDER = ['mon','alu','usb','ssd','kbd','rom','prn','cu','hdd','scan','pcie','ram'];
+
+var T2_ITEMS = {reg:'Регистры процессора', cache:'Кэш-память L1–L3', ram:'Оперативная память (ОЗУ)', ssd:'SSD-накопитель', hdd:'Жёсткий диск (HDD)'};
+var T2_CORRECT = ['reg','cache','ram','ssd','hdd'];
+var T2_TIMES = [['tC','около 100 нс'],['tA','менее 1 нс'],['tE','около 10 мс'],['tB','1–10 нс'],['tD','около 0,1 мс']];
+var T2_TIME_ANS = {reg:'tA', cache:'tB', ram:'tC', ssd:'tD', hdd:'tE'};
+
+var PROG = [{op:'LOAD',a:10},{op:'ADD',a:11},{op:'SUB',a:12},{op:'STORE',a:13},{op:'ADD',a:13},{op:'STORE',a:14},{op:'HALT'}];
+var PHASES = ['Выборка','Декодирование','Исполнение','Запись'];
+
+function t3Questions(v){
+  return [
+    {k:'t3_q1', t:'Сколько команд выполнит процессор до команды HALT? Саму HALT не считайте.', ans:6, unit:'команд'},
+    {k:'t3_q2', t:'Чему равен аккумулятор ACC сразу после выполнения команды по адресу 2 (SUB 12)?', ans:2*v+6},
+    {k:'t3_q3', t:'Какое число окажется в ячейке памяти 14 после остановки программы?', ans:4*v+12},
+    {k:'t3_q4', t:'Какое значение будет в счётчике команд PC сразу после фазы выборки команды STORE 13 (адрес 3)?', ans:4},
+    {k:'t3_q5', t:'По какой шине число из аккумулятора передаётся в память при выполнении STORE?', type:'select',
+      opts:[['addr','Шина адреса'],['data','Шина данных'],['ctrl','Шина управления'],['none','Ни по какой: память находится внутри процессора']], ans:'data'}
+  ];
+}
+
+function t4Problems(v){
+  var i5 = (v - 1) % 5, i6 = (v - 1) % 6;
+  var N = [16,20,24,32,36][i5], U = ['КБ','МБ','МБ','ГБ','ГБ'][i5], A1 = [64,1,16,4,64][i5];
+  var M = [2,8,16,32,128][i5], A2 = [31,33,34,35,37][i5];
+  var F = [1600,2400,3200,4800,5600,6400][i6], B = 8 * F / 1000;
+  var S = 2 * v;
+  return [
+    {k:'t4_p1', t:'Шина адреса процессора имеет <b>' + N + '</b> разрядов. Какой максимальный объём памяти она может адресовать, если каждая ячейка — 1 байт? Ответ дайте в <b>' + U + '</b>.', unit:U, ans:A1},
+    {k:'t4_p2', t:'Компьютеру нужно адресовать <b>' + M + ' ГБ</b> памяти. Какое минимальное число линий должно быть в шине адреса?', unit:'линий', ans:A2},
+    {k:'t4_p3', t:'Модуль ОЗУ работает на скорости <b>' + F + ' МТ/с</b>, ширина шины данных модуля — 64 бита. Найдите его пиковую пропускную способность.', unit:'ГБ/с', ans:B},
+    {k:'t4_p4', t:'Два таких модуля работают в двухканальном режиме: каждый канал — 64 бита. Какова суммарная пиковая пропускная способность?', unit:'ГБ/с', ans:2 * B},
+    {k:'t4_p5', t:'По интерфейсу USB 3.2 Gen 1 (5 Гбит/с) нужно передать файл размером <b>' + S + ' ГБ</b>. Сколько секунд займёт передача при идеальной скорости? Считайте 1 ГБ = 8 Гбит.', unit:'с', ans:S * 8 / 5}
+  ];
+}
+
+var T5_GROUPS = [
+  {t:'Процессор', where:'Диспетчер задач → Производительность → ЦП', f:[
+    ['t5_cpu_model','Модель процессора','например, Intel Core i5-12400'],
+    ['t5_cpu_freq','Базовая частота, ГГц','2,50'],
+    ['t5_cpu_cores','Число ядер','6'],
+    ['t5_cpu_threads','Логических процессоров','12'],
+    ['t5_cache_l1','Кэш L1','480 КБ'],
+    ['t5_cache_l2','Кэш L2','7,5 МБ'],
+    ['t5_cache_l3','Кэш L3','18 МБ']]},
+  {t:'Оперативная память', where:'Диспетчер задач → Производительность → Память', f:[
+    ['t5_ram_size','Объём ОЗУ, ГБ','16'],
+    ['t5_ram_type','Тип памяти','DDR4'],
+    ['t5_ram_speed','Скорость, МТ/с','3200'],
+    ['t5_ram_slots','Использовано гнёзд','2 из 4']]},
+  {t:'Накопитель', where:'Диспетчер задач → Диск 0; «Этот компьютер»', f:[
+    ['t5_disk_type','Тип накопителя','SSD или HDD'],
+    ['t5_disk_size','Объём','512 ГБ'],
+    ['t5_disk_model','Модель','Samsung 980']]},
+  {t:'Система', where:'msinfo32 → Сведения о системе', f:[
+    ['t5_sys_type','Тип системы (разрядность)','x64-based PC'],
+    ['t5_bios_mode','Режим BIOS','UEFI'],
+    ['t5_pc_model','Изготовитель и модель','например, Lenovo ThinkCentre']]},
+  {t:'Устройства ввода-вывода', where:'Диспетчер устройств', f:[
+    ['t5_dev_in','Устройства ввода','клавиатура, мышь…','area'],
+    ['t5_dev_out','Устройства вывода','монитор, динамики…','area'],
+    ['t5_dev_usb','Контроллеры USB и другие интерфейсы','','area']]}
+];
+var T5_CALC = ['t5_ram_bw','Пропускная способность одного канала вашей ОЗУ, ГБ/с (покажите расчёт)','8 × 3200 ÷ 1000 = 25,6'];
+
+var T6 = [
+  ['Кто в 1945 году сформулировал принципы построения ЭВМ с хранимой программой?', ['Алан Тьюринг','Джон фон Нейман','Чарльз Бэббидж','Сергей Лебедев'], 1],
+  ['Какой блок процессора выполняет арифметические и логические операции?', ['Устройство управления','Кэш-память','АЛУ','Контроллер памяти'], 2],
+  ['Какой регистр хранит адрес следующей команды?', ['Аккумулятор','Регистр команд','Регистр флагов','Счётчик команд'], 3],
+  ['Какая память работает быстрее всех?', ['Регистры процессора','Кэш L3','ОЗУ','SSD'], 0],
+  ['Какая память является энергозависимой?', ['ПЗУ','Оперативная память','SSD-накопитель','Жёсткий диск'], 1],
+  ['Из какой памяти обычно делают кэш процессора?', ['DRAM','Flash','SRAM','Магнитных пластин'], 2],
+  ['По какой шине передаётся номер ячейки памяти, к которой обращается процессор?', ['Шина данных','Шина адреса','Шина управления','Шина USB'], 1],
+  ['Какая из шин передаёт информацию в обоих направлениях: и при чтении, и при записи?', ['Шина адреса','Шина данных','Ни одна из шин','Только шина PCI Express'], 1],
+  ['Какой объём памяти может адресовать 32-разрядная шина адреса?', ['32 ГБ','4 МБ','4 ГБ','64 ГБ'], 2],
+  ['Что хранится в ПЗУ компьютера?', ['Открытые документы','Программа начальной загрузки BIOS/UEFI','Временные файлы браузера','Содержимое кэша'], 1],
+  ['Какой способ обмена позволяет передавать данные в ОЗУ без участия процессора?', ['Программный опрос','Прерывание','DMA','Декодирование'], 2],
+  ['Как называется сигнал от устройства, по которому процессор приостанавливает текущую программу?', ['Такт','Прерывание','Адрес','Регистр'], 1],
+  ['Какое устройство является устройством только вывода?', ['Сканер','Сенсорный экран','Микрофон','Принтер'], 3],
+  ['Что означает тактовая частота процессора 3 ГГц?', ['3 миллиарда тактов в секунду','3 миллиона команд в минуту','3 ГБ данных в секунду','3 ядра в процессоре'], 0],
+  ['Принцип однородности памяти означает, что…', ['вся память одного типа','команды и данные хранятся в одной памяти','у каждой ячейки одинаковый адрес','память не зависит от питания'], 1]
+];
+
+var T7_FIELDS = [
+  ['t7_q1','1. Почему память компьютера строят по уровням (иерархически)?'],
+  ['t7_q2','2. Чем архитектура фон Неймана отличается от гарвардской архитектуры?'],
+  ['t7_q3','3. Какие шины работали при выполнении команды STORE в симуляторе и что по каждой из них передавалось?'],
+  ['t7_q4','4. Какой компонент вашего компьютера, по-вашему, сильнее всего ограничивает его производительность? Обоснуйте по данным задания 5.'],
+  ['t7_concl','Вывод по работе']
+];
+
+/* ---------- состояние и хранение ---------- */
+var KEY = 'hw-arch-practicum-v1';
+function defaults(){
+  return {v:{}, t1:{}, t2:['ram','hdd','reg','ssd','cache'], attempts:{}, checked:{}, timer:{left:7200, running:false, at:0}, active:'intro'};
+}
+function load(){
+  try { var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; }
+}
+var S = (function(){
+  var d = defaults(), s = load();
+  if (!s || typeof s !== 'object') return d;
+  for (var k in d) if (!(k in s)) s[k] = d[k];
+  if (!Array.isArray(s.t2) || s.t2.length !== 5) s.t2 = d.t2;
+  return s;
+})();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+
+function variant(){ var n = parseInt(S.v.student_variant, 10); return n >= 1 && n <= 10 ? n : 1; }
+function num(s){
+  if (s == null) return NaN;
+  var t = String(s).replace(/\s+/g,'').replace(',', '.');
+  if (t === '') return NaN;
+  return Number(t);
+}
+function close(a, b){ return isFinite(a) && Math.abs(a - b) <= Math.max(0.05, Math.abs(b) * 0.01); }
+function filled(k){ return String(S.v[k] || '').trim() !== ''; }
+
+/* ---------- оценки ---------- */
+function scoreT1(){ var s = 0; for (var id in T1_CARDS) if (S.t1[id] === T1_CARDS[id][1]) s++; return s; }
+function scoreT2(){
+  var s = 0;
+  S.t2.forEach(function(id, i){ if (T2_CORRECT[i] === id) s++; if (S.v['t2_time_' + id] === T2_TIME_ANS[id]) s++; });
+  return s;
+}
+function qOk(q){ return q.type === 'select' ? S.v[q.k] === q.ans : close(num(S.v[q.k]), q.ans); }
+function scoreT3(){ return t3Questions(variant()).filter(qOk).length * 4; }
+function scoreT4(){ return t4Problems(variant()).filter(qOk).length * 3; }
+function scoreT6(){ var s = 0; T6.forEach(function(q, i){ if (S.v['t6_' + i] === String(q[2])) s++; }); return s; }
+function score(id){ return {t1:scoreT1, t2:scoreT2, t3:scoreT3, t4:scoreT4, t6:scoreT6}[id](); }
+function t5Keys(){ var k = []; T5_GROUPS.forEach(function(g){ g.f.forEach(function(f){ k.push(f[0]); }); }); k.push(T5_CALC[0]); return k; }
+function fillCount(keys){ return keys.filter(filled).length; }
+function autoTotal(){ return scoreT1() + scoreT2() + scoreT3() + scoreT4() + scoreT6(); }
+
+/* ---------- навигация ---------- */
+function renderNav(){
+  $('#nav').innerHTML = TASKS.map(function(t){
+    var chip = '', cls = '';
+    if (t.auto){
+      if (S.attempts[t.id]){ var s = score(t.id); chip = s + '/' + t.max; cls = s >= t.max * 0.75 ? 'good' : 'mid'; }
+    } else if (t.id === 't5'){ var keys = t5Keys(), f = fillCount(keys); if (f) { chip = Math.round(f / keys.length * 100) + '%'; cls = f === keys.length ? 'good' : 'mid'; } }
+    else if (t.id === 't7'){ var k7 = T7_FIELDS.map(function(x){ return x[0]; }), f7 = fillCount(k7); if (f7) { chip = f7 + '/' + k7.length; cls = f7 === k7.length ? 'good' : 'mid'; } }
+    return '<li><button type="button" class="nav-btn" data-go="' + t.id + '" aria-current="' + (S.active === t.id) + '">' +
+      '<span class="nav-num">' + t.n + '</span><span class="nav-title">' + t.t + (t.min ? '<span class="nav-min">' + t.min + ' мин</span>' : '') + '</span>' +
+      '<span class="nav-chip ' + cls + '">' + chip + '</span></button></li>';
+  }).join('');
+}
+function go(id, noScroll){
+  if (!document.getElementById(id)) id = 'intro';
+  S.active = id; save();
+  $$('[data-panel]').forEach(function(p){ p.hidden = p.id !== id; });
+  renderNav();
+  if (id === 'report') renderReport();
+  try { history.replaceState(null, '', '#' + id); } catch(e){}
+  if (!noScroll) window.scrollTo(0, 0);
+}
+function updateBar(){
+  $('#barVariant').textContent = variant();
+  $('#barScore').textContent = autoTotal() + ' / ' + AUTO_MAX;
+}
+
+/* ---------- значения полей ---------- */
+function fillValues(root){
+  $$('[data-k]', root).forEach(function(el){
+    var val = S.v[el.dataset.k];
+    if (val == null) return;
+    if (el.type === 'radio') el.checked = el.value === val; else el.value = val;
+  });
+}
+function onField(e){
+  var el = e.target, k = el.dataset && el.dataset.k;
+  if (!k) return;
+  if (el.type === 'radio' && !el.checked) return;
+  if (S.v[k] === el.value) return;
+  S.v[k] = el.value;
+  var task = k.split('_')[0];
+  if (S.checked[task]) { S.checked[task] = false; feedback(task); }
+  if (k === 'student_variant') onVariant();
+  if (k === 't5_ram_speed') updateBw();
+  if (task === 't5') setT5Result();
+  if (task === 't7') setT7Result();
+  save(); updateBar(); renderNav();
+}
+document.addEventListener('input', onField);
+document.addEventListener('change', onField);
+
+/* ---------- результат проверки ---------- */
+function setResult(id){
+  var el = $('#res-' + id), t = TASKS.filter(function(x){ return x.id === id; })[0];
+  if (!el) return;
+  el.className = 'result';
+  if (S.checked[id]){
+    var s = score(id);
+    el.textContent = 'Результат: ' + s + ' из ' + t.max + ' · проверок: ' + S.attempts[id];
+    el.classList.add(s >= t.max * 0.75 ? 'good' : 'mid');
+  } else if (S.attempts[id]){
+    el.textContent = 'Ответы изменены — нажмите «Проверить» ещё раз.';
+  } else el.textContent = '';
+}
+function markQ(list){
+  list.forEach(function(q){
+    var box = document.querySelector('[data-q="' + q.k + '"]');
+    if (!box) return;
+    var task = q.k.split('_')[0], m = $('.q-mark', box);
+    box.classList.remove('ok','bad'); m.className = 'q-mark'; m.textContent = '';
+    if (!S.checked[task]) return;
+    var ok = qOk(q);
+    box.classList.add(ok ? 'ok' : 'bad'); m.classList.add(ok ? 'ok' : 'bad');
+    m.textContent = ok ? '✓ Верно' : '✗ Неверно';
+  });
+}
+function feedback(id){
+  if (id === 't1') renderT1();
+  else if (id === 't2') renderT2();
+  else if (id === 't3') markQ(t3Questions(variant()));
+  else if (id === 't4') markQ(t4Problems(variant()));
+  else if (id === 't6') markQ(T6.map(function(q, i){ return {k:'t6_' + i, type:'select', ans:String(q[2])}; }));
+  setResult(id);
+}
+
+/* ---------- задание 1 ---------- */
+var t1Sel = null;
+function cardHtml(id){
+  var cls = 'card';
+  if (S.checked.t1 && S.t1[id]) cls += S.t1[id] === T1_CARDS[id][1] ? ' ok' : ' bad';
+  return '<button type="button" class="' + cls + '" draggable="true" data-card="' + id + '" aria-pressed="' + (t1Sel === id) + '">' + T1_CARDS[id][0] + '</button>';
+}
+function renderT1(){
+  var pool = T1_ORDER.filter(function(id){ return !S.t1[id]; });
+  $('#t1pool').innerHTML = pool.length ? pool.map(cardHtml).join('') : '<span class="pool-empty">Все карточки распределены</span>';
+  $('#t1cats').innerHTML = T1_CATS.map(function(c){
+    var items = T1_ORDER.filter(function(id){ return S.t1[id] === c.id; });
+    return '<div class="cat' + (t1Sel ? ' armed' : '') + '" data-drop="' + c.id + '" role="button" tabindex="0" aria-label="Поместить в группу ' + c.t + '">' +
+      '<span class="cat-t">' + c.t + '</span><span class="cat-d">' + c.d + '</span><div class="cat-list">' + items.map(cardHtml).join('') + '</div></div>';
+  }).join('');
+  setResult('t1');
+}
+function placeT1(id, target){
+  if (!T1_CARDS[id]) return;
+  if (target === 'pool') delete S.t1[id]; else S.t1[id] = target;
+  t1Sel = null;
+  if (S.checked.t1) S.checked.t1 = false;
+  save(); renderT1(); updateBar(); renderNav();
+}
+$('#t1').addEventListener('click', function(e){
+  var card = e.target.closest('[data-card]');
+  if (card){ e.stopPropagation(); var id = card.dataset.card; t1Sel = t1Sel === id ? null : id; renderT1(); return; }
+  var drop = e.target.closest('[data-drop]');
+  if (drop && t1Sel) placeT1(t1Sel, drop.dataset.drop);
+});
+$('#t1').addEventListener('keydown', function(e){
+  var drop = e.target.closest('.cat[data-drop]');
+  if (drop && (e.key === 'Enter' || e.key === ' ') && t1Sel){ e.preventDefault(); placeT1(t1Sel, drop.dataset.drop); }
+});
+$('#t1').addEventListener('dragstart', function(e){
+  var card = e.target.closest('[data-card]'); if (!card) return;
+  try { e.dataTransfer.setData('text/plain', card.dataset.card); e.dataTransfer.effectAllowed = 'move'; } catch(err){}
+});
+$('#t1').addEventListener('dragover', function(e){
+  var drop = e.target.closest('[data-drop]'); if (!drop) return;
+  e.preventDefault(); $$('.over', $('#t1')).forEach(function(x){ if (x !== drop) x.classList.remove('over'); }); drop.classList.add('over');
+});
+$('#t1').addEventListener('dragleave', function(e){ var drop = e.target.closest('[data-drop]'); if (drop && !drop.contains(e.relatedTarget)) drop.classList.remove('over'); });
+$('#t1').addEventListener('drop', function(e){
+  var drop = e.target.closest('[data-drop]'); if (!drop) return;
+  e.preventDefault(); var id = ''; try { id = e.dataTransfer.getData('text/plain'); } catch(err){}
+  placeT1(id, drop.dataset.drop);
+});
+
+/* ---------- задание 2 ---------- */
+function renderT2(){
+  var opts = '<option value="">Время доступа…</option>' + T2_TIMES.map(function(o){ return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('');
+  $('#t2list').innerHTML = S.t2.map(function(id, i){
+    var cls = 'order-item', mark = '';
+    if (S.checked.t2){
+      var posOk = T2_CORRECT[i] === id, tOk = S.v['t2_time_' + id] === T2_TIME_ANS[id];
+      cls += posOk && tOk ? ' ok' : ' bad';
+      mark = '<span class="omark ' + (posOk ? 'ok' : 'bad') + '">' + (posOk ? '✓ позиция верна' : '✗ позиция неверна') + '</span>' +
+             '<span class="omark ' + (tOk ? 'ok' : 'bad') + '">' + (tOk ? '✓ время верно' : '✗ время неверно') + '</span>';
+    }
+    return '<li class="' + cls + '"><span class="pos">' + (i + 1) + '</span>' +
+      '<div><span class="oname">' + T2_ITEMS[id] + '</span>' + mark + '</div>' +
+      '<div class="mv-group"><button type="button" class="mv" data-mv="' + i + '" data-dir="-1" aria-label="Выше" ' + (i === 0 ? 'disabled' : '') + '>↑</button>' +
+      '<button type="button" class="mv" data-mv="' + i + '" data-dir="1" aria-label="Ниже" ' + (i === S.t2.length - 1 ? 'disabled' : '') + '>↓</button></div>' +
+      '<select id="t2_time_' + id + '" data-k="t2_time_' + id + '" aria-label="Время доступа: ' + T2_ITEMS[id] + '">' + opts + '</select></li>';
+  }).join('');
+  fillValues($('#t2list'));
+  setResult('t2');
+}
+$('#t2list').addEventListener('click', function(e){
+  var b = e.target.closest('[data-mv]'); if (!b) return;
+  var i = +b.dataset.mv, j = i + (+b.dataset.dir);
+  if (j < 0 || j >= S.t2.length) return;
+  var tmp = S.t2[i]; S.t2[i] = S.t2[j]; S.t2[j] = tmp;
+  S.checked.t2 = false; save(); renderT2(); updateBar(); renderNav();
+  var again = document.querySelector('[data-mv="' + j + '"][data-dir="' + b.dataset.dir + '"]') || document.querySelector('[data-mv="' + j + '"]');
+  if (again && !again.disabled) again.focus();
+});
+
+/* ---------- задание 3: симулятор ---------- */
+var sim;
+function memInit(v){
+  var m = []; for (var i = 0; i < 16; i++) m.push(0);
+  PROG.forEach(function(p, i){ m[i] = p; });
+  m[10] = 5 + v; m[11] = 2 * v + 1; m[12] = v;
+  return m;
+}
+function fmt(c){ return typeof c === 'object' ? c.op + (c.a != null ? ' ' + c.a : '') : String(c); }
+function resetSim(){
+  sim = {pc:0, ir:null, acc:0, mem:memInit(variant()), next:0, last:-1, halted:false, done:0, tmp:0,
+    bus:{addr:null, data:null, ctrl:null}, cu:'Готов к выборке первой команды. Нажмите «Следующая фаза».', alu:'—', op:null, log:[], flash:''};
+  renderSim();
+}
+function logAdd(s){ sim.log.push(s); }
+function phaseStep(){
+  if (sim.halted) return;
+  var ir = sim.ir, ph = sim.next;
+  sim.bus = {addr:null, data:null, ctrl:null}; sim.op = null; sim.flash = '';
+  if (ph === 0){
+    var addr = sim.pc, cell = sim.mem[addr];
+    sim.ir = cell; sim.bus = {addr:addr, data:fmt(cell), ctrl:'ЧТЕНИЕ'}; sim.pc = addr + 1; sim.op = addr;
+    sim.cu = 'Выборка: команда из ячейки ' + addr + ' помещена в IR, PC увеличен на 1.';
+    sim.alu = '—'; sim.flash = 'IR PC';
+    logAdd('Выборка: IR ← M[' + addr + '] = ' + fmt(cell) + '; PC ← ' + sim.pc);
+    sim.next = 1;
+  } else if (ph === 1){
+    if (typeof ir !== 'object'){ sim.cu = 'В IR не команда — процессор остановлен.'; sim.halted = true; logAdd('Ошибка: в IR данные, а не команда'); }
+    else {
+      var txt = {LOAD:'загрузить число из ячейки ' + ir.a + ' в ACC', ADD:'прибавить к ACC число из ячейки ' + ir.a, SUB:'вычесть из ACC число из ячейки ' + ir.a, STORE:'записать ACC в ячейку ' + ir.a, HALT:'остановить процессор'}[ir.op];
+      sim.cu = 'Декодирование: операция ' + ir.op + ' — ' + txt + '.';
+      logAdd('Декодирование: ' + ir.op + (ir.a != null ? ', адрес ' + ir.a : ''));
+    }
+    sim.next = 2;
+  } else if (ph === 2){
+    if (ir.op === 'HALT'){
+      sim.halted = true; sim.cu = 'Команда HALT: процессор остановлен.'; sim.alu = '—';
+      logAdd('Исполнение: HALT — остановка. Выполнено команд: ' + sim.done);
+    } else if (ir.op === 'STORE'){
+      sim.tmp = sim.acc; sim.alu = 'Не используется: число ' + sim.acc + ' готово к записи';
+      sim.cu = 'Исполнение: подготовка записи ACC в память.';
+      logAdd('Исполнение: STORE — подготовка ACC = ' + sim.acc + ' к записи');
+    } else {
+      var val = sim.mem[ir.a];
+      sim.bus = {addr:ir.a, data:String(val), ctrl:'ЧТЕНИЕ'}; sim.op = ir.a;
+      if (ir.op === 'LOAD'){ sim.tmp = val; sim.alu = 'Пропускает число ' + val; }
+      else if (ir.op === 'ADD'){ sim.tmp = sim.acc + val; sim.alu = sim.acc + ' + ' + val + ' = ' + sim.tmp; }
+      else { sim.tmp = sim.acc - val; sim.alu = sim.acc + ' − ' + val + ' = ' + sim.tmp; }
+      sim.cu = 'Исполнение: операнд прочитан из ячейки ' + ir.a + ', АЛУ выполняет операцию.';
+      logAdd('Исполнение: прочитано M[' + ir.a + '] = ' + val + '; АЛУ: ' + sim.alu);
+    }
+    sim.next = 3;
+  } else {
+    if (ir.op === 'STORE'){
+      sim.mem[ir.a] = sim.acc; sim.bus = {addr:ir.a, data:String(sim.acc), ctrl:'ЗАПИСЬ'}; sim.op = ir.a;
+      sim.cu = 'Запись: ACC записан в ячейку ' + ir.a + '.';
+      logAdd('Запись: M[' + ir.a + '] ← ' + sim.acc);
+    } else {
+      sim.acc = sim.tmp; sim.flash = 'ACC';
+      sim.cu = 'Запись: результат помещён в аккумулятор.';
+      logAdd('Запись: ACC ← ' + sim.acc);
+    }
+    sim.done++; sim.next = 0;
+  }
+  sim.last = ph;
+}
+function renderSim(){
+  $('#simPhases').innerHTML = PHASES.map(function(p, i){
+    var c = 'phase'; if (i === sim.last) c += ' now'; else if (!sim.halted && i === sim.next) c += ' next';
+    return '<span class="' + c + '">' + p + '</span>';
+  }).join('');
+  function reg(id, v, key){ var el = $(id); $('.reg-v', el).textContent = v; el.classList.toggle('flash', sim.flash.indexOf(key) >= 0); }
+  reg('#regPC', sim.pc, 'PC'); reg('#regIR', sim.ir == null ? '—' : fmt(sim.ir), 'IR'); reg('#regACC', sim.acc, 'ACC');
+  $('#simCU').textContent = sim.halted ? sim.cu + ' Нажмите «Сначала», чтобы повторить.' : sim.cu;
+  $('#simALU').textContent = sim.alu;
+  function bus(id, v){ var el = $(id); $('.bus-v', el).textContent = v == null ? '—' : v; el.classList.toggle('on', v != null); }
+  bus('#busAddr', sim.bus.addr); bus('#busData', sim.bus.data); bus('#busCtrl', sim.bus.ctrl);
+  $('#simMem').innerHTML = sim.mem.map(function(c, i){
+    var cls = []; if (i === sim.pc && !sim.halted) cls.push('is-pc'); if (i === sim.op) cls.push('is-op');
+    var tag = typeof c === 'object' ? 'команда' : (i >= 10 && i <= 14 ? 'данные' : '');
+    if (i === sim.pc && !sim.halted) tag += (tag ? ' · ' : '') + '← PC';
+    return '<tr class="' + cls.join(' ') + '"><td class="num">' + i + '</td><td>' + esc(fmt(c)) + '</td><td class="tag">' + tag + '</td></tr>';
+  }).join('');
+  var log = $('#simLog');
+  log.innerHTML = sim.log.length ? sim.log.map(function(s){ return '<li>' + esc(s) + '</li>'; }).join('') : '<li class="log-empty">Журнал пуст. Действия процессора появятся здесь.</li>';
+  log.scrollTop = log.scrollHeight;
+  $('#simStep').disabled = $('#simInstr').disabled = $('#simRun').disabled = sim.halted;
+}
+$('#simStep').addEventListener('click', function(){ phaseStep(); renderSim(); });
+$('#simInstr').addEventListener('click', function(){ var g = 0; do { phaseStep(); g++; } while (!sim.halted && sim.next !== 0 && g < 8); renderSim(); });
+$('#simRun').addEventListener('click', function(){ var g = 0; while (!sim.halted && g < 200){ phaseStep(); g++; } renderSim(); });
+$('#simReset').addEventListener('click', resetSim);
+
+function qHtml(q){
+  var input;
+  if (q.type === 'select'){
+    input = '<select id="' + q.k + '" data-k="' + q.k + '" style="max-width:520px"><option value="">Выберите ответ…</option>' +
+      q.opts.map(function(o){ return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('') + '</select>';
+  } else {
+    input = '<input type="text" inputmode="decimal" class="short" id="' + q.k + '" data-k="' + q.k + '" autocomplete="off">' + (q.unit ? '<span class="q-unit">' + q.unit + '</span>' : '');
+  }
+  return '<div class="q" data-q="' + q.k + '"><label class="q-t" for="' + q.k + '">' + q.t + '</label><div class="q-row">' + input + '<span class="q-mark"></span></div></div>';
+}
+function renderT3Q(){ var qs = t3Questions(variant()); $('#t3qs').innerHTML = qs.map(function(q, i){ q.t = (i + 1) + '. ' + q.t; return qHtml(q); }).join(''); fillValues($('#t3qs')); feedback('t3'); }
+function renderT4(){ var ps = t4Problems(variant()); $('#t4qs').innerHTML = ps.map(function(q, i){ q.t = 'Задача ' + (i + 1) + '. ' + q.t; return qHtml(q); }).join(''); fillValues($('#t4qs')); feedback('t4'); }
+
+/* ---------- задание 5 ---------- */
+function fieldHtml(f){
+  var k = f[0], ph = f[2] ? ' placeholder="' + esc(f[2]) + '"' : '';
+  var ctl = f[3] === 'area' ? '<textarea id="' + k + '" data-k="' + k + '"' + ph + ' style="min-height:84px"></textarea>' : '<input type="text" id="' + k + '" data-k="' + k + '"' + ph + ' autocomplete="off">';
+  return '<div class="field"><label for="' + k + '">' + f[1] + '</label>' + ctl + '</div>';
+}
+function renderT5(){
+  var html = T5_GROUPS.map(function(g){
+    return '<fieldset><legend>' + g.t + '</legend><span class="where">' + g.where + '</span><div class="grid-2">' + g.f.map(fieldHtml).join('') + '</div></fieldset>';
+  }).join('');
+  html += '<fieldset><legend>Расчёт</legend><span class="where">Формула из задания 4: B = 8 × скорость ÷ 1000</span>' + fieldHtml(T5_CALC) + '<p class="hint" id="bwHint"></p></fieldset>';
+  $('#t5fields').innerHTML = html; fillValues($('#t5fields')); updateBw(); setT5Result();
+}
+function updateBw(){
+  var el = $('#bwHint'); if (!el) return;
+  var sp = num(S.v.t5_ram_speed);
+  el.innerHTML = isFinite(sp) && sp > 0 ? 'Самопроверка: при скорости ' + sp + ' МТ/с один канал даёт <span class="calc">' + (8 * sp / 1000).toFixed(1).replace('.', ',') + ' ГБ/с</span>.' : 'Укажите скорость ОЗУ выше — здесь появится результат для самопроверки.';
+}
+function setT5Result(){ var k = t5Keys(); $('#res-t5').textContent = 'Заполнено полей: ' + fillCount(k) + ' из ' + k.length; }
+
+/* ---------- задание 6 ---------- */
+function renderT6(){
+  $('#t6qs').innerHTML = T6.map(function(q, i){
+    var k = 't6_' + i;
+    return '<div class="q" data-q="' + k + '" role="radiogroup" aria-labelledby="' + k + '_t"><span class="q-t" id="' + k + '_t">' + (i + 1) + '. ' + q[0] + '</span><div class="opts">' +
+      q[1].map(function(o, j){ return '<label class="opt"><input type="radio" name="' + k + '" value="' + j + '" data-k="' + k + '"><span>' + o + '</span></label>'; }).join('') +
+      '</div><span class="q-mark"></span></div>';
+  }).join('');
+  fillValues($('#t6qs')); feedback('t6');
+}
+
+/* ---------- задание 7 ---------- */
+function renderT7(){
+  $('#t7fields').innerHTML = T7_FIELDS.map(function(f){ return '<div class="field"><label for="' + f[0] + '">' + f[1] + '</label><textarea id="' + f[0] + '" data-k="' + f[0] + '"></textarea></div>'; }).join('');
+  fillValues($('#t7fields')); setT7Result();
+}
+function setT7Result(){ $('#res-t7').textContent = 'Отвечено: ' + fillCount(T7_FIELDS.map(function(f){ return f[0]; })) + ' из ' + T7_FIELDS.length; }
+
+/* ---------- проверка ---------- */
+document.addEventListener('click', function(e){
+  var g = e.target.closest('[data-go]'); if (g){ go(g.dataset.go); return; }
+  var c = e.target.closest('[data-check]'); if (!c) return;
+  var id = c.dataset.check;
+  S.attempts[id] = (S.attempts[id] || 0) + 1; S.checked[id] = true;
+  save(); feedback(id); updateBar(); renderNav();
+});
+
+/* ---------- таймер ---------- */
+function fmtTime(sec){ sec = Math.max(0, Math.round(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
+function tick(){
+  var T = S.timer;
+  if (T.running){
+    var now = Date.now(); T.left = Math.max(0, T.left - (now - T.at) / 1000); T.at = now;
+    if (T.left <= 0) T.running = false;
+    save();
+  }
+  $('#timerText').textContent = T.left <= 0 ? 'Время вышло' : fmtTime(T.left);
+  $('#timerBox').classList.toggle('low', T.left < 900);
+  var b = $('#timerBtn'); b.textContent = T.running ? 'Пауза' : (T.left < 7200 && T.left > 0 ? 'Продолжить' : 'Старт');
+  b.classList.toggle('go', !T.running); b.disabled = T.left <= 0;
+}
+$('#timerBtn').addEventListener('click', function(){ var T = S.timer; if (T.left <= 0) return; T.running = !T.running; T.at = Date.now(); save(); tick(); });
+setInterval(tick, 1000);
+
+/* ---------- отчёт ---------- */
+function grade(p){ return p >= 90 ? '«5»' : p >= 75 ? '«4»' : p >= 60 ? '«3»' : '«2»'; }
+function renderReport(){
+  var v = variant(), name = (S.v.student_name || '').trim() || 'не указано', grp = (S.v.student_group || '').trim() || 'не указана';
+  var used = 7200 - S.timer.left;
+  $('#repWho').innerHTML = '<b>' + esc(name) + '</b>, группа ' + esc(grp) + ', вариант ' + v + '. Время работы: ' + fmtTime(used) + '.';
+  var rows = [], lines = [];
+  lines.push('ПРАКТИЧЕСКАЯ РАБОТА «АРХИТЕКТУРА АППАРАТНЫХ СРЕДСТВ»');
+  lines.push('Студент: ' + name + '; группа: ' + grp + '; вариант: ' + v);
+  lines.push('Дата: ' + new Date().toLocaleDateString('ru-RU') + '; время работы: ' + fmtTime(used));
+  lines.push('');
+  lines.push('БАЛЛЫ АВТОПРОВЕРКИ');
+  TASKS.forEach(function(t){
+    if (!t.max) return;
+    if (t.auto){
+      var s = score(t.id), a = S.attempts[t.id] || 0;
+      rows.push('<tr><td>' + t.n + '. ' + t.t + '</td><td class="num">' + s + ' / ' + t.max + '</td><td class="num">' + a + '</td><td>автоматически' + (a ? '' : ' — не проверялось') + '</td></tr>');
+      lines.push('Задание ' + t.n + '. ' + t.t + ': ' + s + ' из ' + t.max + ' (проверок: ' + a + ')');
+    } else {
+      var keys = t.id === 't5' ? t5Keys() : T7_FIELDS.map(function(f){ return f[0]; });
+      rows.push('<tr><td>' + t.n + '. ' + t.t + '</td><td class="num">… / ' + t.max + '</td><td class="num">—</td><td>преподаватель · заполнено ' + fillCount(keys) + ' из ' + keys.length + '</td></tr>');
+    }
+  });
+  var tot = autoTotal();
+  rows.push('<tr><td><b>Итого автопроверка</b></td><td class="num"><b>' + tot + ' / ' + AUTO_MAX + '</b></td><td></td><td></td></tr>');
+  $('#repTable').innerHTML = rows.join('');
+  $('#repNote').innerHTML = 'Автопроверка: <b>' + tot + ' из ' + AUTO_MAX + '</b>. Ещё до 28 баллов преподаватель выставит за задания 5 и 7. Если они оценены полностью, итог составит ' + (tot + 28) + ' баллов — оценка ' + grade(tot + 28) + '.';
+  lines.push('Итого автопроверка: ' + tot + ' из ' + AUTO_MAX);
+  lines.push('');
+  lines.push('ЗАДАНИЕ 5. КОНФИГУРАЦИЯ КОМПЬЮТЕРА');
+  T5_GROUPS.forEach(function(g){ lines.push('— ' + g.t); g.f.forEach(function(f){ lines.push('  ' + f[1] + ': ' + ((S.v[f[0]] || '').trim() || '—')); }); });
+  lines.push('— Расчёт: ' + ((S.v[T5_CALC[0]] || '').trim() || '—'));
+  lines.push('');
+  lines.push('ЗАДАНИЕ 7. КОНТРОЛЬНЫЕ ВОПРОСЫ И ВЫВОД');
+  T7_FIELDS.forEach(function(f){ lines.push(f[1]); lines.push('  ' + ((S.v[f[0]] || '').trim() || '—')); });
+  $('#reportText').value = lines.join('\n');
+  $('#copyMsg').textContent = '';
+}
+$('#copyBtn').addEventListener('click', function(){
+  var ta = $('#reportText'), msg = $('#copyMsg');
+  function fallback(){ ta.focus(); ta.select(); msg.textContent = 'Текст выделен — нажмите Ctrl + C.'; }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(ta.value).then(function(){ msg.textContent = 'Отчёт скопирован.'; }, fallback);
+    } else fallback();
+  } catch(e){ fallback(); }
+});
+$('#resetBtn').addEventListener('click', function(){ $('#resetConfirm').hidden = false; $('#resetBtn').hidden = true; });
+$('#resetNo').addEventListener('click', function(){ $('#resetConfirm').hidden = true; $('#resetBtn').hidden = false; });
+$('#resetYes').addEventListener('click', function(){
+  S = defaults(); save(); t1Sel = null;
+  $$('[data-k]').forEach(function(el){ if (el.type === 'radio') el.checked = false; else if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; });
+  $('#resetConfirm').hidden = true; $('#resetBtn').hidden = false;
+  renderAll(); go('intro');
+});
+
+/* ---------- запуск ---------- */
+function onVariant(){ resetSim(); S.checked.t3 = false; S.checked.t4 = false; renderT3Q(); renderT4(); updateBar(); }
+function renderAll(){
+  fillValues(document);
+  if (!S.v.student_variant) $('#student_variant').value = '1';
+  renderT1(); renderT2(); resetSim(); renderT3Q(); renderT4(); renderT5(); renderT6(); renderT7();
+  updateBar(); tick();
+}
+renderAll();
+var h = (location.hash || '').replace('#', '');
+go(h && document.getElementById(h) ? h : (S.active || 'intro'), true);
+})();
+</script>
+
+</body>
+</html>
