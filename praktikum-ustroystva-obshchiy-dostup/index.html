@@ -1,0 +1,1122 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Практикум: устройства и общий доступ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans:wght@400;700&family=PT+Serif:wght@700&display=swap">
+<style>
+/* Layout: sticky navy status bar (timer, score) + left task rail + one task panel at a time; rail turns into a horizontal strip on phones */
+:root{
+  --bg:#F2F5FA; --surface:#FDFDFB; --surface-2:#E9EFF8; --field:#FFFFFE;
+  --fg:#101828; --muted:#475467; --line:#D3DCE8; --line-strong:#9AA9BF;
+  --accent:#C2410C; --accent-soft:#FDE7D9; --on-accent:#FFFBF6;
+  --blue:#1560D0; --blue-soft:#DCE8FB; --on-blue:#FBFDFF;
+  --grey:#5B6B82; --grey-soft:#E4E9F0;
+  --ok:#0F7A3D; --ok-soft:#DDF3E5; --bad:#B42318; --bad-soft:#FDE3E1;
+  --navy:#0F1B33; --bar-fg:#F3F5FA; --bar-muted:#AFC0DA; --bar-accent:#FF9A55;
+  --font-display:'PT Serif', Georgia, 'Times New Roman', serif;
+  --font-body:'PT Sans', 'Segoe UI', Arial, sans-serif;
+  --font-mono:'PT Mono', Consolas, 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1322; --surface:#121D33; --surface-2:#1A2843; --field:#0E182C;
+    --fg:#F1F4FA; --muted:#AEB9CC; --line:#2A3A5C; --line-strong:#4A5E86;
+    --accent:#FF8A3D; --accent-soft:#3A2414; --on-accent:#1A1006;
+    --blue:#7DB6FF; --blue-soft:#17305A; --on-blue:#08142B;
+    --grey:#A3B0C4; --grey-soft:#25314A;
+    --ok:#4ADE80; --ok-soft:#10301F; --bad:#FF8A80; --bad-soft:#3A1717;
+    --navy:#08101F;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1322; --surface:#121D33; --surface-2:#1A2843; --field:#0E182C;
+  --fg:#F1F4FA; --muted:#AEB9CC; --line:#2A3A5C; --line-strong:#4A5E86;
+  --accent:#FF8A3D; --accent-soft:#3A2414; --on-accent:#1A1006;
+  --blue:#7DB6FF; --blue-soft:#17305A; --on-blue:#08142B;
+  --grey:#A3B0C4; --grey-soft:#25314A;
+  --ok:#4ADE80; --ok-soft:#10301F; --bad:#FF8A80; --bad-soft:#3A1717;
+  --navy:#08101F;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-display);font-weight:700;margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:clamp(28px,3.4vw,40px)}
+h2{font-size:clamp(25px,3vw,34px)}
+h3{font-size:21px}
+p{margin:0}
+ol,ul{margin:0;padding-left:1.4em}
+li+li{margin-top:6px}
+code,.mono{font-family:var(--font-mono)}
+code{font-size:.92em;background:var(--surface-2);padding:1px 6px;border-radius:5px}
+kbd{font-family:var(--font-mono);font-size:15px;padding:1px 7px;border:1px solid var(--line-strong);border-bottom-width:3px;border-radius:6px;background:var(--surface-2);white-space:nowrap}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--navy);color:var(--bar-fg)}
+.bar-in{max-width:1320px;margin:0 auto;padding:12px 20px;display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;justify-content:space-between}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand-kicker{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--bar-accent);font-weight:700}
+.brand-title{font-family:var(--font-display);font-weight:700;font-size:21px;line-height:1.2}
+.bar-stats{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center}
+.stat{display:flex;flex-direction:column;line-height:1.2}
+.stat-l{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--bar-muted)}
+.stat-v{font-weight:700;font-size:21px;font-variant-numeric:tabular-nums}
+.timer{display:flex;align-items:center;gap:12px}
+.timer.low .stat-v{color:var(--bar-accent)}
+.btn-bar{font:inherit;font-weight:700;font-size:15px;padding:7px 14px;border-radius:8px;border:1.5px solid var(--bar-muted);background:transparent;color:var(--bar-fg);cursor:pointer}
+.btn-bar:hover{border-color:var(--bar-fg)}
+.btn-bar.go{background:var(--bar-accent);border-color:var(--bar-accent);color:#1A1006}
+
+.app{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:24px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:28px;align-items:start}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 96px)}
+#nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+#nav li{margin:0}
+.nav-btn{width:100%;display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border:1.5px solid transparent;border-radius:10px;background:none;color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.nav-btn:hover{background:var(--surface-2)}
+.nav-btn[aria-current="true"]{background:var(--surface);border-color:var(--line)}
+.nav-num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.nav-btn[aria-current="true"] .nav-num{background:var(--blue);color:var(--on-blue)}
+.nav-title{font-weight:700;font-size:16px;line-height:1.25;min-width:0}
+.nav-min{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.nav-chip{font-size:13px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.nav-chip.good{background:var(--ok-soft);color:var(--ok)}
+.nav-chip.mid{background:var(--accent-soft);color:var(--accent)}
+.nav-chip:empty{display:none}
+.rail-note{margin-top:14px;font-size:14px;color:var(--muted);padding:0 10px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;gap:26px;min-width:0}
+.task-head{display:flex;flex-direction:column;gap:10px}
+.kicker{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:20px;max-width:70ch}
+.prose{max-width:74ch}
+.muted{color:var(--muted)}
+.block{display:flex;flex-direction:column;gap:14px;min-width:0}
+.note{background:var(--blue-soft);border-radius:12px;padding:14px 18px;max-width:80ch}
+.note.warm{background:var(--accent-soft)}
+
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.lbl{font-weight:700;font-size:16px}
+.hint{font-size:14px;color:var(--muted)}
+input[type=text],select,textarea{font:inherit;font-size:17px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:10px;background:var(--field);color:var(--fg);width:100%;min-width:0}
+textarea{min-height:110px;resize:vertical;line-height:1.5}
+input.short{max-width:240px}
+select.inline{width:auto;max-width:100%}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+fieldset{border:1.5px solid var(--line);border-radius:14px;padding:18px 20px 20px;margin:0;display:flex;flex-direction:column;gap:14px;min-width:0}
+legend{font-family:var(--font-display);font-weight:700;font-size:20px;padding:0 8px}
+.where{font-size:15px;color:var(--muted)}
+
+.btn{font:inherit;font-weight:700;font-size:17px;padding:10px 18px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--fg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.btn.small{font-size:15px;padding:7px 12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;padding-top:18px;border-top:1px solid var(--line)}
+.actions .spacer{flex:1}
+.result{font-weight:700;font-size:18px}
+.result.good{color:var(--ok)}
+.result.mid{color:var(--accent)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:17px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+th{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* задание 1 */
+.pool{display:flex;flex-wrap:wrap;gap:10px;padding:16px;border:2px dashed var(--line-strong);border-radius:14px;min-height:76px;align-items:flex-start}
+.pool-empty{color:var(--muted);font-size:16px;align-self:center}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.cat{border:2px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:160px;background:var(--surface-2);cursor:pointer;text-align:left}
+.cat.armed{border-color:var(--blue);border-style:dashed}
+.cat.over{border-color:var(--blue);background:var(--blue-soft)}
+.cat-t{font-family:var(--font-display);font-weight:700;font-size:19px;line-height:1.2}
+.cat-d{font-size:14px;color:var(--muted)}
+.cat-list{display:flex;flex-wrap:wrap;gap:8px}
+.card{font:inherit;font-weight:700;font-size:16px;padding:8px 14px;border-radius:999px;border:2px solid var(--line-strong);background:var(--surface);color:var(--fg);cursor:grab;line-height:1.3}
+.card[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);box-shadow:0 0 0 3px var(--blue-soft)}
+.card.ok{border-color:var(--ok);background:var(--ok-soft)}
+.card.ok::after{content:"  ✓";color:var(--ok)}
+.card.bad{border-color:var(--bad);background:var(--bad-soft)}
+.card.bad::after{content:"  ✗";color:var(--bad)}
+
+/* задание 2 */
+.order-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.order-list li{margin:0}
+.order-item{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.order-item.ok{border-color:var(--ok)}
+.order-item.bad{border-color:var(--bad)}
+.pos{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-weight:700;background:var(--surface);border:1.5px solid var(--line-strong);font-variant-numeric:tabular-nums}
+.oname{font-weight:700;font-size:18px}
+.omark{font-size:14px;font-weight:700;display:block}
+.omark.ok{color:var(--ok)} .omark.bad{color:var(--bad)}
+.mv-group{display:flex;gap:6px}
+.mv{width:42px;height:42px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--fg);font:inherit;font-weight:700;font-size:20px;cursor:pointer;line-height:1}
+.mv:disabled{opacity:.35;cursor:not-allowed}
+.layer-tag{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+
+/* задание 3: замещение страниц */
+.sim-top{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:end}
+.refs{display:flex;flex-wrap:wrap;gap:6px}
+.ref{min-width:46px;height:46px;padding:0 6px;border-radius:10px;display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:19px;border:2px solid var(--line-strong);background:var(--surface);color:var(--fg)}
+.ref.done{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+.ref.cur{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.pr td,.pr th{text-align:center;padding:8px 6px;font-family:var(--font-mono);font-size:17px;min-width:46px;border-right:1px solid var(--line)}
+.pr th:first-child,.pr td:first-child{text-align:left;font-family:var(--font-body);font-weight:700;font-size:15px;white-space:nowrap;padding-left:12px;min-width:120px}
+.pr th{letter-spacing:0;text-transform:none;font-size:15px}
+.pr td.new{background:var(--accent-soft);font-weight:700}
+.pr td.hit{background:var(--blue-soft);font-weight:700}
+.pr td.res-f{color:var(--accent);font-weight:700}
+.pr td.res-h{color:var(--blue);font-weight:700}
+.pr td.cur-col,.pr th.cur-col{box-shadow:inset 0 0 0 2px var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.tile{border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--surface-2)}
+.tile-l{font-size:14px;color:var(--muted);font-weight:700}
+.tile-v{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.sim-msg{font-size:18px;padding:12px 16px;border-radius:12px;background:var(--surface-2);border-left:6px solid var(--accent)}
+.sim-ctrl{display:flex;flex-wrap:wrap;gap:10px}
+
+/* вопросы */
+.qs{display:flex;flex-direction:column;gap:14px}
+.q{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:2px solid var(--line);border-radius:12px;min-width:0}
+.q.ok{border-color:var(--ok)}
+.q.bad{border-color:var(--bad)}
+.q-t{font-weight:700}
+.q-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.q-unit{color:var(--muted);font-weight:700}
+.q-mark{font-weight:700;font-size:16px}
+.q-mark.ok{color:var(--ok)} .q-mark.bad{color:var(--bad)}
+.opts{display:grid;gap:4px}
+label.opt{display:flex;gap:10px;align-items:flex-start;padding:7px 10px;border-radius:8px;cursor:pointer;font-weight:400}
+label.opt:hover{background:var(--surface-2)}
+input[type=radio]{width:20px;height:20px;accent-color:var(--blue);margin:3px 0 0;flex:none}
+details.help{border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--surface-2)}
+details.help summary{font-weight:700;cursor:pointer}
+details.help[open] summary{margin-bottom:10px}
+.formula{font-family:var(--font-mono);font-size:16px;background:var(--surface);border-radius:8px;padding:6px 12px;display:inline-block}
+.steps li{padding-left:4px}
+.pt td,.pt th{text-align:center;font-family:var(--font-mono);padding:8px 10px}
+.pt th:first-child,.pt td:first-child{text-align:left;font-family:var(--font-body);font-weight:700;white-space:nowrap}
+
+.confirm{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;border-radius:12px;background:var(--bad-soft)}
+.report-text{min-height:260px;font-family:var(--font-mono);font-size:15px}
+.copy-msg{font-weight:700;color:var(--ok)}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:16px 48px}
+  .rail{position:static;overflow-x:auto;margin-inline:-20px;padding-inline:20px}
+  #nav{flex-direction:row;gap:6px;width:max-content}
+  .nav-btn{width:auto;grid-template-columns:30px auto;white-space:nowrap;padding:7px 10px}
+  .nav-min,.nav-chip{display:none}
+  .rail-note{display:none}
+}
+@media (max-width:620px){
+  .brand-title{font-size:18px}
+  .order-item{grid-template-columns:40px minmax(0,1fr)}
+  .order-item .mv-group{grid-column:2}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media print{
+  body{background:#fff;color:#000;font-size:12pt}
+  .bar,.rail,.no-print{display:none!important}
+  .panel{display:none!important;border:none;padding:0}
+  #report,#report[hidden]{display:flex!important}
+  .app{display:block;padding:0}
+}
+
+/* задание 2 */
+.pair{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:12px 16px}
+@media (max-width:620px){.pair{grid-template-columns:minmax(0,1fr)}}
+/* задание 3 */
+.sim-t td{vertical-align:middle}
+.sim-t select{width:auto;min-width:170px}
+.gname{display:block;font-weight:700;font-size:18px;margin-bottom:2px}
+.two{display:block;white-space:nowrap;font-size:16px}
+.sim-t tr.ok td:first-child{box-shadow:inset 6px 0 0 var(--ok)}
+.sim-t tr.bad td:first-child{box-shadow:inset 6px 0 0 var(--bad)}
+.out{font-weight:700;white-space:nowrap}
+.out.match{color:var(--ok)}
+.out.match::before{content:"✓ "}
+.out.miss{color:var(--accent)}
+.out.miss::before{content:"≠ "}
+/* задание 4 */
+.mon td,.mon th{font-variant-numeric:tabular-nums}
+.mon td.num{font-family:var(--font-mono)}
+</style>
+
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand">
+      <span class="brand-kicker">Практическая работа · 120 минут</span>
+      <span class="brand-title">Конфигурация устройств и общие ресурсы ОС</span>
+    </div>
+    <div class="bar-stats">
+      <div class="stat"><span class="stat-l">Вариант</span><span class="stat-v" id="barVariant">1</span></div>
+      <div class="stat"><span class="stat-l">Автопроверка</span><span class="stat-v" id="barScore">0 / 68</span></div>
+      <div class="timer" id="timerBox">
+        <div class="stat"><span class="stat-l">Осталось</span><span class="stat-v" id="timerText">2:00:00</span></div>
+        <button type="button" class="btn-bar go" id="timerBtn">Старт</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <nav class="rail" aria-label="Задания">
+    <ol id="nav"></ol>
+    <p class="rail-note">Ответы сохраняются автоматически в этом браузере.</p>
+  </nav>
+
+  <main id="main">
+
+    <section class="panel" id="intro" data-panel>
+      <div class="task-head">
+        <p class="kicker">Инструкция · 5 минут</p>
+        <h1>Конфигурация аппаратных устройств и управление общими ресурсами</h1>
+        <p class="lead"><b>Цель работы:</b> научиться настраивать устройства и драйверы, управлять системными ресурсами и контролировать производительность, открывать общий доступ с правильными разрешениями и устранять неполадки оборудования средствами Windows.</p>
+      </div>
+
+      <fieldset>
+        <legend>Данные студента</legend>
+        <div class="grid-3">
+          <div class="field"><label for="student_name">Фамилия, имя</label><input type="text" id="student_name" data-k="student_name" placeholder="Иванов Иван" autocomplete="name"></div>
+          <div class="field"><label for="student_group">Группа / класс</label><input type="text" id="student_group" data-k="student_group" placeholder="ИТ-21"></div>
+          <div class="field"><label for="student_variant">Вариант</label>
+            <select id="student_variant" data-k="student_variant">
+              <option value="1">Вариант 1</option><option value="2">Вариант 2</option><option value="3">Вариант 3</option><option value="4">Вариант 4</option><option value="5">Вариант 5</option>
+              <option value="6">Вариант 6</option><option value="7">Вариант 7</option><option value="8">Вариант 8</option><option value="9">Вариант 9</option><option value="10">Вариант 10</option>
+            </select>
+            <span class="hint">Последняя цифра номера в журнале; цифра 0 — вариант 10.</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="block">
+        <h3>План работы</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>№</th><th>Задание</th><th class="num">Время</th><th class="num">Баллы</th><th>Проверка</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Инструменты Windows: распределить команды по блокам темы</td><td class="num">15 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>2</td><td>Диагноз неисправностей: код ошибки и действие</td><td class="num">15 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>3</td><td>Симулятор общего доступа: разрешения общего доступа и NTFS</td><td class="num">25 мин</td><td class="num">20</td><td>автоматически</td></tr>
+              <tr><td>4</td><td>Анализ производительности: найти узкое место</td><td class="num">15 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>5</td><td>Исследование устройств, ресурсов, общих папок и журналов своего ПК</td><td class="num">25 мин</td><td class="num">20</td><td>преподаватель</td></tr>
+              <tr><td>6</td><td>Итоговый тест (12 вопросов)</td><td class="num">10 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>7</td><td>Контрольные вопросы и вывод</td><td class="num">10 мин</td><td class="num">12</td><td>преподаватель</td></tr>
+              <tr><td></td><td><b>Итого</b> (с учётом 5 минут на инструкцию)</td><td class="num"><b>120 мин</b></td><td class="num"><b>100</b></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="block">
+          <h3>Порядок работы</h3>
+          <ol class="steps">
+            <li>Введите фамилию, группу и выберите вариант.</li>
+            <li>Нажмите <b>«Старт»</b> в верхней панели — запустится таймер на 2 часа.</li>
+            <li>Выполняйте задания по порядку. В заданиях с автопроверкой нажимайте <b>«Проверить»</b>; число проверок попадает в отчёт.</li>
+            <li>Ответы сохраняются автоматически: страницу можно закрыть и открыть снова в этом же браузере.</li>
+            <li>В конце откройте раздел <b>«Отчёт»</b>, скопируйте его и отправьте преподавателю.</li>
+          </ol>
+        </div>
+        <div class="block">
+          <h3>Оборудование</h3>
+          <ul>
+            <li>Компьютер с Windows 10 или 11 (для задания 5).</li>
+            <li>Яндекс Браузер или другой современный браузер.</li>
+            <li>Презентация «Конфигурация устройств и общие ресурсы ОС».</li>
+          </ul>
+          <h3>Критерии оценки</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Баллы</th><th>Оценка</th></tr></thead>
+              <tbody>
+                <tr><td>90–100</td><td>«5», отлично</td></tr>
+                <tr><td>75–89</td><td>«4», хорошо</td></tr>
+                <tr><td>60–74</td><td>«3», удовлетворительно</td></tr>
+                <tr><td>менее 60</td><td>«2», работа на доработку</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint">Для 10-балльной шкалы: баллы ÷ 10 с округлением.</p>
+        </div>
+      </div>
+
+      <div class="actions"><span class="spacer"></span><button type="button" class="btn blue" data-go="t1">К заданию 1 →</button></div>
+    </section>
+
+    <section class="panel" id="t1" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 1 · 15 минут · 12 баллов</p>
+        <h2>Инструменты Windows</h2>
+        <p class="prose">Распределите 12 команд и инструментов по четырём блокам темы. Нажмите на карточку, затем на нужный блок; на компьютере карточки можно перетаскивать мышью. Если сомневаетесь, запустите команду на своём компьютере: <kbd>Win</kbd> + <kbd>R</kbd> → введите команду. Команды с пробелом выполняются в командной строке.</p>
+      </div>
+      <div class="block">
+        <span class="lbl">Нераспределённые</span>
+        <div class="pool" id="t1pool" data-drop="pool"></div>
+      </div>
+      <div class="cats" id="t1cats"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t1">Проверить</button>
+        <span class="result" id="res-t1" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t2">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t2" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 2 · 15 минут · 12 баллов</p>
+        <h2>Диагноз неисправностей</h2>
+        <p class="prose">Для каждой ситуации выберите код ошибки Диспетчера устройств и правильное первое действие. За каждый верный выбор — 1 балл.</p>
+      </div>
+      <details class="help">
+        <summary>Справка: коды ошибок</summary>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Код</th><th>Сообщение в свойствах устройства</th></tr></thead>
+            <tbody>
+              <tr><td>10</td><td>Запуск этого устройства невозможен</td></tr>
+              <tr><td>12</td><td>Не удаётся найти достаточно свободных ресурсов</td></tr>
+              <tr><td>22</td><td>Это устройство отключено</td></tr>
+              <tr><td>28</td><td>Драйверы для этого устройства не установлены</td></tr>
+              <tr><td>43</td><td>Система Windows остановила это устройство, так как оно сообщило о возникновении неполадок</td></tr>
+              <tr><td>45</td><td>Сейчас это устройство не подключено к компьютеру</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <div class="qs" id="t2qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t2">Проверить</button>
+        <span class="result" id="res-t2" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t3">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t3" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 3 · 25 минут · 20 баллов</p>
+        <h2>Симулятор общего доступа</h2>
+        <p class="prose" id="t3lead"></p>
+      </div>
+      <details class="help">
+        <summary>Правила расчёта итоговых прав</summary>
+        <ul>
+          <li>Права упорядочены по силе: <b>Нет доступа &lt; Чтение &lt; Изменение &lt; Полный доступ</b>.</li>
+          <li><b>По сети</b> итоговое право = более строгое (меньшее) из разрешения общего доступа и разрешения NTFS.</li>
+          <li><b>Локально</b>, за этим компьютером, действует только разрешение NTFS.</li>
+          <li>Если пользователь входит в несколько групп, права групп <b>на одном уровне складываются</b>: берётся большее.</li>
+        </ul>
+      </details>
+      <div class="block">
+        <h3>Часть 1. Настройте разрешения (12 баллов)</h3>
+        <div class="table-wrap">
+          <table class="sim-t">
+            <thead><tr><th>Группа и требование</th><th>Общий доступ</th><th>NTFS</th><th>Получится</th></tr></thead>
+            <tbody id="simBody"></tbody>
+          </table>
+        </div>
+        <p class="hint">Столбец «Получится» пересчитывается сразу, когда вы меняете разрешения. По 4 балла за каждую группу, у которой итог совпадает с требованием.</p>
+      </div>
+      <div class="block">
+        <h3>Часть 2. Рассчитайте права (8 баллов)</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Разрешение</th><th>Группа А</th><th>Группа Б</th></tr></thead>
+            <tbody id="calcBody"></tbody>
+          </table>
+        </div>
+        <p class="hint">Пользователь Ольга входит в обе группы: А и Б.</p>
+        <div class="qs" id="t3qs"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t3">Проверить</button>
+        <span class="result" id="res-t3" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t4">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t4" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 4 · 15 минут · 12 баллов</p>
+        <h2>Анализ производительности</h2>
+        <p class="prose">Пользователь жалуется, что компьютер «тормозит». Администратор записал показания Системного монитора: шесть замеров с интервалом 10 секунд. Объём ОЗУ — 8 ГБ (8192 МБ), диск один. Найдите узкое место. Каждый ответ — 4 балла.</p>
+      </div>
+      <details class="help">
+        <summary>Ориентиры: признаки узкого места</summary>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Счётчик</th><th>Признак проблемы</th></tr></thead>
+            <tbody>
+              <tr><td>% загруженности процессора</td><td>долго выше 85%</td></tr>
+              <tr><td>Доступно памяти, МБ</td><td>меньше 10% объёма ОЗУ</td></tr>
+              <tr><td>Страниц/с</td><td>постоянно больше 20</td></tr>
+              <tr><td>% активности диска</td><td>долго выше 90%</td></tr>
+              <tr><td>Длина очереди диска</td><td>больше 2 на один диск</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <div class="table-wrap"><table class="mon" id="monTable"></table></div>
+      <div class="qs" id="t4qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t4">Проверить</button>
+        <span class="result" id="res-t4" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t5">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t5" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 5 · 25 минут · 20 баллов</p>
+        <h2>Исследование своего компьютера</h2>
+        <p class="prose">Выполните действия на компьютере, за которым работаете, и заполните поля. Задание оценивает преподаватель: по 1 баллу за каждое верно заполненное поле. Ничего не удаляйте и не отключайте без разрешения преподавателя.</p>
+      </div>
+      <div class="block">
+        <h3>Где искать сведения</h3>
+        <ol class="steps">
+          <li><kbd>Win</kbd> + <kbd>R</kbd> → <code>devmgmt.msc</code>. Разверните «Сетевые адаптеры» → свойства адаптера → вкладки «Драйвер» и «Ресурсы». Меню «Вид» → «Ресурсы по типу» → «Запрос на прерывание (IRQ)».</li>
+          <li><kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Esc</kbd> → «Процессы» (сортировка по столбцу «Память») и «Автозагрузка» (столбец «Влияние на запуск»).</li>
+          <li><kbd>Win</kbd> + <kbd>R</kbd> → <code>services.msc</code> → служба «Диспетчер печати»: тип запуска и состояние.</li>
+          <li><kbd>Win</kbd> + <kbd>R</kbd> → <code>perfmon</code> → «Средства наблюдения» → «Системный монитор». Счётчик «% загруженности процессора» уже добавлен; через 1–2 минуты прочитайте значение «Среднее» под графиком.</li>
+          <li>Командная строка → <code>net share</code>: список общих ресурсов. Или <kbd>Win</kbd> + <kbd>R</kbd> → <code>fsmgmt.msc</code> → «Общие ресурсы».</li>
+          <li>Если есть права администратора: создайте папку <code>Practice_Фамилия</code>, свойства → «Доступ» → «Расширенная настройка» → «Открыть общий доступ». Разрешения: «Все» — «Чтение». Запишите сетевой путь.</li>
+          <li><kbd>Win</kbd> + <kbd>R</kbd> → <code>eventvwr.msc</code> → «Журналы Windows» → «Система» → «Фильтр текущего журнала»: уровни «Критический» и «Ошибка», за последние 24 часа.</li>
+          <li><kbd>Win</kbd> + <kbd>R</kbd> → <code>perfmon /rel</code>: Монитор стабильности системы.</li>
+        </ol>
+        <p class="note">Работаете на Linux? Устройства — <code>lspci -k</code> и <code>lsusb</code>, ресурсы — <code>top</code> и <code>free -h</code>, службы — <code>systemctl list-units --type=service</code>, журнал — <code>journalctl -p err -b</code>, общие папки — Samba, <code>smbclient -L localhost</code>.</p>
+      </div>
+      <div class="block" id="t5fields"></div>
+      <div class="actions">
+        <span class="result" id="res-t5" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t6">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t6" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 6 · 10 минут · 12 баллов</p>
+        <h2>Итоговый тест</h2>
+        <p class="prose">Выберите один правильный ответ в каждом вопросе. После проверки отмечается, верен ли ответ, но правильный вариант не показывается.</p>
+      </div>
+      <div class="qs" id="t6qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t6">Проверить</button>
+        <span class="result" id="res-t6" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t7">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t7" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 7 · 10 минут · 12 баллов</p>
+        <h2>Контрольные вопросы и вывод</h2>
+        <p class="prose">Ответьте развёрнуто, 2–4 предложения на вопрос. Опирайтесь на результаты заданий 3–5. По 2 балла за каждый ответ, 4 балла за вывод.</p>
+      </div>
+      <div class="block" id="t7fields"></div>
+      <div class="actions">
+        <span class="result" id="res-t7" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="report">К отчёту →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="report" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Отчёт</p>
+        <h2>Результаты практической работы</h2>
+        <p class="prose" id="repWho"></p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Задание</th><th class="num">Баллы</th><th class="num">Проверок</th><th>Проверка</th></tr></thead>
+          <tbody id="repTable"></tbody>
+        </table>
+      </div>
+      <p class="note" id="repNote"></p>
+      <div class="block no-print">
+        <label class="lbl" for="reportText">Текст отчёта для преподавателя</label>
+        <textarea id="reportText" class="report-text" readonly></textarea>
+        <div class="q-row">
+          <button type="button" class="btn primary" id="copyBtn">Скопировать отчёт</button>
+          <span class="copy-msg" id="copyMsg" aria-live="polite"></span>
+        </div>
+        <p class="hint">Вставьте отчёт в письмо или сообщение преподавателю. Чтобы распечатать или сохранить PDF, откройте файл практикума в Яндекс Браузере и нажмите <kbd>Ctrl</kbd> + <kbd>P</kbd>.</p>
+      </div>
+      <div class="actions no-print">
+        <button type="button" class="btn" id="resetBtn">Начать работу заново</button>
+        <div class="confirm" id="resetConfirm" hidden>
+          <span><b>Удалить все ответы и сбросить таймер?</b></span>
+          <button type="button" class="btn small primary" id="resetYes">Да, удалить</button>
+          <button type="button" class="btn small" id="resetNo">Отмена</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(s, r){ return (r || document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+
+/* ---------- данные ---------- */
+var TASKS = [
+  {id:'intro', n:'i', t:'Инструкция', min:5},
+  {id:'t1', n:'1', t:'Инструменты Windows', min:15, max:12, auto:true},
+  {id:'t2', n:'2', t:'Диагноз неисправностей', min:15, max:12, auto:true},
+  {id:'t3', n:'3', t:'Симулятор общего доступа', min:25, max:20, auto:true},
+  {id:'t4', n:'4', t:'Анализ производительности', min:15, max:12, auto:true},
+  {id:'t5', n:'5', t:'Исследование ПК', min:25, max:20},
+  {id:'t6', n:'6', t:'Итоговый тест', min:10, max:12, auto:true},
+  {id:'t7', n:'7', t:'Выводы', min:10, max:12},
+  {id:'report', n:'Σ', t:'Отчёт'}
+];
+var AUTO_MAX = 68, TEACHER_MAX = 32;
+
+var T1_CATS = [
+  {id:'cfg', t:'Конфигурация устройств', d:'драйверы, устройства, аппаратные ресурсы'},
+  {id:'res', t:'Ресурсы и мониторинг', d:'процессы, службы, производительность'},
+  {id:'share', t:'Общий доступ', d:'общие папки и разрешения'},
+  {id:'diag', t:'Диагностика', d:'журналы и проверки неисправностей'}
+];
+var T1_CARDS = {
+  devmgmt:['devmgmt.msc','cfg'], pnputil:['pnputil /enum-drivers','cfg'], restype:['Вид → Ресурсы по типу','cfg'],
+  resmon:['resmon','res'], perfmon:['perfmon','res'], services:['services.msc','res'],
+  fsmgmt:['fsmgmt.msc','share'], netshare:['net share','share'], ntfs:['Вкладка «Безопасность» (NTFS)','share'],
+  eventvwr:['eventvwr.msc','diag'], sfc:['sfc /scannow','diag'], mdsched:['mdsched','diag']
+};
+var T1_ORDER = ['sfc','devmgmt','netshare','resmon','mdsched','restype','fsmgmt','perfmon','eventvwr','pnputil','ntfs','services'];
+
+var CODE_OPTS = [['10','Код 10'],['12','Код 12'],['22','Код 22'],['28','Код 28'],['43','Код 43'],['45','Код 45']];
+var ACT_OPTS = [
+  ['drv','Установить драйвер с сайта производителя'],
+  ['on','Включить устройство'],
+  ['back','Откатить драйвер к предыдущей версии'],
+  ['port','Переподключить в другой порт, проверить кабель'],
+  ['conf','Устранить конфликт ресурсов: отключить лишнее устройство или сменить слот'],
+  ['none','Ничего не чинить: устройство просто не подключено сейчас']
+];
+var T2_CASES = [
+  ['После подключения нового сканера в разделе «Другие устройства» появилось «Неизвестное устройство» с жёлтым значком.', '28', 'drv'],
+  ['Значок сетевого адаптера отмечен стрелкой вниз, интернет не работает, кабель исправен.', '22', 'on'],
+  ['Сразу после обновления драйвера видеокарты изображение стало мелким, а в свойствах адаптера написано: «Запуск этого устройства невозможен».', '10', 'back'],
+  ['USB-камера то появляется, то пропадает; в свойствах: «Windows остановила это устройство, так как оно сообщило о возникновении неполадок».', '43', 'port'],
+  ['После установки второй платы расширения она не работает: «Не удаётся найти достаточно свободных ресурсов».', '12', 'conf'],
+  ['В режиме «Показать скрытые устройства» видна флешка с бледным значком: «Сейчас это устройство не подключено к компьютеру».', '45', 'none']
+];
+
+var LV = ['Нет доступа','Чтение','Изменение','Полный доступ'];
+var SCEN = [
+  ['Отчёты', [['Бухгалтерия',2,2],['Стажёры',1,2],['Менеджеры',1,1]]],
+  ['Проекты', [['Разработчики',2,2],['Тестировщики',1,1],['Руководство',3,3]]],
+  ['Документы', [['Секретари',2,2],['Юристы',1,2],['Все сотрудники',1,1]]],
+  ['Фото', [['Дизайнеры',3,3],['Маркетинг',1,1],['Стажёры',0,1]]],
+  ['Счета', [['Бухгалтерия',2,2],['Аудиторы',1,1],['Кассиры',1,2]]],
+  ['Учебные материалы', [['Преподаватели',2,2],['Студенты',1,1],['Методисты',2,3]]],
+  ['Склад', [['Кладовщики',2,2],['Логисты',1,2],['Охрана',0,1]]],
+  ['Договоры', [['Юристы',2,2],['Менеджеры',1,1],['Директор',3,3]]],
+  ['Резервные копии', [['Администраторы',3,3],['Операторы',1,2],['Пользователи',0,0]]],
+  ['Расписание', [['Диспетчеры',2,2],['Преподаватели',1,1],['Студенты',1,1]]]
+];
+var CALC = [[1,2,2,1],[2,1,1,1],[1,1,3,2],[3,0,1,2],[1,2,1,1],[2,3,1,0],[0,1,2,3],[3,1,2,2],[1,1,1,2],[2,2,3,1]];
+
+var MON_TYPES = ['cpu','mem','disk','mem','cpu','disk','none','disk','mem','cpu'];
+var BOTTLE = [['cpu','Процессор'],['mem','Оперативная память'],['disk','Диск'],['none','Узкого места нет']];
+var RECS = [['proc','Найти и завершить процесс, нагружающий ЦП, или установить более мощный процессор'],['ram','Добавить оперативную память'],['ssd','Заменить HDD на SSD или снизить дисковую нагрузку'],['ok','Нагрузка в норме, ничего не менять']];
+var REC_FOR = {cpu:'proc', mem:'ram', disk:'ssd', none:'ok'};
+
+var T5_GROUPS = [
+  {t:'Конфигурация устройств', where:'devmgmt.msc → Сетевые адаптеры → Свойства', f:[
+    ['t5_nic','Модель сетевого адаптера','например, Realtek PCIe GbE Family Controller'],
+    ['t5_nic_drv','Поставщик, дата и версия драйвера',''],
+    ['t5_nic_res','Ресурсы адаптера с вкладки «Ресурсы»','IRQ, диапазон памяти'],
+    ['t5_irq_count','Сколько устройств в разделе «Запрос на прерывание (IRQ)» (Вид → Ресурсы по типу)',''],
+    ['t5_problem','Устройства с жёлтым значком или стрелкой вниз и код ошибки (если нет — «нет»)','','area']]},
+  {t:'Системные ресурсы', where:'Диспетчер задач, services.msc, perfmon', f:[
+    ['t5_top_mem','Три процесса, занимающие больше всего памяти, и их объём','','area'],
+    ['t5_startup','Сколько программ в автозагрузке с влиянием «Высокое»',''],
+    ['t5_spooler','Служба «Диспетчер печати»: тип запуска и состояние','Автоматически, выполняется'],
+    ['t5_cpu_avg','Среднее значение «% загруженности процессора» за 1–2 минуты, %',''],
+    ['t5_bottleneck','Есть ли на вашем ПК узкое место? Обоснуйте по показателям','','area']]},
+  {t:'Общий доступ', where:'net share, fsmgmt.msc', f:[
+    ['t5_shares','Общие ресурсы из вывода net share','C$, ADMIN$, IPC$…','area'],
+    ['t5_newshare','Сетевой путь созданной папки (или «нет прав администратора»)','\\\\ИМЯ-ПК\\Practice_Ivanov'],
+    ['t5_share_perm','Разрешения общего доступа и NTFS для созданной папки','','area']]},
+  {t:'Диагностика', where:'eventvwr.msc, perfmon /rel', f:[
+    ['t5_ev_count','Число критических событий и ошибок в журнале «Система» за 24 часа',''],
+    ['t5_ev_last','Источник и код последней ошибки','например, Disk, код 153'],
+    ['t5_stab','Индекс стабильности на сегодня (perfmon /rel)','от 1 до 10'],
+    ['t5_stab_fail','Последний сбой в Мониторе стабильности: дата и программа или устройство',''],
+    ['t5_plan','Что бы вы сделали для устранения найденной ошибки? По шагам алгоритма','','area']]}
+];
+
+var T6 = [
+  ['Какой командой открыть Диспетчер устройств?', ['services.msc','devmgmt.msc','eventvwr.msc','diskmgmt.msc'], 1],
+  ['Что означает стрелка вниз на значке устройства в Диспетчере устройств?', ['Драйвер устарел','Устройство отключено','Устройство сообщило о сбое','Устройство только что подключено'], 1],
+  ['Что означает код ошибки 28?', ['Устройство отключено','Не хватает ресурсов','Драйвер не установлен','Устройство не подключено'], 2],
+  ['Что НЕ относится к аппаратным ресурсам устройства?', ['Линия прерывания IRQ','Порты ввода-вывода','Канал DMA','Файл подкачки'], 3],
+  ['Где лучше всего выяснить, какой процесс сильнее всего обращается к диску?', ['В Мониторе ресурсов','В Диспетчере устройств','В Просмотре событий','В выводе sfc /scannow'], 0],
+  ['О чём говорит постоянно высокое значение счётчика «Страниц/с»?', ['О перегреве процессора','О нехватке оперативной памяти','Об ошибках файловой системы','О низкой скорости сети'], 1],
+  ['При каком типе запуска служба не запускается вообще?', ['Автоматически','Вручную','Отключена','Автоматически (отложенный запуск)'], 2],
+  ['Общий доступ — «Изменение», NTFS — «Чтение». Какое итоговое право по сети?', ['Изменение','Чтение','Полный доступ','Нет доступа'], 1],
+  ['Когда действуют разрешения общего доступа?', ['Всегда','Только при работе за этим компьютером','Только при подключении по сети','Только для администраторов'], 2],
+  ['Для одной группы задано «Разрешить чтение», для другой — «Запретить чтение». Пользователь входит в обе. Итог?', ['Чтение разрешено','Чтение запрещено','Решает порядок групп','Полный доступ'], 1],
+  ['Какая команда проверяет и восстанавливает системные файлы Windows?', ['chkdsk C: /f','mdsched','sfc /scannow','dxdiag'], 2],
+  ['В каком журнале искать ошибки драйверов и оборудования?', ['«Система»','«Приложение»','«Безопасность»','«Установка»'], 0]
+];
+
+var T7_FIELDS = [
+  ['t7_q1','1. Чем разрешения общего доступа отличаются от разрешений NTFS? Почему рекомендуют ограничивать доступ именно через NTFS?'],
+  ['t7_q2','2. Какой ресурс оказался узким местом в задании 4 и по каким счётчикам вы это определили?'],
+  ['t7_q3','3. Что вы будете делать, если после обновления драйвера устройство перестало работать? Опишите шаги.'],
+  ['t7_q4','4. Какие показатели вашего компьютера из задания 5 говорят о его стабильности и производительности?'],
+  ['t7_concl','Вывод по работе']
+];
+
+/* ---------- состояние ---------- */
+var KEY = 'os-config-practicum-v1';
+function defaults(){ return {v:{}, t1:{}, sim:{}, attempts:{}, checked:{}, timer:{left:7200, running:false, at:0}, active:'intro'}; }
+function load(){ try { var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; } }
+var S = (function(){
+  var d = defaults(), s = load();
+  if (!s || typeof s !== 'object') return d;
+  for (var k in d) if (!(k in s)) s[k] = d[k];
+  return s;
+})();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function variant(){ var n = parseInt(S.v.student_variant, 10); return n >= 1 && n <= 10 ? n : 1; }
+function num(s){ if (s == null) return NaN; var t = String(s).replace(/\s+/g,'').replace(',', '.'); return t === '' ? NaN : Number(t); }
+function filled(k){ return String(S.v[k] || '').trim() !== ''; }
+
+/* ---------- вычисления ---------- */
+function rng(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function between(r, a, b){ return a + r() * (b - a); }
+function monData(v){
+  var type = MON_TYPES[v - 1], r = rng(v * 7919 + 13), rows = [];
+  for (var i = 0; i < 6; i++){
+    var cpu = Math.round(type === 'cpu' ? between(r, 86, 98) : between(r, 18, 55));
+    var av = Math.round(type === 'mem' ? between(r, 280, 650) : between(r, 2600, 4200));
+    var pg = Math.round(type === 'mem' ? between(r, 35, 95) : between(r, 1, 12));
+    var dk = Math.round(type === 'disk' ? between(r, 91, 99) : (type === 'mem' ? between(r, 55, 80) : between(r, 8, 45)));
+    var q = Math.round((type === 'disk' ? between(r, 2.6, 5.8) : (type === 'mem' ? between(r, 0.8, 1.8) : between(r, 0.1, 0.9))) * 10) / 10;
+    rows.push({t:(i + 1) * 10, cpu:cpu, av:av, pg:pg, dk:dk, q:q});
+  }
+  var avg = rows.reduce(function(s, x){ return s + x.cpu; }, 0) / rows.length;
+  return {type:type, rows:rows, avg:avg};
+}
+function share(v){ return SCEN[v - 1]; }
+function simVal(i, kind){ var x = S.sim[variant() + '_' + i + '_' + kind]; return x == null ? -1 : +x; }
+function simResult(i){ var s = simVal(i, 's'), n = simVal(i, 'n'); if (s < 0 || n < 0) return null; return {net:Math.min(s, n), loc:n}; }
+function simOk(i){ var g = share(variant())[1][i], r = simResult(i); return !!r && r.net === g[1] && r.loc === g[2]; }
+function calcAns(v){ var c = CALC[v - 1], sh = Math.max(c[0], c[1]), nt = Math.max(c[2], c[3]); return {net:Math.min(sh, nt), loc:nt}; }
+function t3Questions(v){
+  var a = calcAns(v), opts = LV.map(function(l, i){ return [String(i), l]; });
+  return [
+    {k:'t3_q1', t:'1. Какое итоговое право у Ольги при подключении к папке по сети?', type:'select', opts:opts, ans:String(a.net)},
+    {k:'t3_q2', t:'2. Какое право у Ольги, когда она работает за этим компьютером локально?', type:'select', opts:opts, ans:String(a.loc)}
+  ];
+}
+function t4Questions(v){
+  var m = monData(v);
+  return [
+    {k:'t4_q1', t:'1. Средняя загрузка процессора за шесть замеров, % (с точностью до десятых)', unit:'%', ans:m.avg, tol:0.06},
+    {k:'t4_q2', t:'2. Какой ресурс является узким местом?', type:'select', opts:BOTTLE, ans:m.type},
+    {k:'t4_q3', t:'3. Что вы порекомендуете пользователю?', type:'select', opts:RECS, ans:REC_FOR[m.type]}
+  ];
+}
+function t2List(){ var out = []; T2_CASES.forEach(function(c, i){ out.push({k:'t2_c' + i, type:'select', ans:c[1]}); out.push({k:'t2_a' + i, type:'select', ans:c[2]}); }); return out; }
+function qOk(q){
+  if (q.type === 'select') return S.v[q.k] === q.ans;
+  var x = num(S.v[q.k]);
+  return isFinite(x) && Math.abs(x - q.ans) <= (q.tol || 1e-9);
+}
+
+/* ---------- оценки ---------- */
+function scoreT1(){ var s = 0; for (var id in T1_CARDS) if (S.t1[id] === T1_CARDS[id][1]) s++; return s; }
+function scoreT2(){ return t2List().filter(qOk).length; }
+function scoreT3(){ var s = 0; for (var i = 0; i < 3; i++) if (simOk(i)) s += 4; return s + t3Questions(variant()).filter(qOk).length * 4; }
+function scoreT4(){ return t4Questions(variant()).filter(qOk).length * 4; }
+function scoreT6(){ var s = 0; T6.forEach(function(q, i){ if (S.v['t6_' + i] === String(q[2])) s++; }); return s; }
+function score(id){ return {t1:scoreT1, t2:scoreT2, t3:scoreT3, t4:scoreT4, t6:scoreT6}[id](); }
+function t5Keys(){ var k = []; T5_GROUPS.forEach(function(g){ g.f.forEach(function(f){ k.push(f[0]); }); }); return k; }
+function t7Keys(){ return T7_FIELDS.map(function(f){ return f[0]; }); }
+function fillCount(keys){ return keys.filter(filled).length; }
+function autoTotal(){ return scoreT1() + scoreT2() + scoreT3() + scoreT4() + scoreT6(); }
+
+/* ---------- навигация ---------- */
+function renderNav(){
+  $('#nav').innerHTML = TASKS.map(function(t){
+    var chip = '', cls = '';
+    if (t.auto){
+      if (S.attempts[t.id]){ var s = score(t.id); chip = s + '/' + t.max; cls = s >= t.max * 0.75 ? 'good' : 'mid'; }
+    } else if (t.id === 't5' || t.id === 't7'){
+      var keys = t.id === 't5' ? t5Keys() : t7Keys(), f = fillCount(keys);
+      if (f){ chip = f + '/' + keys.length; cls = f === keys.length ? 'good' : 'mid'; }
+    }
+    return '<li><button type="button" class="nav-btn" data-go="' + t.id + '" aria-current="' + (S.active === t.id) + '">' +
+      '<span class="nav-num">' + t.n + '</span><span class="nav-title">' + t.t + (t.min ? '<span class="nav-min">' + t.min + ' мин</span>' : '') + '</span>' +
+      '<span class="nav-chip ' + cls + '">' + chip + '</span></button></li>';
+  }).join('');
+}
+function go(id, noScroll){
+  if (!document.getElementById(id)) id = 'intro';
+  S.active = id; save();
+  $$('[data-panel]').forEach(function(p){ p.hidden = p.id !== id; });
+  renderNav();
+  if (id === 'report') renderReport();
+  try { history.replaceState(null, '', '#' + id); } catch(e){}
+  if (!noScroll) window.scrollTo(0, 0);
+}
+function updateBar(){ $('#barVariant').textContent = variant(); $('#barScore').textContent = autoTotal() + ' / ' + AUTO_MAX; }
+
+/* ---------- поля ---------- */
+function fillValues(root){
+  $$('[data-k]', root).forEach(function(el){
+    var val = S.v[el.dataset.k];
+    if (val == null) return;
+    if (el.type === 'radio') el.checked = el.value === val; else el.value = val;
+  });
+}
+function onField(e){
+  var el = e.target;
+  if (el.dataset && el.dataset.sim){
+    S.sim[el.dataset.sim] = el.value === '' ? null : el.value;
+    if (S.checked.t3){ S.checked.t3 = false; }
+    save(); renderSimRows(); setResult('t3'); updateBar(); renderNav();
+    return;
+  }
+  var k = el.dataset && el.dataset.k;
+  if (!k) return;
+  if (el.type === 'radio' && !el.checked) return;
+  if (S.v[k] === el.value) return;
+  S.v[k] = el.value;
+  var task = k.split('_')[0];
+  if (S.checked[task]){ S.checked[task] = false; feedback(task); }
+  if (k === 'student_variant') onVariant();
+  if (task === 't5' || task === 't7') setFillResult(task);
+  save(); updateBar(); renderNav();
+}
+document.addEventListener('input', onField);
+document.addEventListener('change', onField);
+
+function setResult(id){
+  var el = $('#res-' + id), t = TASKS.filter(function(x){ return x.id === id; })[0];
+  if (!el) return;
+  el.className = 'result';
+  if (S.checked[id]){
+    var s = score(id);
+    el.textContent = 'Результат: ' + s + ' из ' + t.max + ' · проверок: ' + S.attempts[id];
+    el.classList.add(s >= t.max * 0.75 ? 'good' : 'mid');
+  } else if (S.attempts[id]) el.textContent = 'Ответы изменены — нажмите «Проверить» ещё раз.';
+  else el.textContent = '';
+}
+function markQ(list){
+  list.forEach(function(q){
+    var box = document.querySelector('[data-q="' + q.k + '"]');
+    if (!box) return;
+    var task = q.k.split('_')[0], m = $('.q-mark', box);
+    box.classList.remove('ok','bad'); m.className = 'q-mark'; m.textContent = '';
+    if (!S.checked[task]) return;
+    var ok = qOk(q);
+    box.classList.add(ok ? 'ok' : 'bad'); m.classList.add(ok ? 'ok' : 'bad');
+    m.textContent = ok ? '✓ Верно' : '✗ Неверно';
+  });
+}
+function markT2(){
+  T2_CASES.forEach(function(c, i){
+    var box = document.querySelector('[data-case="' + i + '"]');
+    if (!box) return;
+    var m = $('.q-mark', box);
+    box.classList.remove('ok','bad'); m.className = 'q-mark'; m.textContent = '';
+    if (!S.checked.t2) return;
+    var a = S.v['t2_c' + i] === c[1], b = S.v['t2_a' + i] === c[2];
+    box.classList.add(a && b ? 'ok' : 'bad');
+    m.classList.add(a && b ? 'ok' : 'bad');
+    m.textContent = 'Код: ' + (a ? '✓ верно' : '✗ неверно') + ' · Действие: ' + (b ? '✓ верно' : '✗ неверно');
+  });
+}
+function feedback(id){
+  if (id === 't1') renderT1();
+  else if (id === 't2') markT2();
+  else if (id === 't3'){ renderSimRows(); markQ(t3Questions(variant())); }
+  else if (id === 't4') markQ(t4Questions(variant()));
+  else if (id === 't6') markQ(T6.map(function(q, i){ return {k:'t6_' + i, type:'select', ans:String(q[2])}; }));
+  setResult(id);
+}
+
+/* ---------- задание 1 ---------- */
+var t1Sel = null;
+function cardHtml(id){
+  var cls = 'card';
+  if (S.checked.t1 && S.t1[id]) cls += S.t1[id] === T1_CARDS[id][1] ? ' ok' : ' bad';
+  return '<button type="button" class="' + cls + '" draggable="true" data-card="' + id + '" aria-pressed="' + (t1Sel === id) + '">' + esc(T1_CARDS[id][0]) + '</button>';
+}
+function renderT1(){
+  var pool = T1_ORDER.filter(function(id){ return !S.t1[id]; });
+  $('#t1pool').innerHTML = pool.length ? pool.map(cardHtml).join('') : '<span class="pool-empty">Все карточки распределены</span>';
+  $('#t1cats').innerHTML = T1_CATS.map(function(c){
+    var items = T1_ORDER.filter(function(id){ return S.t1[id] === c.id; });
+    return '<div class="cat' + (t1Sel ? ' armed' : '') + '" data-drop="' + c.id + '" role="button" tabindex="0" aria-label="Поместить в блок ' + c.t + '">' +
+      '<span class="cat-t">' + c.t + '</span><span class="cat-d">' + c.d + '</span><div class="cat-list">' + items.map(cardHtml).join('') + '</div></div>';
+  }).join('');
+  setResult('t1');
+}
+function placeT1(id, target){
+  if (!T1_CARDS[id]) return;
+  if (target === 'pool') delete S.t1[id]; else S.t1[id] = target;
+  t1Sel = null; S.checked.t1 = false;
+  save(); renderT1(); updateBar(); renderNav();
+}
+$('#t1').addEventListener('click', function(e){
+  var card = e.target.closest('[data-card]');
+  if (card){ e.stopPropagation(); var id = card.dataset.card; t1Sel = t1Sel === id ? null : id; renderT1(); return; }
+  var drop = e.target.closest('[data-drop]');
+  if (drop && t1Sel) placeT1(t1Sel, drop.dataset.drop);
+});
+$('#t1').addEventListener('keydown', function(e){
+  var drop = e.target.closest('.cat[data-drop]');
+  if (drop && (e.key === 'Enter' || e.key === ' ') && t1Sel){ e.preventDefault(); placeT1(t1Sel, drop.dataset.drop); }
+});
+$('#t1').addEventListener('dragstart', function(e){
+  var card = e.target.closest('[data-card]'); if (!card) return;
+  try { e.dataTransfer.setData('text/plain', card.dataset.card); e.dataTransfer.effectAllowed = 'move'; } catch(err){}
+});
+$('#t1').addEventListener('dragover', function(e){
+  var drop = e.target.closest('[data-drop]'); if (!drop) return;
+  e.preventDefault(); $$('.over', $('#t1')).forEach(function(x){ if (x !== drop) x.classList.remove('over'); }); drop.classList.add('over');
+});
+$('#t1').addEventListener('dragleave', function(e){ var drop = e.target.closest('[data-drop]'); if (drop && !drop.contains(e.relatedTarget)) drop.classList.remove('over'); });
+$('#t1').addEventListener('drop', function(e){
+  var drop = e.target.closest('[data-drop]'); if (!drop) return;
+  e.preventDefault(); var id = ''; try { id = e.dataTransfer.getData('text/plain'); } catch(err){}
+  placeT1(id, drop.dataset.drop);
+});
+
+/* ---------- задание 2 ---------- */
+function selectHtml(k, opts, label){
+  return '<select id="' + k + '" data-k="' + k + '" aria-label="' + esc(label) + '"><option value="">Выберите…</option>' +
+    opts.map(function(o){ return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+}
+function renderT2(){
+  $('#t2qs').innerHTML = T2_CASES.map(function(c, i){
+    return '<div class="q" data-case="' + i + '"><span class="q-t">Ситуация ' + (i + 1) + '. ' + esc(c[0]) + '</span>' +
+      '<div class="pair"><div class="field"><span class="lbl">Код ошибки</span>' + selectHtml('t2_c' + i, CODE_OPTS, 'Код ошибки, ситуация ' + (i + 1)) + '</div>' +
+      '<div class="field"><span class="lbl">Первое действие</span>' + selectHtml('t2_a' + i, ACT_OPTS, 'Действие, ситуация ' + (i + 1)) + '</div></div>' +
+      '<span class="q-mark"></span></div>';
+  }).join('');
+  fillValues($('#t2qs')); markT2(); setResult('t2');
+}
+
+/* ---------- задание 3 ---------- */
+function lvSelect(key, label){
+  var cur = S.sim[key];
+  return '<select data-sim="' + key + '" aria-label="' + esc(label) + '"><option value="">—</option>' +
+    LV.map(function(l, i){ return '<option value="' + i + '"' + (cur != null && +cur === i ? ' selected' : '') + '>' + l + '</option>'; }).join('') + '</select>';
+}
+function renderT3(){
+  var v = variant(), sc = share(v);
+  $('#t3lead').innerHTML = 'На сервере открыт общий доступ к папке <b>«' + esc(sc[0]) + '»</b>. Настройте для трёх групп разрешения общего доступа и NTFS так, чтобы итоговые права по сети и локально совпали с требованиями вашего варианта. Затем рассчитайте права пользователя, который входит в две группы.';
+  $('#simBody').innerHTML = sc[1].map(function(g, i){
+    return '<tr data-row="' + i + '"><td><span class="gname">' + esc(g[0]) + '</span><span class="two">Сеть: <b>' + LV[g[1]] + '</b></span><span class="two">Локально: <b>' + LV[g[2]] + '</b></span></td>' +
+      '<td>' + lvSelect(v + '_' + i + '_s', 'Общий доступ: ' + g[0]) + '</td><td>' + lvSelect(v + '_' + i + '_n', 'NTFS: ' + g[0]) + '</td>' +
+      '<td><span class="two">Сеть: <span class="out" data-out="net"></span></span><span class="two">Локально: <span class="out" data-out="loc"></span></span></td></tr>';
+  }).join('');
+  var c = CALC[v - 1];
+  $('#calcBody').innerHTML = '<tr><td>Общий доступ</td><td>' + LV[c[0]] + '</td><td>' + LV[c[1]] + '</td></tr><tr><td>NTFS</td><td>' + LV[c[2]] + '</td><td>' + LV[c[3]] + '</td></tr>';
+  $('#t3qs').innerHTML = t3Questions(v).map(qHtml).join('');
+  fillValues($('#t3qs'));
+  renderSimRows(); markQ(t3Questions(v)); setResult('t3');
+}
+function renderSimRows(){
+  var sc = share(variant());
+  $$('#simBody tr').forEach(function(tr){
+    var i = +tr.dataset.row, r = simResult(i), g = sc[1][i];
+    var net = $('[data-out="net"]', tr), loc = $('[data-out="loc"]', tr);
+    tr.classList.remove('ok','bad');
+    if (!r){ net.textContent = '—'; loc.textContent = '—'; net.className = loc.className = 'out'; return; }
+    net.textContent = LV[r.net]; loc.textContent = LV[r.loc];
+    net.className = 'out ' + (r.net === g[1] ? 'match' : 'miss');
+    loc.className = 'out ' + (r.loc === g[2] ? 'match' : 'miss');
+    if (S.checked.t3) tr.classList.add(simOk(i) ? 'ok' : 'bad');
+  });
+}
+
+/* ---------- задание 4 ---------- */
+function renderT4(){
+  var m = monData(variant());
+  $('#monTable').innerHTML = '<thead><tr><th>Время, с</th><th class="num">% загруженности ЦП</th><th class="num">Доступно памяти, МБ</th><th class="num">Страниц/с</th><th class="num">% активности диска</th><th class="num">Очередь диска</th></tr></thead><tbody>' +
+    m.rows.map(function(r){ return '<tr><td>' + r.t + '</td><td class="num">' + r.cpu + '</td><td class="num">' + r.av + '</td><td class="num">' + r.pg + '</td><td class="num">' + r.dk + '</td><td class="num">' + String(r.q).replace('.', ',') + '</td></tr>'; }).join('') + '</tbody>';
+  $('#t4qs').innerHTML = t4Questions(variant()).map(qHtml).join('');
+  fillValues($('#t4qs')); markQ(t4Questions(variant())); setResult('t4');
+}
+
+function qHtml(q){
+  var input;
+  if (q.type === 'select'){
+    input = '<select id="' + q.k + '" data-k="' + q.k + '" style="max-width:640px"><option value="">Выберите ответ…</option>' +
+      q.opts.map(function(o){ return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+  } else {
+    input = '<input type="text" inputmode="decimal" class="short" id="' + q.k + '" data-k="' + q.k + '" autocomplete="off">' + (q.unit ? '<span class="q-unit">' + q.unit + '</span>' : '');
+  }
+  return '<div class="q" data-q="' + q.k + '"><label class="q-t" for="' + q.k + '">' + q.t + '</label><div class="q-row">' + input + '<span class="q-mark"></span></div></div>';
+}
+
+/* ---------- задание 5 ---------- */
+function fieldHtml(f){
+  var k = f[0], ph = f[2] ? ' placeholder="' + esc(f[2]) + '"' : '';
+  var ctl = f[3] === 'area' ? '<textarea id="' + k + '" data-k="' + k + '"' + ph + ' style="min-height:84px"></textarea>' : '<input type="text" id="' + k + '" data-k="' + k + '"' + ph + ' autocomplete="off">';
+  return '<div class="field"><label for="' + k + '">' + f[1] + '</label>' + ctl + '</div>';
+}
+function renderT5(){
+  $('#t5fields').innerHTML = T5_GROUPS.map(function(g){
+    return '<fieldset><legend>' + g.t + '</legend><span class="where">' + g.where + '</span><div class="grid-2">' + g.f.map(fieldHtml).join('') + '</div></fieldset>';
+  }).join('');
+  fillValues($('#t5fields')); setFillResult('t5');
+}
+function setFillResult(id){
+  var keys = id === 't5' ? t5Keys() : t7Keys();
+  $('#res-' + id).textContent = (id === 't5' ? 'Заполнено полей: ' : 'Отвечено: ') + fillCount(keys) + ' из ' + keys.length;
+}
+
+/* ---------- задание 6 ---------- */
+function renderT6(){
+  $('#t6qs').innerHTML = T6.map(function(q, i){
+    var k = 't6_' + i;
+    return '<div class="q" data-q="' + k + '" role="radiogroup" aria-labelledby="' + k + '_t"><span class="q-t" id="' + k + '_t">' + (i + 1) + '. ' + q[0] + '</span><div class="opts">' +
+      q[1].map(function(o, j){ return '<label class="opt"><input type="radio" name="' + k + '" value="' + j + '" data-k="' + k + '"><span>' + esc(o) + '</span></label>'; }).join('') +
+      '</div><span class="q-mark"></span></div>';
+  }).join('');
+  fillValues($('#t6qs')); feedback('t6');
+}
+
+/* ---------- задание 7 ---------- */
+function renderT7(){
+  $('#t7fields').innerHTML = T7_FIELDS.map(function(f){ return '<div class="field"><label for="' + f[0] + '">' + f[1] + '</label><textarea id="' + f[0] + '" data-k="' + f[0] + '"></textarea></div>'; }).join('');
+  fillValues($('#t7fields')); setFillResult('t7');
+}
+
+/* ---------- проверка и переходы ---------- */
+document.addEventListener('click', function(e){
+  var g = e.target.closest('[data-go]'); if (g){ go(g.dataset.go); return; }
+  var c = e.target.closest('[data-check]'); if (!c) return;
+  var id = c.dataset.check;
+  S.attempts[id] = (S.attempts[id] || 0) + 1; S.checked[id] = true;
+  save(); feedback(id); updateBar(); renderNav();
+});
+
+/* ---------- таймер ---------- */
+function fmtTime(sec){ sec = Math.max(0, Math.round(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
+function tick(){
+  var T = S.timer;
+  if (T.running){
+    var now = Date.now(); T.left = Math.max(0, T.left - (now - T.at) / 1000); T.at = now;
+    if (T.left <= 0) T.running = false;
+    save();
+  }
+  $('#timerText').textContent = T.left <= 0 ? 'Время вышло' : fmtTime(T.left);
+  $('#timerBox').classList.toggle('low', T.left < 900);
+  var b = $('#timerBtn'); b.textContent = T.running ? 'Пауза' : (T.left < 7200 && T.left > 0 ? 'Продолжить' : 'Старт');
+  b.classList.toggle('go', !T.running); b.disabled = T.left <= 0;
+}
+$('#timerBtn').addEventListener('click', function(){ var T = S.timer; if (T.left <= 0) return; T.running = !T.running; T.at = Date.now(); save(); tick(); });
+setInterval(tick, 1000);
+
+/* ---------- отчёт ---------- */
+function grade(p){ return p >= 90 ? '«5»' : p >= 75 ? '«4»' : p >= 60 ? '«3»' : '«2»'; }
+function renderReport(){
+  var v = variant(), name = (S.v.student_name || '').trim() || 'не указано', grp = (S.v.student_group || '').trim() || 'не указана';
+  var used = 7200 - S.timer.left, rows = [], lines = [];
+  $('#repWho').innerHTML = '<b>' + esc(name) + '</b>, группа ' + esc(grp) + ', вариант ' + v + '. Время работы: ' + fmtTime(used) + '.';
+  lines.push('ПРАКТИЧЕСКАЯ РАБОТА «КОНФИГУРАЦИЯ АППАРАТНЫХ УСТРОЙСТВ И УПРАВЛЕНИЕ ОБЩИМИ РЕСУРСАМИ В ОС»');
+  lines.push('Студент: ' + name + '; группа: ' + grp + '; вариант: ' + v);
+  lines.push('Дата: ' + new Date().toLocaleDateString('ru-RU') + '; время работы: ' + fmtTime(used));
+  lines.push('');
+  lines.push('БАЛЛЫ АВТОПРОВЕРКИ');
+  TASKS.forEach(function(t){
+    if (!t.max) return;
+    if (t.auto){
+      var s = score(t.id), a = S.attempts[t.id] || 0;
+      rows.push('<tr><td>' + t.n + '. ' + t.t + '</td><td class="num">' + s + ' / ' + t.max + '</td><td class="num">' + a + '</td><td>автоматически' + (a ? '' : ' — не проверялось') + '</td></tr>');
+      lines.push('Задание ' + t.n + '. ' + t.t + ': ' + s + ' из ' + t.max + ' (проверок: ' + a + ')');
+    } else {
+      var keys = t.id === 't5' ? t5Keys() : t7Keys();
+      rows.push('<tr><td>' + t.n + '. ' + t.t + '</td><td class="num">… / ' + t.max + '</td><td class="num">—</td><td>преподаватель · заполнено ' + fillCount(keys) + ' из ' + keys.length + '</td></tr>');
+    }
+  });
+  var tot = autoTotal();
+  rows.push('<tr><td><b>Итого автопроверка</b></td><td class="num"><b>' + tot + ' / ' + AUTO_MAX + '</b></td><td></td><td></td></tr>');
+  $('#repTable').innerHTML = rows.join('');
+  $('#repNote').innerHTML = 'Автопроверка: <b>' + tot + ' из ' + AUTO_MAX + '</b>. Ещё до ' + TEACHER_MAX + ' баллов преподаватель выставит за задания 5 и 7. Если они оценены полностью, итог составит ' + (tot + TEACHER_MAX) + ' баллов — оценка ' + grade(tot + TEACHER_MAX) + '.';
+  lines.push('Итого автопроверка: ' + tot + ' из ' + AUTO_MAX);
+  lines.push('');
+  lines.push('ЗАДАНИЕ 3. НАСТРОЙКА РАЗРЕШЕНИЙ (папка «' + share(v)[0] + '»)');
+  share(v)[1].forEach(function(g, i){
+    var s = simVal(i, 's'), n = simVal(i, 'n');
+    lines.push('  ' + g[0] + ': общий доступ — ' + (s < 0 ? '—' : LV[s]) + '; NTFS — ' + (n < 0 ? '—' : LV[n]) + (simOk(i) ? ' (соответствует)' : ' (не соответствует)'));
+  });
+  lines.push('');
+  lines.push('ЗАДАНИЕ 5. ИССЛЕДОВАНИЕ КОМПЬЮТЕРА');
+  T5_GROUPS.forEach(function(g){ lines.push('— ' + g.t); g.f.forEach(function(f){ lines.push('  ' + f[1] + ': ' + ((S.v[f[0]] || '').trim() || '—')); }); });
+  lines.push('');
+  lines.push('ЗАДАНИЕ 7. КОНТРОЛЬНЫЕ ВОПРОСЫ И ВЫВОД');
+  T7_FIELDS.forEach(function(f){ lines.push(f[1]); lines.push('  ' + ((S.v[f[0]] || '').trim() || '—')); });
+  $('#reportText').value = lines.join('\n');
+  $('#copyMsg').textContent = '';
+}
+$('#copyBtn').addEventListener('click', function(){
+  var ta = $('#reportText'), msg = $('#copyMsg');
+  function fallback(){ ta.focus(); ta.select(); msg.textContent = 'Текст выделен — нажмите Ctrl + C.'; }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(function(){ msg.textContent = 'Отчёт скопирован.'; }, fallback);
+    else fallback();
+  } catch(e){ fallback(); }
+});
+$('#resetBtn').addEventListener('click', function(){ $('#resetConfirm').hidden = false; $('#resetBtn').hidden = true; });
+$('#resetNo').addEventListener('click', function(){ $('#resetConfirm').hidden = true; $('#resetBtn').hidden = false; });
+$('#resetYes').addEventListener('click', function(){
+  S = defaults(); save(); t1Sel = null;
+  $$('[data-k]').forEach(function(el){ if (el.type === 'radio') el.checked = false; else if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; });
+  $('#resetConfirm').hidden = true; $('#resetBtn').hidden = false;
+  renderAll(); go('intro');
+});
+
+/* ---------- запуск ---------- */
+function onVariant(){ S.checked.t3 = false; S.checked.t4 = false; renderT3(); renderT4(); updateBar(); }
+function renderAll(){
+  fillValues(document);
+  if (!S.v.student_variant) $('#student_variant').value = '1';
+  renderT1(); renderT2(); renderT3(); renderT4(); renderT5(); renderT6(); renderT7();
+  updateBar(); tick();
+}
+renderAll();
+var h = (location.hash || '').replace('#', '');
+go(h && document.getElementById(h) ? h : (S.active || 'intro'), true);
+})();
+</script>
+
+</body>
+</html>
