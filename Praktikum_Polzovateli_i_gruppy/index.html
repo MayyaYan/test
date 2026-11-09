@@ -1,0 +1,1494 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Практикум: пользователи и группы</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans:wght@400;700&family=PT+Serif:wght@700&display=swap">
+<style>
+/* Layout: sticky navy status bar (timer, score) + left task rail + one task panel at a time; rail turns into a horizontal strip on phones */
+:root{
+  --bg:#F2F5FA; --surface:#FDFDFB; --surface-2:#E9EFF8; --field:#FFFFFE;
+  --fg:#101828; --muted:#475467; --line:#D3DCE8; --line-strong:#9AA9BF;
+  --accent:#C2410C; --accent-soft:#FDE7D9; --on-accent:#FFFBF6;
+  --blue:#1560D0; --blue-soft:#DCE8FB; --on-blue:#FBFDFF;
+  --grey:#5B6B82; --grey-soft:#E4E9F0;
+  --ok:#0F7A3D; --ok-soft:#DDF3E5; --bad:#B42318; --bad-soft:#FDE3E1;
+  --navy:#0F1B33; --bar-fg:#F3F5FA; --bar-muted:#AFC0DA; --bar-accent:#FF9A55;
+  --font-display:'PT Serif', Georgia, 'Times New Roman', serif;
+  --font-body:'PT Sans', 'Segoe UI', Arial, sans-serif;
+  --font-mono:'PT Mono', Consolas, 'Courier New', monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0B1322; --surface:#121D33; --surface-2:#1A2843; --field:#0E182C;
+    --fg:#F1F4FA; --muted:#AEB9CC; --line:#2A3A5C; --line-strong:#4A5E86;
+    --accent:#FF8A3D; --accent-soft:#3A2414; --on-accent:#1A1006;
+    --blue:#7DB6FF; --blue-soft:#17305A; --on-blue:#08142B;
+    --grey:#A3B0C4; --grey-soft:#25314A;
+    --ok:#4ADE80; --ok-soft:#10301F; --bad:#FF8A80; --bad-soft:#3A1717;
+    --navy:#08101F;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1322; --surface:#121D33; --surface-2:#1A2843; --field:#0E182C;
+  --fg:#F1F4FA; --muted:#AEB9CC; --line:#2A3A5C; --line-strong:#4A5E86;
+  --accent:#FF8A3D; --accent-soft:#3A2414; --on-accent:#1A1006;
+  --blue:#7DB6FF; --blue-soft:#17305A; --on-blue:#08142B;
+  --grey:#A3B0C4; --grey-soft:#25314A;
+  --ok:#4ADE80; --ok-soft:#10301F; --bad:#FF8A80; --bad-soft:#3A1717;
+  --navy:#08101F;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--font-body);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--font-display);font-weight:700;margin:0;line-height:1.2;text-wrap:balance}
+h1{font-size:clamp(28px,3.4vw,40px)}
+h2{font-size:clamp(25px,3vw,34px)}
+h3{font-size:21px}
+p{margin:0}
+ol,ul{margin:0;padding-left:1.4em}
+li+li{margin-top:6px}
+code,.mono{font-family:var(--font-mono)}
+code{font-size:.92em;background:var(--surface-2);padding:1px 6px;border-radius:5px}
+kbd{font-family:var(--font-mono);font-size:15px;padding:1px 7px;border:1px solid var(--line-strong);border-bottom-width:3px;border-radius:6px;background:var(--surface-2);white-space:nowrap}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--navy);color:var(--bar-fg)}
+.bar-in{max-width:1320px;margin:0 auto;padding:12px 20px;display:flex;flex-wrap:wrap;gap:10px 28px;align-items:center;justify-content:space-between}
+.brand{display:flex;flex-direction:column;min-width:0}
+.brand-kicker{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--bar-accent);font-weight:700}
+.brand-title{font-family:var(--font-display);font-weight:700;font-size:21px;line-height:1.2}
+.bar-stats{display:flex;flex-wrap:wrap;gap:10px 26px;align-items:center}
+.stat{display:flex;flex-direction:column;line-height:1.2}
+.stat-l{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--bar-muted)}
+.stat-v{font-weight:700;font-size:21px;font-variant-numeric:tabular-nums}
+.timer{display:flex;align-items:center;gap:12px}
+.timer.low .stat-v{color:var(--bar-accent)}
+.btn-bar{font:inherit;font-weight:700;font-size:15px;padding:7px 14px;border-radius:8px;border:1.5px solid var(--bar-muted);background:transparent;color:var(--bar-fg);cursor:pointer}
+.btn-bar:hover{border-color:var(--bar-fg)}
+.btn-bar.go{background:var(--bar-accent);border-color:var(--bar-accent);color:#1A1006}
+
+.app{max-width:1320px;margin:0 auto;padding-inline:20px;padding-block:24px 64px;display:grid;grid-template-columns:270px minmax(0,1fr);gap:28px;align-items:start}
+.rail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 96px)}
+#nav{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+#nav li{margin:0}
+.nav-btn{width:100%;display:grid;grid-template-columns:32px minmax(0,1fr) auto;gap:10px;align-items:center;padding:9px 10px;border:1.5px solid transparent;border-radius:10px;background:none;color:var(--fg);font:inherit;text-align:left;cursor:pointer}
+.nav-btn:hover{background:var(--surface-2)}
+.nav-btn[aria-current="true"]{background:var(--surface);border-color:var(--line)}
+.nav-num{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-weight:700;font-size:15px;font-variant-numeric:tabular-nums}
+.nav-btn[aria-current="true"] .nav-num{background:var(--blue);color:var(--on-blue)}
+.nav-title{font-weight:700;font-size:16px;line-height:1.25;min-width:0}
+.nav-min{display:block;font-weight:400;font-size:13px;color:var(--muted)}
+.nav-chip{font-size:13px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap}
+.nav-chip.good{background:var(--ok-soft);color:var(--ok)}
+.nav-chip.mid{background:var(--accent-soft);color:var(--accent)}
+.nav-chip:empty{display:none}
+.rail-note{margin-top:14px;font-size:14px;color:var(--muted);padding:0 10px}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;gap:26px;min-width:0}
+.task-head{display:flex;flex-direction:column;gap:10px}
+.kicker{font-size:14px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:20px;max-width:70ch}
+.prose{max-width:74ch}
+.muted{color:var(--muted)}
+.block{display:flex;flex-direction:column;gap:14px;min-width:0}
+.note{background:var(--blue-soft);border-radius:12px;padding:14px 18px;max-width:80ch}
+.note.warm{background:var(--accent-soft)}
+
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label,.lbl{font-weight:700;font-size:16px}
+.hint{font-size:14px;color:var(--muted)}
+input[type=text],select,textarea{font:inherit;font-size:17px;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:10px;background:var(--field);color:var(--fg);width:100%;min-width:0}
+textarea{min-height:110px;resize:vertical;line-height:1.5}
+input.short{max-width:240px}
+select.inline{width:auto;max-width:100%}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+fieldset{border:1.5px solid var(--line);border-radius:14px;padding:18px 20px 20px;margin:0;display:flex;flex-direction:column;gap:14px;min-width:0}
+legend{font-family:var(--font-display);font-weight:700;font-size:20px;padding:0 8px}
+.where{font-size:15px;color:var(--muted)}
+
+.btn{font:inherit;font-weight:700;font-size:17px;padding:10px 18px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--fg);cursor:pointer}
+.btn:hover{border-color:var(--fg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:var(--on-blue)}
+.btn.small{font-size:15px;padding:7px 12px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.actions{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center;padding-top:18px;border-top:1px solid var(--line)}
+.actions .spacer{flex:1}
+.result{font-weight:700;font-size:18px}
+.result.good{color:var(--ok)}
+.result.mid{color:var(--accent)}
+
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px}
+table{border-collapse:collapse;width:100%;font-size:17px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:none}
+th{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--surface-2)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* задание 1 */
+.pool{display:flex;flex-wrap:wrap;gap:10px;padding:16px;border:2px dashed var(--line-strong);border-radius:14px;min-height:76px;align-items:flex-start}
+.pool-empty{color:var(--muted);font-size:16px;align-self:center}
+.cats{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.cat{border:2px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:160px;background:var(--surface-2);cursor:pointer;text-align:left}
+.cat.armed{border-color:var(--blue);border-style:dashed}
+.cat.over{border-color:var(--blue);background:var(--blue-soft)}
+.cat-t{font-family:var(--font-display);font-weight:700;font-size:19px;line-height:1.2}
+.cat-d{font-size:14px;color:var(--muted)}
+.cat-list{display:flex;flex-wrap:wrap;gap:8px}
+.card{font:inherit;font-weight:700;font-size:16px;padding:8px 14px;border-radius:999px;border:2px solid var(--line-strong);background:var(--surface);color:var(--fg);cursor:grab;line-height:1.3}
+.card[aria-pressed="true"]{border-color:var(--blue);background:var(--blue-soft);box-shadow:0 0 0 3px var(--blue-soft)}
+.card.ok{border-color:var(--ok);background:var(--ok-soft)}
+.card.ok::after{content:"  ✓";color:var(--ok)}
+.card.bad{border-color:var(--bad);background:var(--bad-soft)}
+.card.bad::after{content:"  ✗";color:var(--bad)}
+
+/* задание 2 */
+.order-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
+.order-list li{margin:0}
+.order-item{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 14px;border:2px solid var(--line);border-radius:12px;background:var(--surface-2)}
+.order-item.ok{border-color:var(--ok)}
+.order-item.bad{border-color:var(--bad)}
+.pos{width:40px;height:40px;border-radius:10px;display:grid;place-items:center;font-weight:700;background:var(--surface);border:1.5px solid var(--line-strong);font-variant-numeric:tabular-nums}
+.oname{font-weight:700;font-size:18px}
+.omark{font-size:14px;font-weight:700;display:block}
+.omark.ok{color:var(--ok)} .omark.bad{color:var(--bad)}
+.mv-group{display:flex;gap:6px}
+.mv{width:42px;height:42px;border-radius:10px;border:1.5px solid var(--line-strong);background:var(--surface);color:var(--fg);font:inherit;font-weight:700;font-size:20px;cursor:pointer;line-height:1}
+.mv:disabled{opacity:.35;cursor:not-allowed}
+.layer-tag{display:inline-block;font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted)}
+
+/* задание 3: замещение страниц */
+.sim-top{display:flex;flex-wrap:wrap;gap:16px 24px;align-items:end}
+.refs{display:flex;flex-wrap:wrap;gap:6px}
+.ref{min-width:46px;height:46px;padding:0 6px;border-radius:10px;display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:19px;border:2px solid var(--line-strong);background:var(--surface);color:var(--fg)}
+.ref.done{background:var(--surface-2);color:var(--muted);border-color:var(--line)}
+.ref.cur{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.pr td,.pr th{text-align:center;padding:8px 6px;font-family:var(--font-mono);font-size:17px;min-width:46px;border-right:1px solid var(--line)}
+.pr th:first-child,.pr td:first-child{text-align:left;font-family:var(--font-body);font-weight:700;font-size:15px;white-space:nowrap;padding-left:12px;min-width:120px}
+.pr th{letter-spacing:0;text-transform:none;font-size:15px}
+.pr td.new{background:var(--accent-soft);font-weight:700}
+.pr td.hit{background:var(--blue-soft);font-weight:700}
+.pr td.res-f{color:var(--accent);font-weight:700}
+.pr td.res-h{color:var(--blue);font-weight:700}
+.pr td.cur-col,.pr th.cur-col{box-shadow:inset 0 0 0 2px var(--accent)}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.tile{border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--surface-2)}
+.tile-l{font-size:14px;color:var(--muted);font-weight:700}
+.tile-v{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums}
+.sim-msg{font-size:18px;padding:12px 16px;border-radius:12px;background:var(--surface-2);border-left:6px solid var(--accent)}
+.sim-ctrl{display:flex;flex-wrap:wrap;gap:10px}
+
+/* вопросы */
+.qs{display:flex;flex-direction:column;gap:14px}
+.q{display:flex;flex-direction:column;gap:10px;padding:14px 16px;border:2px solid var(--line);border-radius:12px;min-width:0}
+.q.ok{border-color:var(--ok)}
+.q.bad{border-color:var(--bad)}
+.q-t{font-weight:700}
+.q-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.q-unit{color:var(--muted);font-weight:700}
+.q-mark{font-weight:700;font-size:16px}
+.q-mark.ok{color:var(--ok)} .q-mark.bad{color:var(--bad)}
+.opts{display:grid;gap:4px}
+label.opt{display:flex;gap:10px;align-items:flex-start;padding:7px 10px;border-radius:8px;cursor:pointer;font-weight:400}
+label.opt:hover{background:var(--surface-2)}
+input[type=radio]{width:20px;height:20px;accent-color:var(--blue);margin:3px 0 0;flex:none}
+details.help{border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;background:var(--surface-2)}
+details.help summary{font-weight:700;cursor:pointer}
+details.help[open] summary{margin-bottom:10px}
+.formula{font-family:var(--font-mono);font-size:16px;background:var(--surface);border-radius:8px;padding:6px 12px;display:inline-block}
+.steps li{padding-left:4px}
+.pt td,.pt th{text-align:center;font-family:var(--font-mono);padding:8px 10px}
+.pt th:first-child,.pt td:first-child{text-align:left;font-family:var(--font-body);font-weight:700;white-space:nowrap}
+
+.confirm{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:12px 14px;border-radius:12px;background:var(--bad-soft)}
+.report-text{min-height:260px;font-family:var(--font-mono);font-size:15px}
+.copy-msg{font-weight:700;color:var(--ok)}
+
+@media (max-width:900px){
+  .app{grid-template-columns:minmax(0,1fr);gap:18px;padding-block:16px 48px}
+  .rail{position:static;overflow-x:auto;margin-inline:-20px;padding-inline:20px}
+  #nav{flex-direction:row;gap:6px;width:max-content}
+  .nav-btn{width:auto;grid-template-columns:30px auto;white-space:nowrap;padding:7px 10px}
+  .nav-min,.nav-chip{display:none}
+  .rail-note{display:none}
+}
+@media (max-width:620px){
+  .brand-title{font-size:18px}
+  .order-item{grid-template-columns:40px minmax(0,1fr)}
+  .order-item .mv-group{grid-column:2}
+}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;scroll-behavior:auto!important}}
+@media print{
+  body{background:#fff;color:#000;font-size:12pt}
+  .bar,.rail,.no-print{display:none!important}
+  .panel{display:none!important;border:none;padding:0}
+  #report,#report[hidden]{display:flex!important}
+  .app{display:block;padding:0}
+}
+
+/* задание 2 */
+.pair{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr);gap:12px 16px}
+@media (max-width:620px){.pair{grid-template-columns:minmax(0,1fr)}}
+/* задание 3 */
+.sim-t td{vertical-align:middle}
+.sim-t select{width:auto;min-width:170px}
+.gname{display:block;font-weight:700;font-size:18px;margin-bottom:2px}
+.two{display:block;white-space:nowrap;font-size:16px}
+.sim-t tr.ok td:first-child{box-shadow:inset 6px 0 0 var(--ok)}
+.sim-t tr.bad td:first-child{box-shadow:inset 6px 0 0 var(--bad)}
+.out{font-weight:700;white-space:nowrap}
+.out.match{color:var(--ok)}
+.out.match::before{content:"✓ "}
+.out.miss{color:var(--accent)}
+.out.miss::before{content:"≠ "}
+/* задание 3: сотрудники */
+.staff-t td{vertical-align:top}
+.cbx-cell{min-width:230px}
+.cbx{display:flex;align-items:center;gap:8px;font-size:16px;line-height:1.3;padding:3px 0;cursor:pointer}
+.cbx input{width:20px;height:20px;flex:0 0 auto;margin:0;accent-color:var(--blue)}
+.cbx:last-child{margin-top:4px;padding-top:7px;border-top:1px dashed var(--line);font-weight:700}
+.staff-t .two{white-space:normal}
+/* задания 2 и 4 */
+select.mono-sel{font-family:var(--font-mono);font-size:16px}
+.pol{max-width:640px}
+.pol td{font-size:18px}
+.q-t code{font-size:.95em}
+/* отправка */
+.stat-v.sync{font-size:17px;white-space:nowrap}
+.stat-v.sync.good{color:#8EE6B0}
+.stat-v.sync.warn{color:var(--bar-accent)}
+.send-box{display:flex;flex-direction:column;gap:12px;padding:18px 20px;border:2px solid var(--blue);border-radius:14px;background:var(--blue-soft)}
+/* кабинет преподавателя */
+.t-tools{display:flex;flex-wrap:wrap;gap:12px 20px;align-items:end;justify-content:space-between;margin-block:18px}
+.t-search{flex:1 1 280px;max-width:420px}
+.tt{font-size:16px}
+.tt td,.tt th{padding:9px 10px;vertical-align:top}
+.tt td.num{font-variant-numeric:tabular-nums}
+.tt .sub{display:block;font-size:13px;color:var(--muted);font-weight:400;white-space:nowrap}
+.tt .empty{text-align:center;color:var(--muted);padding:28px 12px}
+.gin{width:64px!important;padding:6px 8px!important;font-size:16px!important;text-align:right}
+.linkbtn{display:inline-block;margin-top:4px;padding:0;border:none;background:none;color:var(--blue);font:inherit;font-size:14px;font-weight:700;text-decoration:underline;cursor:pointer}
+.chip{display:inline-block;font-size:13px;font-weight:700;padding:2px 9px;border-radius:999px;background:var(--surface-2);color:var(--muted)}
+.chip.good{background:var(--ok-soft);color:var(--ok)}
+.tile-u{font-size:16px;color:var(--muted);font-weight:700}
+.t-details{display:flex;flex-direction:column;gap:16px;margin-top:20px}
+.det{border:2px solid var(--line);border-radius:14px;padding:16px 20px;display:flex;flex-direction:column;gap:12px}
+.det-h{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
+.det h4{margin:6px 0 0;font-size:17px}
+.ans{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:6px 18px;margin:0}
+.ans dt{font-weight:700;font-size:15px;color:var(--muted)}
+.ans dd{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}
+@media (max-width:620px){.ans{grid-template-columns:minmax(0,1fr)}}
+</style>
+
+</head>
+<body>
+<header class="bar">
+  <div class="bar-in">
+    <div class="brand">
+      <span class="brand-kicker">Практическая работа · 120 минут</span>
+      <span class="brand-title">Администрирование пользователей и групп</span>
+    </div>
+    <div class="bar-stats">
+      <div class="stat"><span class="stat-l">Отправка</span><span class="stat-v sync" id="syncBadge">—</span></div>
+      <div class="stat"><span class="stat-l">Вариант</span><span class="stat-v" id="barVariant">1</span></div>
+      <div class="stat"><span class="stat-l">Автопроверка</span><span class="stat-v" id="barScore">0 / 68</span></div>
+      <div class="timer" id="timerBox">
+        <div class="stat"><span class="stat-l">Осталось</span><span class="stat-v" id="timerText">2:00:00</span></div>
+        <button type="button" class="btn-bar go" id="timerBtn">Старт</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <nav class="rail" aria-label="Задания">
+    <ol id="nav"></ol>
+    <p class="rail-note">Ответы сохраняются автоматически в этом браузере.</p>
+  </nav>
+
+  <main id="main">
+
+    <section class="panel" id="intro" data-panel>
+      <div class="task-head">
+        <p class="kicker">Инструкция · 5 минут</p>
+        <h1>Администрирование и управление пользователями</h1>
+        <p class="lead"><b>Цель работы:</b> научиться создавать, настраивать, отключать и удалять учётные записи, объединять пользователей в группы, назначать группам разрешения на папки и настраивать политику паролей средствами Windows.</p>
+      </div>
+
+      <fieldset>
+        <legend>Данные студента</legend>
+        <div class="grid-3">
+          <div class="field"><label for="student_name">Фамилия, имя</label><input type="text" id="student_name" data-k="student_name" placeholder="Иванов Иван" autocomplete="name"></div>
+          <div class="field"><label for="student_group">Группа / класс</label><input type="text" id="student_group" data-k="student_group" placeholder="ИТ-21"></div>
+          <div class="field"><label for="student_variant">Вариант</label>
+            <select id="student_variant" data-k="student_variant">
+              <option value="1">Вариант 1</option><option value="2">Вариант 2</option><option value="3">Вариант 3</option><option value="4">Вариант 4</option><option value="5">Вариант 5</option>
+              <option value="6">Вариант 6</option><option value="7">Вариант 7</option><option value="8">Вариант 8</option><option value="9">Вариант 9</option><option value="10">Вариант 10</option>
+            </select>
+            <span class="hint">Последняя цифра номера в журнале; цифра 0 — вариант 10.</span>
+          </div>
+        </div>
+      </fieldset>
+
+      <div class="block">
+        <h3>План работы</h3>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>№</th><th>Задание</th><th class="num">Время</th><th class="num">Баллы</th><th>Проверка</th></tr></thead>
+            <tbody>
+              <tr><td>1</td><td>Инструменты администратора: распределить команды по блокам темы</td><td class="num">15 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>2</td><td>Команды net user, net localgroup, net accounts для шести ситуаций</td><td class="num">15 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>3</td><td>Симулятор групп и прав: членство, отключение, разрешения на папки</td><td class="num">25 мин</td><td class="num">20</td><td>автоматически</td></tr>
+              <tr><td>4</td><td>Политика паролей: какие пароли примет Windows</td><td class="num">15 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>5</td><td>Учётные записи, группы и политики своего ПК</td><td class="num">25 мин</td><td class="num">20</td><td>преподаватель</td></tr>
+              <tr><td>6</td><td>Итоговый тест (12 вопросов)</td><td class="num">10 мин</td><td class="num">12</td><td>автоматически</td></tr>
+              <tr><td>7</td><td>Контрольные вопросы и вывод</td><td class="num">10 мин</td><td class="num">12</td><td>преподаватель</td></tr>
+              <tr><td></td><td><b>Итого</b> (с учётом 5 минут на инструкцию)</td><td class="num"><b>120 мин</b></td><td class="num"><b>100</b></td><td></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="block">
+          <h3>Порядок работы</h3>
+          <ol class="steps">
+            <li>Введите фамилию, группу и выберите вариант.</li>
+            <li>Нажмите <b>«Старт»</b> в верхней панели — запустится таймер на 2 часа.</li>
+            <li>Выполняйте задания по порядку. В заданиях с автопроверкой нажимайте <b>«Проверить»</b>; число проверок попадает в отчёт.</li>
+            <li>Ответы сохраняются автоматически: страницу можно закрыть и открыть снова в этом же браузере.</li>
+            <li>В конце откройте раздел <b>«Отчёт»</b> и нажмите «Сдать работу». Если вы работаете в офлайн-файле, скопируйте отчёт и отправьте его преподавателю.</li>
+          </ol>
+        </div>
+        <div class="block">
+          <h3>Оборудование</h3>
+          <ul>
+            <li>Компьютер с Windows 10 или 11 (для задания 5).</li>
+            <li>Яндекс Браузер или другой современный браузер.</li>
+            <li>Презентация «Администрирование и управление пользователями».</li>
+          </ul>
+          <h3>Критерии оценки</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Баллы</th><th>Оценка</th></tr></thead>
+              <tbody>
+                <tr><td>90–100</td><td>«5», отлично</td></tr>
+                <tr><td>75–89</td><td>«4», хорошо</td></tr>
+                <tr><td>60–74</td><td>«3», удовлетворительно</td></tr>
+                <tr><td>менее 60</td><td>«2», работа на доработку</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="hint">Для 10-балльной шкалы: баллы ÷ 10 с округлением.</p>
+        </div>
+      </div>
+
+      <div class="actions"><span class="spacer"></span><button type="button" class="btn blue" data-go="t1">К заданию 1 →</button></div>
+    </section>
+
+    <section class="panel" id="t1" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 1 · 15 минут · 12 баллов</p>
+        <h2>Инструменты администратора</h2>
+        <p class="prose">Распределите 12 команд и инструментов по четырём блокам темы. Нажмите на карточку, затем на нужный блок; на компьютере карточки можно перетаскивать мышью. Если сомневаетесь, запустите безопасную команду на своём компьютере, например <code>whoami /groups</code> или <code>net accounts</code>.</p>
+      </div>
+      <div class="block">
+        <span class="lbl">Нераспределённые</span>
+        <div class="pool" id="t1pool" data-drop="pool"></div>
+      </div>
+      <div class="cats" id="t1cats"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t1">Проверить</button>
+        <span class="result" id="res-t1" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t2">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t2" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 2 · 15 минут · 12 баллов</p>
+        <h2>Команды net</h2>
+        <p class="prose" id="t2lead"></p>
+        <p class="prose">За каждую верную команду — 2 балла. Команды на компьютере не выполняйте: часть из них удаляет учётные записи.</p>
+      </div>
+      <details class="help">
+        <summary>Справка: синтаксис команд</summary>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Команда</th><th>Что делает</th></tr></thead>
+            <tbody>
+              <tr><td><code>net user имя пароль /add</code></td><td>создаёт локальную учётную запись</td></tr>
+              <tr><td><code>net user имя /delete</code></td><td>удаляет учётную запись</td></tr>
+              <tr><td><code>net user имя /active:no</code></td><td>отключает учётную запись (<code>/active:yes</code> — включает)</td></tr>
+              <tr><td><code>net user имя /logonpasswordchg:yes</code></td><td>требует сменить пароль при следующем входе</td></tr>
+              <tr><td><code>net localgroup группа /add</code></td><td>создаёт локальную группу</td></tr>
+              <tr><td><code>net localgroup группа имя /add</code></td><td>добавляет пользователя в группу (<code>/delete</code> — исключает)</td></tr>
+              <tr><td><code>net accounts /minpwlen:N</code></td><td>задаёт минимальную длину пароля для всех учётных записей</td></tr>
+              <tr><td><code>net accounts /lockoutthreshold:N</code></td><td>задаёт порог блокировки после N неудачных попыток входа</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </details>
+      <div class="qs" id="t2qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t2">Проверить</button>
+        <span class="result" id="res-t2" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t3">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t3" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 3 · 25 минут · 20 баллов</p>
+        <h2>Симулятор групп и прав</h2>
+        <p class="prose" id="t3lead"></p>
+      </div>
+      <details class="help">
+        <summary>Правила расчёта итогового доступа</summary>
+        <ul>
+          <li>Уровни доступа по силе: <b>Нет доступа &lt; Чтение &lt; Изменение &lt; Полный доступ</b>.</li>
+          <li>Сотрудник входит в группы <b>по своей должности</b>. Руководитель отдела входит и в группу отдела, и в группу руководства.</li>
+          <li>Если человек состоит в нескольких группах, их разрешения <b>складываются</b>: действует большее.</li>
+          <li><b>Явный запрет</b> сильнее любого разрешения.</li>
+          <li>Отключённая учётная запись не может войти в систему, значит доступа нет ни к чему.</li>
+          <li>Учётную запись уволенного сотрудника <b>сначала отключают</b>, удаляют позже, после сохранения его данных.</li>
+          <li>Если наследование отключено и унаследованные разрешения удалены, действуют только явно заданные разрешения вложенной папки.</li>
+        </ul>
+      </details>
+      <div class="block">
+        <h3>Часть 1. Сотрудники и группы (10 баллов)</h3>
+        <div class="table-wrap">
+          <table class="sim-t staff-t">
+            <thead id="staffHead"></thead>
+            <tbody id="staffBody"></tbody>
+          </table>
+        </div>
+        <h3>Разрешения групп на папки</h3>
+        <div class="table-wrap">
+          <table class="sim-t">
+            <thead id="permHead"></thead>
+            <tbody id="permBody"></tbody>
+          </table>
+        </div>
+        <p class="hint">Столбец «Получится» пересчитывается сразу, как только вы меняете группы или разрешения. По 2 балла за каждого сотрудника, у которого верны группы и итоговый доступ к обеим папкам, а у уволенного — отключена учётная запись.</p>
+      </div>
+      <div class="block">
+        <h3>Часть 2. Запрет и наследование (10 баллов)</h3>
+        <div class="qs" id="t3qs"></div>
+      </div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t3">Проверить</button>
+        <span class="result" id="res-t3" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t4">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t4" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 4 · 15 минут · 12 баллов</p>
+        <h2>Политика паролей</h2>
+        <p class="prose">На компьютере вашего варианта настроена политика паролей. Определите, примет ли Windows каждый из шести паролей при смене пароля пользователя. Каждый ответ — 2 балла.</p>
+      </div>
+      <details class="help">
+        <summary>Справка: требования сложности Windows</summary>
+        <ul>
+          <li>Длина пароля должна быть не меньше минимальной — это правило действует всегда.</li>
+          <li>Если требования сложности <b>включены</b>, пароль должен содержать символы хотя бы <b>трёх</b> категорий из четырёх: заглавные буквы, строчные буквы, цифры, специальные символы (<code>! # % @</code> и т. п.).</li>
+          <li>При включённой сложности пароль <b>не должен содержать имя входа</b> пользователя (без учёта регистра).</li>
+          <li>Если сложность <b>отключена</b>, проверяется только длина.</li>
+        </ul>
+      </details>
+      <div class="table-wrap"><table class="pol" id="polTable"></table></div>
+      <div class="qs" id="t4qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t4">Проверить</button>
+        <span class="result" id="res-t4" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t5">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t5" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 5 · 25 минут · 20 баллов</p>
+        <h2>Учётные записи своего компьютера</h2>
+        <p class="prose">Выполните действия на компьютере, за которым работаете, и заполните поля. Задание оценивает преподаватель: по 1 баллу за каждое верно заполненное поле. Создавайте и удаляйте только тестовую учётную запись <code>test_фамилия</code> и только с разрешения преподавателя.</p>
+      </div>
+      <div class="block">
+        <h3>Где искать сведения</h3>
+        <ol class="steps">
+          <li>Откройте командную строку: <kbd>Win</kbd> + <kbd>R</kbd> → <code>cmd</code>. Выполните <code>whoami</code> и <code>net user</code>.</li>
+          <li><code>net user Администратор</code> и <code>net user Гость</code> — строка «Учётная запись активна». В английской Windows — <code>Administrator</code> и <code>Guest</code>.</li>
+          <li><code>net user %USERNAME%</code> — последний вход, срок действия пароля, членство в локальных группах.</li>
+          <li><code>whoami /groups</code>, <code>net localgroup</code>, <code>net localgroup Администраторы</code>, <code>net localgroup Пользователи</code>.</li>
+          <li><code>net accounts</code> — минимальная длина пароля, срок действия, порог блокировки.</li>
+          <li><code>icacls "%USERPROFILE%\Documents"</code> — разрешения на папку «Документы». Буквы: F — полный доступ, M — изменение, RX — чтение и выполнение, (I) — разрешение унаследовано.</li>
+          <li>Если есть права администратора (командная строка «Запуск от имени администратора»): <code>net user test_фамилия * /add</code> → <code>net localgroup Пользователи test_фамилия /add</code> → <code>net user test_фамилия /active:no</code> → <code>net user test_фамилия /delete</code>. После каждой команды проверяйте результат через <code>net user test_фамилия</code>.</li>
+        </ol>
+        <p class="note">Работаете на Linux? Пользователи — <code>cat /etc/passwd</code> и <code>id</code>, группы — <code>groups</code> и <code>getent group sudo</code>, политика паролей — <code>chage -l $USER</code>, разрешения — <code>ls -l ~</code>; создание — <code>sudo useradd -m test_фамилия</code>, блокировка — <code>sudo usermod -L</code>, удаление — <code>sudo userdel -r</code>.</p>
+      </div>
+      <div class="block" id="t5fields"></div>
+      <div class="actions">
+        <span class="result" id="res-t5" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t6">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t6" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 6 · 10 минут · 12 баллов</p>
+        <h2>Итоговый тест</h2>
+        <p class="prose">Выберите один правильный ответ в каждом вопросе. После проверки отмечается, верен ли ответ, но правильный вариант не показывается.</p>
+      </div>
+      <div class="qs" id="t6qs"></div>
+      <div class="actions">
+        <button type="button" class="btn primary" data-check="t6">Проверить</button>
+        <span class="result" id="res-t6" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="t7">Далее →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="t7" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Задание 7 · 10 минут · 12 баллов</p>
+        <h2>Контрольные вопросы и вывод</h2>
+        <p class="prose">Ответьте развёрнуто, 2–4 предложения на вопрос. Опирайтесь на результаты заданий 3–5. По 2 балла за каждый ответ, 4 балла за вывод.</p>
+      </div>
+      <div class="block" id="t7fields"></div>
+      <div class="actions">
+        <span class="result" id="res-t7" aria-live="polite"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn blue" data-go="report">К отчёту →</button>
+      </div>
+    </section>
+
+    <section class="panel" id="report" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Отчёт</p>
+        <h2>Результаты практической работы</h2>
+        <p class="prose" id="repWho"></p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Задание</th><th class="num">Баллы</th><th class="num">Проверок</th><th>Проверка</th></tr></thead>
+          <tbody id="repTable"></tbody>
+        </table>
+      </div>
+      <p class="note" id="repNote"></p>
+      <div class="send-box no-print">
+        <div class="block">
+          <h3>Отправка преподавателю</h3>
+          <p id="syncNote" class="prose">Проверяю связь с преподавателем…</p>
+          <p class="hint">Ответы отправляются автоматически после каждой проверки и изменения. Когда закончите работу, нажмите «Сдать работу» — преподаватель увидит отметку «Сдано».</p>
+        </div>
+        <div class="q-row">
+          <button type="button" class="btn primary" id="submitBtn">Сдать работу</button>
+          <span class="copy-msg" id="submitMsg" aria-live="polite"></span>
+        </div>
+      </div>
+      <div class="block no-print">
+        <label class="lbl" for="reportText">Текст отчёта для преподавателя</label>
+        <textarea id="reportText" class="report-text" readonly></textarea>
+        <div class="q-row">
+          <button type="button" class="btn primary" id="copyBtn">Скопировать отчёт</button>
+          <span class="copy-msg" id="copyMsg" aria-live="polite"></span>
+        </div>
+        <p class="hint">Вставьте отчёт в письмо или сообщение преподавателю. Чтобы распечатать или сохранить PDF, откройте файл практикума в Яндекс Браузере и нажмите <kbd>Ctrl</kbd> + <kbd>P</kbd>.</p>
+      </div>
+      <div class="actions no-print">
+        <button type="button" class="btn" id="resetBtn">Начать работу заново</button>
+        <div class="confirm" id="resetConfirm" hidden>
+          <span><b>Удалить все ответы и сбросить таймер?</b></span>
+          <button type="button" class="btn small primary" id="resetYes">Да, удалить</button>
+          <button type="button" class="btn small" id="resetNo">Отмена</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="teacher" data-panel hidden>
+      <div class="task-head">
+        <p class="kicker">Для преподавателя</p>
+        <h2>Результаты группы</h2>
+        <p class="prose" id="tLead">Этот раздел открывается только у владельца практикума. Если вы преподаватель, откройте ссылку под своей учётной записью claude.ai.</p>
+      </div>
+      <div id="tBody" hidden>
+        <div class="tiles" id="tTiles"></div>
+        <div class="t-tools">
+          <div class="field t-search"><label for="tFilter">Поиск по фамилии или группе</label><input type="text" id="tFilter" autocomplete="off" placeholder="Например, ИТ-21"></div>
+          <div class="q-row">
+            <button type="button" class="btn" id="csvBtn">Скачать таблицу (CSV)</button>
+            <span class="copy-msg" id="csvMsg" aria-live="polite"></span>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="tt">
+            <thead><tr><th>Студент</th><th class="num">Вар.</th><th class="num">№1</th><th class="num">№2</th><th class="num">№3</th><th class="num">№4</th><th class="num">№6</th><th class="num">Авто /68</th><th class="num">№5 /20</th><th class="num">№7 /12</th><th class="num">Итого</th><th>Статус</th></tr></thead>
+            <tbody id="tRows"></tbody>
+          </table>
+        </div>
+        <p class="hint">Баллы автопроверки пересчитываются здесь по ответам студента, а не берутся из его браузера. Баллы за задания 5 и 7 введите в таблицу — они сохраняются сразу. Подробные ответы — кнопка «Ответы».</p>
+        <textarea id="csvText" class="report-text" readonly hidden></textarea>
+        <div id="tDetails" class="t-details"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function(){
+'use strict';
+var $ = function(s, r){ return (r || document).querySelector(s); };
+var $$ = function(s, r){ return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var esc = function(s){ return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); };
+
+
+/* ---------- данные ---------- */
+var TASKS = [
+  {id:'intro', n:'i', t:'Инструкция', min:5},
+  {id:'t1', n:'1', t:'Инструменты администратора', min:15, max:12, auto:true},
+  {id:'t2', n:'2', t:'Команды net', min:15, max:12, auto:true},
+  {id:'t3', n:'3', t:'Симулятор групп и прав', min:25, max:20, auto:true},
+  {id:'t4', n:'4', t:'Политика паролей', min:15, max:12, auto:true},
+  {id:'t5', n:'5', t:'Учётные записи ПК', min:25, max:20},
+  {id:'t6', n:'6', t:'Итоговый тест', min:10, max:12, auto:true},
+  {id:'t7', n:'7', t:'Выводы', min:10, max:12},
+  {id:'report', n:'Σ', t:'Отчёт'}
+];
+var AUTO_MAX = 68, TEACHER_MAX = 32;
+
+var T1_CATS = [
+  {id:'acc', t:'Учётные записи', d:'создание, отключение, удаление'},
+  {id:'grp', t:'Группы', d:'создание групп и членство в них'},
+  {id:'perm', t:'Права и разрешения', d:'доступ к файлам и папкам'},
+  {id:'pol', t:'Политики безопасности', d:'пароли и блокировка входа'}
+];
+var T1_CARDS = {
+  netadd:['net user ivanov /add','acc'], disable:['Disable-LocalUser','acc'], lusr:['lusrmgr.msc → Пользователи','acc'],
+  netlg:['net localgroup Кадры /add','grp'], addm:['Add-LocalGroupMember','grp'], whoamig:['whoami /groups','grp'],
+  icacls:['icacls','perm'], secur:['Вкладка «Безопасность»','perm'], eff:['Вкладка «Действующий доступ»','perm'],
+  secpol:['secpol.msc → Политика паролей','pol'], netacc:['net accounts','pol'], lockout:['Порог блокировки учётной записи','pol']
+};
+var T1_ORDER = ['icacls','netadd','secpol','netlg','eff','disable','netacc','whoamig','secur','lockout','lusr','addm'];
+
+var LOGINS = ['ivanov','petrova','sidorov','kuznetsova','smirnov','popova','volkov','sokolova','morozov','lebedeva'];
+var TEAMS = [
+  ['Бухгалтерия','Кадры','Руководство','Финансы','Персонал'],
+  ['Разработчики','Тестировщики','Руководство','Код','Отчёты'],
+  ['Преподаватели','Методисты','Администрация','Задания','Оценки'],
+  ['Продажи','Склад','Руководство','Клиенты','Остатки'],
+  ['Врачи','Регистратура','Руководство','Карты','Расписание'],
+  ['Дизайнеры','Маркетинг','Руководство','Макеты','Кампании'],
+  ['Юристы','Секретариат','Руководство','Договоры','Входящие'],
+  ['Инженеры','Снабжение','Руководство','Чертежи','Закупки'],
+  ['Библиотекари','Хранители','Администрация','Каталог','Фонд'],
+  ['Диспетчеры','Механики','Руководство','Маршруты','Ремонты']
+];
+var PAT = [
+  [[2,0],[0,2],[1,1]], [[3,1],[1,2],[1,1]], [[2,1],[1,2],[1,1]], [[2,0],[1,2],[1,1]], [[2,1],[0,2],[1,1]],
+  [[3,0],[1,2],[1,1]], [[2,0],[0,3],[1,1]], [[2,1],[0,2],[1,0]], [[2,1],[1,2],[0,1]], [[2,0],[1,2],[1,1]]
+];
+var NAMES = ['Анна','Борис','Вера','Глеб','Дина','Егор','Жанна','Захар','Ирина','Кирилл','Лидия','Максим','Нина','Олег','Полина','Роман','Светлана','Тимур','Ульяна','Фёдор'];
+var ROLES = [
+  {g:[0], t:'сотрудник отдела «{0}»'},
+  {g:[1], t:'сотрудник отдела «{1}»'},
+  {g:[0,2], t:'руководитель отдела «{0}», входит в «{2}»'},
+  {g:[2], t:'член группы «{2}»'},
+  {g:[1], fired:true, t:'бывший сотрудник отдела «{1}», уволен вчера'}
+];
+var LV = ['Нет доступа','Чтение','Изменение','Полный доступ'];
+var DENY = [[2,'w'],[3,'f'],[3,'w'],[2,'f'],[2,'w'],[3,'w'],[2,'f'],[3,'f'],[2,'w'],[3,'w']];
+var INH = [[2,1,1],[1,2,1],[2,1,0],[3,1,1],[2,0,0],[1,1,1],[2,3,1],[3,1,0],[1,2,0],[2,1,1]];
+
+var POL = [[8,1],[10,1],[12,0],[10,1],[9,0],[10,0],[7,1],[9,1],[6,1],[11,0]];
+var PWDS = ['Summer2024','password','{L}!2025','K7#mq','Zx9!Zx9!','Tr0ub4dor','qwerty123456','Moscow-2026-Snow','Кот_Мурзик7','ЯблокоГруша'];
+var PSET = [[0,1,2,3,4,8],[0,2,3,4,7,8],[0,1,2,6,7,8],[0,2,4,6,7,8],[1,2,3,4,5,9],[0,1,3,5,6,9],[1,2,4,5,6,8],[0,2,4,5,6,8],[0,1,2,3,4,7],[0,1,2,4,6,9]];
+
+var T5_GROUPS = [
+  {t:'Учётные записи', where:'Командная строка: whoami, net user', f:[
+    ['t5_whoami','Результат whoami (имя компьютера\\пользователь)',''],
+    ['t5_users','Список учётных записей из net user','','area'],
+    ['t5_admin','Учётная запись «Администратор»: активна? (net user Администратор)','Нет'],
+    ['t5_guest','Учётная запись «Гость»: активна?',''],
+    ['t5_me','Ваша учётная запись: последний вход и срок действия пароля','','area']]},
+  {t:'Группы', where:'whoami /groups, net localgroup', f:[
+    ['t5_mygroups','В каких локальных группах вы состоите (net user ваше_имя)',''],
+    ['t5_admins','Члены группы «Администраторы»','','area'],
+    ['t5_usersgrp','Члены группы «Пользователи»','','area'],
+    ['t5_groupcount','Сколько всего локальных групп выводит net localgroup','']]},
+  {t:'Политики и разрешения', where:'net accounts, icacls', f:[
+    ['t5_minlen','Минимальная длина пароля',''],
+    ['t5_maxage','Максимальный срок действия пароля, дней',''],
+    ['t5_lockout','Порог блокировки учётной записи',''],
+    ['t5_icacls','icacls для папки «Документы»: кто и с какими правами (F, M, RX)','','area'],
+    ['t5_inherit','Какие записи в выводе icacls унаследованы (I)?','']]},
+  {t:'Создание и удаление (если есть права администратора)', where:'Командная строка от имени администратора', f:[
+    ['t5_create','Команда создания test_фамилия и её результат','net user test_ivanov * /add'],
+    ['t5_addgrp','Команда добавления в группу и проверка','','area'],
+    ['t5_disable','Команда отключения и поле «Учётная запись активна» после неё','','area'],
+    ['t5_delete','Команда удаления и проверка через net user','','area'],
+    ['t5_advice','Ваши рекомендации по безопасности учётных записей этого ПК','','area'],
+    ['t5_noadmin','Если прав администратора нет: что выдала команда net user test /add?','']]}
+];
+
+var T6 = [
+  ['Чем группа отличается от учётной записи?', ['Группа — это пароль для нескольких пользователей','Группа объединяет учётные записи, чтобы выдавать им права вместе','Группа — это учётная запись администратора','Ничем'], 1],
+  ['Какая команда создаёт локального пользователя?', ['net localgroup ivanov /add','net user ivanov Пароль1! /add','whoami /add ivanov','net accounts ivanov /add'], 1],
+  ['Что сделать с учётной записью уволенного сотрудника в первую очередь?', ['Сразу удалить','Отключить','Переименовать','Перенести в группу «Гости»'], 1],
+  ['Почему учётную запись не удаляют сразу?', ['Удаление занимает много времени','При удалении теряется SID, и вернуть прежние права нельзя','Windows запрещает удаление','Удалённая запись остаётся в группах'], 1],
+  ['Кому лучше назначать разрешения на общие папки?', ['Каждому пользователю отдельно','Группам','Только администратору','Гостю'], 1],
+  ['Пользователь в двух группах: одной дано «Чтение», другой — «Изменение», запретов нет. Итог?', ['Чтение','Изменение','Нет доступа','Полный доступ'], 1],
+  ['Что сильнее: разрешение одной группы или явный запрет другой?', ['Разрешение','Явный запрет','Та группа, что создана раньше','Они не влияют друг на друга'], 1],
+  ['Где задаётся требование сложности пароля?', ['secpol.msc → Политики учётных записей → Политика паролей','Диспетчер устройств','services.msc','Просмотр событий'], 0],
+  ['Что показывает команда whoami /groups?', ['Все группы компьютера','Группы текущего пользователя','Пользователей группы «Администраторы»','Пароли пользователей'], 1],
+  ['Члены какой группы имеют полный контроль над компьютером?', ['Пользователи','Гости','Администраторы','Операторы архива'], 2],
+  ['Для чего нужен порог блокировки учётной записи?', ['Ускоряет вход','Защищает от подбора пароля','Удаляет старые учётные записи','Ограничивает размер профиля'], 1],
+  ['Что такое наследование разрешений?', ['Копирование учётной записи','Передача разрешений папки вложенным файлам и папкам','Передача прав от администратора гостю','Смена владельца файла'], 1]
+];
+
+var T7_FIELDS = [
+  ['t7_q1','1. Почему права доступа назначают группам, а не отдельным пользователям?'],
+  ['t7_q2','2. Как вы решили задание 3: какие разрешения дали каждой группе и почему?'],
+  ['t7_q3','3. Почему учётную запись уволенного сотрудника сначала отключают, а не удаляют?'],
+  ['t7_q4','4. Какую политику паролей и блокировки вы рекомендуете для компьютерного класса? Обоснуйте.'],
+  ['t7_concl','Вывод по работе']
+];
+
+
+/* ---------- состояние ---------- */
+var KEY = 'users-admin-practicum-v1';
+function defaults(){ return {v:{}, t1:{}, sim:{}, attempts:{}, checked:{}, timer:{left:7200, running:false, at:0}, active:'intro'}; }
+function load(){ try { var raw = localStorage.getItem(KEY); return raw ? JSON.parse(raw) : null; } catch(e){ return null; } }
+var S = (function(){
+  var d = defaults(), s = load();
+  if (!s || typeof s !== 'object') return d;
+  for (var k in d) if (!(k in s)) s[k] = d[k];
+  return s;
+})();
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+function variant(){ var n = parseInt(S.v.student_variant, 10); return n >= 1 && n <= 10 ? n : 1; }
+function num(s){ if (s == null) return NaN; var t = String(s).replace(/\s+/g,'').replace(',', '.'); return t === '' ? NaN : Number(t); }
+function filled(k){ return String(S.v[k] || '').trim() !== ''; }
+
+
+/* ---------- вычисления ---------- */
+function team(v){ return TEAMS[v - 1]; }
+function fillT(s, tm){ return s.replace(/\{(\d)\}/g, function(_, i){ return tm[+i]; }); }
+function staff(v){
+  var tm = team(v), out = [];
+  for (var i = 0; i < 5; i++){
+    var r = ROLES[(i + v) % 5];
+    out.push({name:NAMES[(2 * v + i) % NAMES.length], role:fillT(r.t, tm), g:r.g, fired:!!r.fired});
+  }
+  return out;
+}
+function truthReq(v, e){ if (e.fired) return [0, 0]; var P = PAT[v - 1]; return [0, 1].map(function(f){ return Math.max.apply(null, e.g.map(function(g){ return P[g][f]; })); }); }
+function sk(v, a){ return v + '_' + a; }
+function simGet(v, a){ var x = S.sim[sk(v, a)]; return x == null ? null : x; }
+function simPerm(v, g, f){ var x = simGet(v, 'p_' + g + '_' + f); return x == null ? -1 : +x; }
+function simMember(v, e, g){ return simGet(v, 'm_' + e + '_' + g) === '1'; }
+function simDisabled(v, e){ return simGet(v, 'd_' + e) === '1'; }
+function simEff(v, e){
+  if (simDisabled(v, e)) return [0, 0];
+  return [0, 1].map(function(f){
+    var best = 0;
+    for (var g = 0; g < 3; g++) if (simMember(v, e, g)){ var p = simPerm(v, g, f); if (p > best) best = p; }
+    return best;
+  });
+}
+function simRowOk(v, e){
+  var st = staff(v)[e];
+  if (st.fired) return simDisabled(v, e);
+  if (simDisabled(v, e)) return false;
+  for (var g = 0; g < 3; g++) if (simMember(v, e, g) !== (st.g.indexOf(g) >= 0)) return false;
+  var req = truthReq(v, st), got = simEff(v, e);
+  return req[0] === got[0] && req[1] === got[1];
+}
+function t3Questions(v){
+  var tm = team(v), d = DENY[v - 1], h = INH[v - 1], opts = LV.map(function(l, i){ return [String(i), l]; });
+  var dAns = d[1] === 'w' ? 1 : 0;
+  var hAns = h[2] ? Math.max(h[0], h[1]) : h[1];
+  return [
+    {k:'t3_q1', t:'1. Сотрудник входит в группы «' + tm[0] + '» и «' + tm[1] + '». На папку «' + tm[3] + '» группе «' + tm[0] + '» разрешено «' + LV[d[0]] + '», а группе «' + tm[1] + '» установлен запрет «Запретить: ' + (d[1] === 'w' ? 'Запись' : 'Полный доступ') + '». Какой итоговый доступ сотрудника?', type:'select', opts:opts, ans:String(dAns)},
+    {k:'t3_q2', t:'2. Внутри папки «' + tm[3] + '» есть папка «Архив». Группе «' + tm[0] + '» на «' + tm[3] + '» дано «' + LV[h[0]] + '». На «Архиве» ' + (h[2] ? 'наследование включено' : 'наследование отключено, унаследованные разрешения удалены') + (h[1] ? ', и группе «' + tm[0] + '» явно добавлено «' + LV[h[1]] + '»' : ', явных разрешений для «' + tm[0] + '» нет') + '. Какой доступ к «Архиву» у сотрудника этой группы?', type:'select', opts:opts, ans:String(hAns)}
+  ];
+}
+function login(v){ return LOGINS[v - 1]; }
+function cap(s){ return s.charAt(0).toUpperCase() + s.slice(1); }
+function pwdList(v){ return PSET[v - 1].map(function(i){ return PWDS[i]; }).map(function(p){ return p.replace('{L}', cap(login(v))); }); }
+function cats(p){ return [/[A-ZА-ЯЁ]/, /[a-zа-яё]/, /[0-9]/, /[^A-Za-zА-Яа-яЁё0-9]/].filter(function(r){ return r.test(p); }).length; }
+function pwdOk(v, p){
+  var pol = POL[v - 1];
+  if (p.length < pol[0]) return false;
+  if (pol[1]){ if (cats(p) < 3) return false; if (p.toLowerCase().indexOf(login(v).toLowerCase()) >= 0) return false; }
+  return true;
+}
+function t4Questions(v){
+  var opts = [['yes','Примет'],['no','Отклонит']];
+  return pwdList(v).map(function(p, i){ return {k:'t4_p' + i, t:'Пароль ' + (i + 1) + ': <code>' + esc(p) + '</code> для пользователя <code>' + login(v) + '</code>', type:'select', opts:opts, ans:pwdOk(v, p) ? 'yes' : 'no'}; });
+}
+function cmdQuestions(v){
+  var L = login(v), G = team(v)[0], N = POL[v - 1][0];
+  var raw = [
+    ['Создать пользователя ' + L + ' с паролем Start#2026', ['net user ' + L + ' Start#2026 /add', 'net localgroup ' + L + ' /add', 'net accounts ' + L + ' /add', 'net user ' + L + ' /delete']],
+    ['Добавить ' + L + ' в группу «' + G + '»', ['net localgroup ' + G + ' ' + L + ' /add', 'net user ' + L + ' ' + G + ' /add', 'net localgroup ' + L + ' ' + G + ' /add', 'whoami /groups ' + L]],
+    ['Временно запретить вход: сотрудник ушёл в отпуск', ['net user ' + L + ' /active:no', 'net user ' + L + ' /delete', 'net user ' + L + ' /active:yes', 'net localgroup Гости ' + L + ' /add']],
+    ['Потребовать сменить пароль при следующем входе', ['net user ' + L + ' /logonpasswordchg:yes', 'net user ' + L + ' /passwordchg:no', 'net accounts /maxpwage:0', 'net user ' + L + ' /expires:never']],
+    ['Удалить учётную запись: данные уже сохранены', ['net user ' + L + ' /delete', 'net user ' + L + ' /active:no', 'net localgroup ' + L + ' /delete', 'net accounts ' + L + ' /delete']],
+    ['Установить минимальную длину пароля ' + N + ' символов для всех', ['net accounts /minpwlen:' + N, 'net user ' + L + ' /minpwlen:' + N, 'net accounts /uniquepw:' + N, 'net accounts /lockoutthreshold:' + N]]
+  ];
+  return raw.map(function(q, i){
+    var shift = (i + v) % 4, code = function(j){ return String((j + 3 * v + i) % 4); };
+    var opts = q[1].map(function(o, j){ return [code(j), o]; });
+    opts = opts.slice(shift).concat(opts.slice(0, shift));
+    return {k:'t2_c' + i, t:'Ситуация ' + (i + 1) + '. ' + q[0], type:'select', opts:opts, ans:code(0), mono:true};
+  });
+}
+function t3Summary(v, sim){
+  return withSim(sim, function(){
+    var tm = team(v), rows = [];
+    staff(v).forEach(function(st, e){
+      var gs = []; for (var g = 0; g < 3; g++) if (simMember(v, e, g)) gs.push(tm[g]);
+      rows.push([st.name + ' — ' + st.role, (gs.length ? 'группы: ' + gs.join(', ') : 'групп нет') + (simDisabled(v, e) ? '; учётная запись отключена' : '') + (simRowOk(v, e) ? ' (верно)' : ' (не верно)')]);
+    });
+    for (var g = 0; g < 3; g++){
+      rows.push(['Разрешения группы «' + tm[g] + '»', tm[3] + ': ' + (simPerm(v, g, 0) < 0 ? 'не задано' : LV[simPerm(v, g, 0)]) + '; ' + tm[4] + ': ' + (simPerm(v, g, 1) < 0 ? 'не задано' : LV[simPerm(v, g, 1)])]);
+    }
+    return rows;
+  });
+}
+function withSim(sim, fn){ var old = S.sim; S.sim = sim || {}; try { return fn(); } finally { S.sim = old; } }
+function qOk(q){
+  if (q.type === 'select') return S.v[q.k] === q.ans;
+  var x = num(S.v[q.k]);
+  return isFinite(x) && Math.abs(x - q.ans) <= (q.tol || 1e-9);
+}
+
+/* ---------- оценки ---------- */
+function scoreT1(){ var s = 0; for (var id in T1_CARDS) if (S.t1[id] === T1_CARDS[id][1]) s++; return s; }
+function scoreT2(){ return cmdQuestions(variant()).filter(qOk).length * 2; }
+function scoreT3(){ var v = variant(), s = 0; for (var e = 0; e < 5; e++) if (simRowOk(v, e)) s += 2; return s + t3Questions(v).filter(qOk).length * 5; }
+function scoreT4(){ return t4Questions(variant()).filter(qOk).length * 2; }
+function scoreT6(){ var s = 0; T6.forEach(function(q, i){ if (S.v['t6_' + i] === String(q[2])) s++; }); return s; }
+function score(id){ return {t1:scoreT1, t2:scoreT2, t3:scoreT3, t4:scoreT4, t6:scoreT6}[id](); }
+function t5Keys(){ var k = []; T5_GROUPS.forEach(function(g){ g.f.forEach(function(f){ k.push(f[0]); }); }); return k; }
+function t7Keys(){ return T7_FIELDS.map(function(f){ return f[0]; }); }
+function fillCount(keys){ return keys.filter(filled).length; }
+function autoTotal(){ return scoreT1() + scoreT2() + scoreT3() + scoreT4() + scoreT6(); }
+
+
+/* ---------- навигация ---------- */
+function renderNav(){
+  $('#nav').innerHTML = TASKS.map(function(t){
+    var chip = '', cls = '';
+    if (t.auto){
+      if (S.attempts[t.id]){ var s = score(t.id); chip = s + '/' + t.max; cls = s >= t.max * 0.75 ? 'good' : 'mid'; }
+    } else if (t.id === 't5' || t.id === 't7'){
+      var keys = t.id === 't5' ? t5Keys() : t7Keys(), f = fillCount(keys);
+      if (f){ chip = f + '/' + keys.length; cls = f === keys.length ? 'good' : 'mid'; }
+    }
+    return '<li><button type="button" class="nav-btn" data-go="' + t.id + '" aria-current="' + (S.active === t.id) + '">' +
+      '<span class="nav-num">' + t.n + '</span><span class="nav-title">' + t.t + (t.min ? '<span class="nav-min">' + t.min + ' мин</span>' : '') + '</span>' +
+      '<span class="nav-chip ' + cls + '">' + chip + '</span></button></li>';
+  }).join('');
+}
+function go(id, noScroll){
+  if (!document.getElementById(id)) id = 'intro';
+  S.active = id; save();
+  $$('[data-panel]').forEach(function(p){ p.hidden = p.id !== id; });
+  renderNav();
+  if (id === 'report') renderReport();
+  if (id === 'teacher') renderTeacher();
+  try { history.replaceState(null, '', '#' + id); } catch(e){}
+  if (!noScroll) window.scrollTo(0, 0);
+}
+function updateBar(){ $('#barVariant').textContent = variant(); $('#barScore').textContent = autoTotal() + ' / ' + AUTO_MAX; }
+
+
+/* ---------- поля ---------- */
+function fillValues(root){
+  $$('[data-k]', root).forEach(function(el){
+    var val = S.v[el.dataset.k];
+    if (val == null) return;
+    if (el.type === 'radio') el.checked = el.value === val; else el.value = val;
+  });
+}
+function onField(e){
+  var el = e.target;
+  if (el.dataset && el.dataset.sim){
+    S.sim[el.dataset.sim] = el.type === 'checkbox' ? (el.checked ? '1' : null) : (el.value === '' ? null : el.value);
+    if (S.checked.t3){ S.checked.t3 = false; }
+    save(); renderSim(); setResult('t3'); updateBar(); renderNav(); queueSync(2000);
+    return;
+  }
+  var k = el.dataset && el.dataset.k;
+  if (!k) return;
+  if (el.type === 'radio' && !el.checked) return;
+  if (S.v[k] === el.value) return;
+  S.v[k] = el.value;
+  var task = k.split('_')[0];
+  if (S.checked[task]){ S.checked[task] = false; feedback(task); }
+  if (k === 'student_variant') onVariant();
+  if (task === 't5' || task === 't7') setFillResult(task);
+  save(); updateBar(); renderNav(); queueSync(3000);
+}
+document.addEventListener('input', onField);
+document.addEventListener('change', onField);
+
+function setResult(id){
+  var el = $('#res-' + id), t = TASKS.filter(function(x){ return x.id === id; })[0];
+  if (!el) return;
+  el.className = 'result';
+  if (S.checked[id]){
+    var s = score(id);
+    el.textContent = 'Результат: ' + s + ' из ' + t.max + ' · проверок: ' + S.attempts[id];
+    el.classList.add(s >= t.max * 0.75 ? 'good' : 'mid');
+  } else if (S.attempts[id]) el.textContent = 'Ответы изменены — нажмите «Проверить» ещё раз.';
+  else el.textContent = '';
+}
+function markQ(list){
+  list.forEach(function(q){
+    var box = document.querySelector('[data-q="' + q.k + '"]');
+    if (!box) return;
+    var task = q.k.split('_')[0], m = $('.q-mark', box);
+    box.classList.remove('ok','bad'); m.className = 'q-mark'; m.textContent = '';
+    if (!S.checked[task]) return;
+    var ok = qOk(q);
+    box.classList.add(ok ? 'ok' : 'bad'); m.classList.add(ok ? 'ok' : 'bad');
+    m.textContent = ok ? '✓ Верно' : '✗ Неверно';
+  });
+}
+function feedback(id){
+  if (id === 't1') renderT1();
+  else if (id === 't2') markQ(cmdQuestions(variant()));
+  else if (id === 't3'){ renderSim(); markQ(t3Questions(variant())); }
+  else if (id === 't4') markQ(t4Questions(variant()));
+  else if (id === 't6') markQ(T6.map(function(q, i){ return {k:'t6_' + i, type:'select', ans:String(q[2])}; }));
+  setResult(id);
+}
+
+
+/* ---------- задание 1 ---------- */
+var t1Sel = null;
+function cardHtml(id){
+  var cls = 'card';
+  if (S.checked.t1 && S.t1[id]) cls += S.t1[id] === T1_CARDS[id][1] ? ' ok' : ' bad';
+  return '<button type="button" class="' + cls + '" draggable="true" data-card="' + id + '" aria-pressed="' + (t1Sel === id) + '">' + esc(T1_CARDS[id][0]) + '</button>';
+}
+function renderT1(){
+  var pool = T1_ORDER.filter(function(id){ return !S.t1[id]; });
+  $('#t1pool').innerHTML = pool.length ? pool.map(cardHtml).join('') : '<span class="pool-empty">Все карточки распределены</span>';
+  $('#t1cats').innerHTML = T1_CATS.map(function(c){
+    var items = T1_ORDER.filter(function(id){ return S.t1[id] === c.id; });
+    return '<div class="cat' + (t1Sel ? ' armed' : '') + '" data-drop="' + c.id + '" role="button" tabindex="0" aria-label="Поместить в блок ' + c.t + '">' +
+      '<span class="cat-t">' + c.t + '</span><span class="cat-d">' + c.d + '</span><div class="cat-list">' + items.map(cardHtml).join('') + '</div></div>';
+  }).join('');
+  setResult('t1');
+}
+function placeT1(id, target){
+  if (!T1_CARDS[id]) return;
+  if (target === 'pool') delete S.t1[id]; else S.t1[id] = target;
+  t1Sel = null; S.checked.t1 = false;
+  save(); renderT1(); updateBar(); renderNav(); queueSync(1500);
+}
+$('#t1').addEventListener('click', function(e){
+  var card = e.target.closest('[data-card]');
+  if (card){ e.stopPropagation(); var id = card.dataset.card; t1Sel = t1Sel === id ? null : id; renderT1(); return; }
+  var drop = e.target.closest('[data-drop]');
+  if (drop && t1Sel) placeT1(t1Sel, drop.dataset.drop);
+});
+$('#t1').addEventListener('keydown', function(e){
+  var drop = e.target.closest('.cat[data-drop]');
+  if (drop && (e.key === 'Enter' || e.key === ' ') && t1Sel){ e.preventDefault(); placeT1(t1Sel, drop.dataset.drop); }
+});
+$('#t1').addEventListener('dragstart', function(e){
+  var card = e.target.closest('[data-card]'); if (!card) return;
+  try { e.dataTransfer.setData('text/plain', card.dataset.card); e.dataTransfer.effectAllowed = 'move'; } catch(err){}
+});
+$('#t1').addEventListener('dragover', function(e){
+  var drop = e.target.closest('[data-drop]'); if (!drop) return;
+  e.preventDefault(); $$('.over', $('#t1')).forEach(function(x){ if (x !== drop) x.classList.remove('over'); }); drop.classList.add('over');
+});
+$('#t1').addEventListener('dragleave', function(e){ var drop = e.target.closest('[data-drop]'); if (drop && !drop.contains(e.relatedTarget)) drop.classList.remove('over'); });
+$('#t1').addEventListener('drop', function(e){
+  var drop = e.target.closest('[data-drop]'); if (!drop) return;
+  e.preventDefault(); var id = ''; try { id = e.dataTransfer.getData('text/plain'); } catch(err){}
+  placeT1(id, drop.dataset.drop);
+});
+
+
+/* ---------- задание 2 ---------- */
+function renderT2(){
+  var qs = cmdQuestions(variant());
+  $('#t2lead').innerHTML = 'Вы — администратор компьютера отдела. Учётная запись сотрудника: <code>' + login(variant()) + '</code>. Для каждой ситуации выберите команду, которая решает задачу.';
+  $('#t2qs').innerHTML = qs.map(qHtml).join('');
+  fillValues($('#t2qs')); markQ(qs); setResult('t2');
+}
+
+/* ---------- задание 3 ---------- */
+function lvSelect(key, label){
+  var cur = S.sim[key];
+  return '<select data-sim="' + key + '" aria-label="' + esc(label) + '"><option value="">—</option>' +
+    LV.map(function(l, i){ return '<option value="' + i + '"' + (cur != null && +cur === i ? ' selected' : '') + '>' + l + '</option>'; }).join('') + '</select>';
+}
+function chk(key, label, text){
+  return '<label class="cbx"><input type="checkbox" data-sim="' + key + '"' + (S.sim[key] === '1' ? ' checked' : '') + ' aria-label="' + esc(label) + '"><span>' + esc(text) + '</span></label>';
+}
+function renderT3(){
+  var v = variant(), tm = team(v), st = staff(v);
+  $('#t3lead').innerHTML = 'В организации созданы группы <b>«' + esc(tm[0]) + '»</b>, <b>«' + esc(tm[1]) + '»</b> и <b>«' + esc(tm[2]) + '»</b> и общие папки <b>«' + esc(tm[3]) + '»</b> и <b>«' + esc(tm[4]) + '»</b>. ' +
+    'Включите каждого сотрудника в группы по его должности, отключите учётную запись уволенного и выдайте группам разрешения на папки так, чтобы итоговый доступ каждого совпал с колонкой «Нужно». Разрешения отдельным людям не выдаются.';
+  $('#staffHead').innerHTML = '<tr><th>Сотрудник и должность</th><th>Нужно</th><th>Группы</th><th>Получится</th></tr>';
+  $('#staffBody').innerHTML = st.map(function(e, i){
+    var req = truthReq(v, e);
+    var need = e.fired ? '<span class="two"><b>Отключить учётную запись</b></span>' :
+      '<span class="two">' + esc(tm[3]) + ': <b>' + LV[req[0]] + '</b></span><span class="two">' + esc(tm[4]) + ': <b>' + LV[req[1]] + '</b></span>';
+    var groups = [0, 1, 2].map(function(g){ return chk(sk(v, 'm_' + i + '_' + g), e.name + ': группа ' + tm[g], tm[g]); }).join('') +
+      chk(sk(v, 'd_' + i), e.name + ': отключить учётную запись', 'Отключить учётную запись');
+    return '<tr data-row="' + i + '"><td><span class="gname">' + esc(e.name) + '</span><span class="two">' + esc(e.role) + '</span></td><td>' + need + '</td><td class="cbx-cell">' + groups + '</td>' +
+      '<td><span class="two">' + esc(tm[3]) + ': <span class="out" data-out="0"></span></span><span class="two">' + esc(tm[4]) + ': <span class="out" data-out="1"></span></span></td></tr>';
+  }).join('');
+  $('#permHead').innerHTML = '<tr><th>Группа</th><th>Папка «' + esc(tm[3]) + '»</th><th>Папка «' + esc(tm[4]) + '»</th></tr>';
+  $('#permBody').innerHTML = [0, 1, 2].map(function(g){
+    return '<tr><td><span class="gname">' + esc(tm[g]) + '</span></td><td>' + lvSelect(sk(v, 'p_' + g + '_0'), tm[g] + ': ' + tm[3]) + '</td><td>' + lvSelect(sk(v, 'p_' + g + '_1'), tm[g] + ': ' + tm[4]) + '</td></tr>';
+  }).join('');
+  var qs = t3Questions(v);
+  $('#t3qs').innerHTML = qs.map(qHtml).join('');
+  fillValues($('#t3qs'));
+  renderSim(); markQ(qs); setResult('t3');
+}
+function renderSim(){
+  var v = variant(), st = staff(v);
+  $$('#staffBody tr').forEach(function(tr){
+    var i = +tr.dataset.row, e = st[i], req = truthReq(v, e), got = simEff(v, i), off = simDisabled(v, i);
+    [0, 1].forEach(function(f){
+      var o = $('[data-out="' + f + '"]', tr);
+      o.textContent = off ? 'вход запрещён' : LV[got[f]];
+      o.className = 'out ' + ((off ? e.fired : (!e.fired && got[f] === req[f])) ? 'match' : 'miss');
+    });
+    tr.classList.remove('ok', 'bad');
+    if (S.checked.t3) tr.classList.add(simRowOk(v, i) ? 'ok' : 'bad');
+  });
+}
+
+/* ---------- задание 4 ---------- */
+function renderT4(){
+  var v = variant(), pol = POL[v - 1];
+  $('#polTable').innerHTML = '<tbody><tr><td>Минимальная длина пароля</td><td class="num"><b>' + pol[0] + '</b> симв.</td></tr>' +
+    '<tr><td>Пароль должен отвечать требованиям сложности</td><td class="num"><b>' + (pol[1] ? 'Включено' : 'Отключено') + '</b></td></tr>' +
+    '<tr><td>Имя входа пользователя</td><td class="num"><code>' + login(v) + '</code></td></tr></tbody>';
+  var qs = t4Questions(v);
+  $('#t4qs').innerHTML = qs.map(qHtml).join('');
+  fillValues($('#t4qs')); markQ(qs); setResult('t4');
+}
+
+function qHtml(q){
+  var input;
+  if (q.type === 'select'){
+    input = '<select id="' + q.k + '" data-k="' + q.k + '"' + (q.mono ? ' class="mono-sel"' : '') + ' style="max-width:640px"><option value="">Выберите ответ…</option>' +
+      q.opts.map(function(o){ return '<option value="' + o[0] + '">' + esc(o[1]) + '</option>'; }).join('') + '</select>';
+  } else {
+    input = '<input type="text" inputmode="decimal" class="short" id="' + q.k + '" data-k="' + q.k + '" autocomplete="off">' + (q.unit ? '<span class="q-unit">' + q.unit + '</span>' : '');
+  }
+  return '<div class="q" data-q="' + q.k + '"><label class="q-t" for="' + q.k + '">' + q.t + '</label><div class="q-row">' + input + '<span class="q-mark"></span></div></div>';
+}
+
+
+/* ---------- задание 5 ---------- */
+function fieldHtml(f){
+  var k = f[0], ph = f[2] ? ' placeholder="' + esc(f[2]) + '"' : '';
+  var ctl = f[3] === 'area' ? '<textarea id="' + k + '" data-k="' + k + '"' + ph + ' style="min-height:84px"></textarea>' : '<input type="text" id="' + k + '" data-k="' + k + '"' + ph + ' autocomplete="off">';
+  return '<div class="field"><label for="' + k + '">' + f[1] + '</label>' + ctl + '</div>';
+}
+function renderT5(){
+  $('#t5fields').innerHTML = T5_GROUPS.map(function(g){
+    return '<fieldset><legend>' + g.t + '</legend><span class="where">' + g.where + '</span><div class="grid-2">' + g.f.map(fieldHtml).join('') + '</div></fieldset>';
+  }).join('');
+  fillValues($('#t5fields')); setFillResult('t5');
+}
+function setFillResult(id){
+  var keys = id === 't5' ? t5Keys() : t7Keys();
+  $('#res-' + id).textContent = (id === 't5' ? 'Заполнено полей: ' : 'Отвечено: ') + fillCount(keys) + ' из ' + keys.length;
+}
+
+/* ---------- задание 6 ---------- */
+function renderT6(){
+  $('#t6qs').innerHTML = T6.map(function(q, i){
+    var k = 't6_' + i;
+    return '<div class="q" data-q="' + k + '" role="radiogroup" aria-labelledby="' + k + '_t"><span class="q-t" id="' + k + '_t">' + (i + 1) + '. ' + q[0] + '</span><div class="opts">' +
+      q[1].map(function(o, j){ return '<label class="opt"><input type="radio" name="' + k + '" value="' + j + '" data-k="' + k + '"><span>' + esc(o) + '</span></label>'; }).join('') +
+      '</div><span class="q-mark"></span></div>';
+  }).join('');
+  fillValues($('#t6qs')); feedback('t6');
+}
+
+/* ---------- задание 7 ---------- */
+function renderT7(){
+  $('#t7fields').innerHTML = T7_FIELDS.map(function(f){ return '<div class="field"><label for="' + f[0] + '">' + f[1] + '</label><textarea id="' + f[0] + '" data-k="' + f[0] + '"></textarea></div>'; }).join('');
+  fillValues($('#t7fields')); setFillResult('t7');
+}
+
+/* ---------- проверка и переходы ---------- */
+document.addEventListener('click', function(e){
+  var g = e.target.closest('[data-go]'); if (g){ go(g.dataset.go); return; }
+  var c = e.target.closest('[data-check]'); if (!c) return;
+  var id = c.dataset.check;
+  S.attempts[id] = (S.attempts[id] || 0) + 1; S.checked[id] = true;
+  save(); feedback(id); updateBar(); renderNav(); queueSync(300);
+});
+
+/* ---------- таймер ---------- */
+function fmtTime(sec){ sec = Math.max(0, Math.round(sec)); var h = Math.floor(sec / 3600), m = Math.floor(sec % 3600 / 60), s = sec % 60; return h + ':' + (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s; }
+function tick(){
+  var T = S.timer;
+  if (T.running){
+    var now = Date.now(); T.left = Math.max(0, T.left - (now - T.at) / 1000); T.at = now;
+    if (T.left <= 0) T.running = false;
+    save();
+  }
+  $('#timerText').textContent = T.left <= 0 ? 'Время вышло' : fmtTime(T.left);
+  $('#timerBox').classList.toggle('low', T.left < 900);
+  var b = $('#timerBtn'); b.textContent = T.running ? 'Пауза' : (T.left < 7200 && T.left > 0 ? 'Продолжить' : 'Старт');
+  b.classList.toggle('go', !T.running); b.disabled = T.left <= 0;
+}
+$('#timerBtn').addEventListener('click', function(){ var T = S.timer; if (T.left <= 0) return; T.running = !T.running; T.at = Date.now(); save(); tick(); });
+setInterval(tick, 1000);
+
+/* ---------- отчёт ---------- */
+function grade(p){ return p >= 90 ? '«5»' : p >= 75 ? '«4»' : p >= 60 ? '«3»' : '«2»'; }
+function renderReport(){
+  var v = variant(), name = (S.v.student_name || '').trim() || 'не указано', grp = (S.v.student_group || '').trim() || 'не указана';
+  var used = 7200 - S.timer.left, rows = [], lines = [];
+  $('#repWho').innerHTML = '<b>' + esc(name) + '</b>, группа ' + esc(grp) + ', вариант ' + v + '. Время работы: ' + fmtTime(used) + '.';
+  lines.push('ПРАКТИЧЕСКАЯ РАБОТА «АДМИНИСТРИРОВАНИЕ И УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ»');
+  lines.push('Студент: ' + name + '; группа: ' + grp + '; вариант: ' + v);
+  lines.push('Дата: ' + new Date().toLocaleDateString('ru-RU') + '; время работы: ' + fmtTime(used));
+  lines.push('');
+  lines.push('БАЛЛЫ АВТОПРОВЕРКИ');
+  TASKS.forEach(function(t){
+    if (!t.max) return;
+    if (t.auto){
+      var s = score(t.id), a = S.attempts[t.id] || 0;
+      rows.push('<tr><td>' + t.n + '. ' + t.t + '</td><td class="num">' + s + ' / ' + t.max + '</td><td class="num">' + a + '</td><td>автоматически' + (a ? '' : ' — не проверялось') + '</td></tr>');
+      lines.push('Задание ' + t.n + '. ' + t.t + ': ' + s + ' из ' + t.max + ' (проверок: ' + a + ')');
+    } else {
+      var keys = t.id === 't5' ? t5Keys() : t7Keys();
+      rows.push('<tr><td>' + t.n + '. ' + t.t + '</td><td class="num">… / ' + t.max + '</td><td class="num">—</td><td>преподаватель · заполнено ' + fillCount(keys) + ' из ' + keys.length + '</td></tr>');
+    }
+  });
+  var tot = autoTotal();
+  rows.push('<tr><td><b>Итого автопроверка</b></td><td class="num"><b>' + tot + ' / ' + AUTO_MAX + '</b></td><td></td><td></td></tr>');
+  $('#repTable').innerHTML = rows.join('');
+  $('#repNote').innerHTML = 'Автопроверка: <b>' + tot + ' из ' + AUTO_MAX + '</b>. Ещё до ' + TEACHER_MAX + ' баллов преподаватель выставит за задания 5 и 7. Если они оценены полностью, итог составит ' + (tot + TEACHER_MAX) + ' баллов — оценка ' + grade(tot + TEACHER_MAX) + '.';
+  lines.push('Итого автопроверка: ' + tot + ' из ' + AUTO_MAX);
+  lines.push('');
+  lines.push('ЗАДАНИЕ 3. ГРУППЫ И РАЗРЕШЕНИЯ');
+  t3Summary(v, S.sim).forEach(function(r){ lines.push('  ' + r[0] + ': ' + r[1]); });
+  lines.push('');
+  lines.push('ЗАДАНИЕ 5. ИССЛЕДОВАНИЕ КОМПЬЮТЕРА');
+  T5_GROUPS.forEach(function(g){ lines.push('— ' + g.t); g.f.forEach(function(f){ lines.push('  ' + f[1] + ': ' + ((S.v[f[0]] || '').trim() || '—')); }); });
+  lines.push('');
+  lines.push('ЗАДАНИЕ 7. КОНТРОЛЬНЫЕ ВОПРОСЫ И ВЫВОД');
+  T7_FIELDS.forEach(function(f){ lines.push(f[1]); lines.push('  ' + ((S.v[f[0]] || '').trim() || '—')); });
+  $('#reportText').value = lines.join('\n');
+  $('#copyMsg').textContent = '';
+}
+$('#copyBtn').addEventListener('click', function(){
+  var ta = $('#reportText'), msg = $('#copyMsg');
+  function fallback(){ ta.focus(); ta.select(); msg.textContent = 'Текст выделен — нажмите Ctrl + C.'; }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(function(){ msg.textContent = 'Отчёт скопирован.'; }, fallback);
+    else fallback();
+  } catch(e){ fallback(); }
+});
+$('#resetBtn').addEventListener('click', function(){ $('#resetConfirm').hidden = false; $('#resetBtn').hidden = true; });
+$('#resetNo').addEventListener('click', function(){ $('#resetConfirm').hidden = true; $('#resetBtn').hidden = false; });
+$('#resetYes').addEventListener('click', function(){
+  S = defaults(); save(); t1Sel = null;
+  $$('[data-k]').forEach(function(el){ if (el.type === 'radio') el.checked = false; else if (el.tagName === 'SELECT') el.selectedIndex = 0; else el.value = ''; });
+  $('#resetConfirm').hidden = true; $('#resetBtn').hidden = false;
+  renderAll(); go('intro'); queueSync(500);
+});
+
+/* ---------- отправка результатов преподавателю ---------- */
+var CLOUD = {db:null, user:null, uid:null, owner:false, status:'wait', last:null, timer:null, busy:false, again:false, denied:false};
+var SYNC_TEXT = {
+  wait: ['…', 'Проверяю связь с преподавателем…'],
+  offline: ['офлайн', 'Это офлайн-файл: результаты сами не отправляются. Откройте практикум по ссылке преподавателя или скопируйте отчёт ниже и отправьте его.'],
+  noacc: ['нет входа', 'Результаты не отправляются: откройте практикум по ссылке преподавателя, войдя в свою учётную запись claude.ai. Пока можно скопировать отчёт ниже.'],
+  denied: ['нет прав', 'Нет прав на отправку результатов. Попросите преподавателя дать вам доступ уровня «Участник» (Contributor) или выше. Пока можно скопировать отчёт ниже.'],
+  ready: ['готово', 'Связь с преподавателем есть: ответы отправятся автоматически.'],
+  saving: ['отправка…', 'Отправляю ответы преподавателю…'],
+  ok: ['✓', 'Ответы отправлены преподавателю'],
+  error: ['ошибка', 'Не удалось отправить ответы. Повторю при следующем изменении; если ошибка не исчезнет, скопируйте отчёт ниже.']
+};
+function setSync(st){
+  CLOUD.status = st;
+  var t = SYNC_TEXT[st] || SYNC_TEXT.error, badge = $('#syncBadge'), note = $('#syncNote');
+  var time = CLOUD.last ? CLOUD.last.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'}) : '';
+  badge.textContent = st === 'ok' ? '✓ ' + time : t[0];
+  badge.className = 'stat-v sync ' + (st === 'ok' || st === 'ready' ? 'good' : (st === 'saving' || st === 'wait' ? '' : 'warn'));
+  note.textContent = st === 'ok' ? t[1] + ' в ' + time + (S.submitted ? '. Работа сдана.' : '.') : t[1];
+  $('#submitBtn').disabled = !(st === 'ok' || st === 'ready' || st === 'error' || st === 'saving');
+}
+function clean(o){ return JSON.parse(JSON.stringify(o || {})); }
+function snapshotState(){
+  return {
+    name:(S.v.student_name || '').trim().slice(0, 120), group:(S.v.student_group || '').trim().slice(0, 60),
+    variant:variant(), v:clean(S.v), t1:clean(S.t1), sim:clean(S.sim), attempts:clean(S.attempts),
+    timeUsed:Math.round(7200 - S.timer.left), submitted:!!S.submitted, submittedAt:S.submittedAt || null,
+    updatedAt:new Date().toISOString()
+  };
+}
+function queueSync(delay){
+  if (!CLOUD.db || !CLOUD.uid || CLOUD.denied) return;
+  clearTimeout(CLOUD.timer);
+  CLOUD.timer = setTimeout(pushSync, delay == null ? 3000 : delay);
+}
+function pushSync(){
+  if (!CLOUD.db || !CLOUD.uid || CLOUD.denied) return Promise.resolve(false);
+  if (CLOUD.busy){ CLOUD.again = true; return Promise.resolve(false); }
+  CLOUD.busy = true; setSync('saving');
+  return CLOUD.db.doc('results/' + CLOUD.uid).set(snapshotState()).then(function(){
+    CLOUD.last = new Date(); setSync('ok'); return true;
+  }, function(e){
+    if (e && (e.code === 'invalid_argument' || e.code === 'not_granted' || e.code === 'revoked')){ CLOUD.denied = true; setSync('denied'); }
+    else setSync('error');
+    return false;
+  }).then(function(ok){
+    CLOUD.busy = false;
+    if (CLOUD.again){ CLOUD.again = false; pushSync(); }
+    return ok;
+  });
+}
+$('#submitBtn').addEventListener('click', function(){
+  if (!(S.v.student_name || '').trim()){ $('#submitMsg').textContent = 'Сначала укажите фамилию и имя в разделе «Инструкция».'; return; }
+  S.submitted = true; S.submittedAt = new Date().toISOString(); save();
+  clearTimeout(CLOUD.timer);
+  pushSync().then(function(ok){ $('#submitMsg').textContent = ok ? 'Работа сдана. Можно продолжать исправлять ответы — изменения тоже отправятся.' : ''; });
+});
+function localEmpty(){ return !Object.keys(S.v).some(function(k){ return k !== 'student_variant' && String(S.v[k] || '').trim(); }) && !Object.keys(S.t1).length; }
+function initCloud(){
+  var c = window.claude;
+  if (!c || typeof c.use !== 'function'){ setSync('offline'); return; }
+  Promise.all([c.use('user'), c.use('db')]).then(function(r){
+    var user = r[0], db = r[1];
+    CLOUD.user = user;
+    var ownerP = user ? user.isOwner() : Promise.resolve(false);
+    return ownerP.then(function(owner){
+      CLOUD.owner = owner;
+      if (owner) enableTeacher(db);
+      if (!db || !user){ setSync('noacc'); return; }
+      return user.id().then(function(uid){
+        if (!uid){ setSync('noacc'); return; }
+        CLOUD.db = db; CLOUD.uid = uid;
+        return db.doc('results/' + uid).get().then(function(snap){
+          if (snap.exists && localEmpty()){
+            var d = snap.data() || {};
+            S.v = clean(d.v); S.t1 = clean(d.t1); S.sim = clean(d.sim); S.attempts = clean(d.attempts);
+            S.submitted = !!d.submitted; S.submittedAt = d.submittedAt || null; S.checked = {};
+            save(); renderAll(); go(S.active || 'intro', true);
+          }
+          if (snap.exists){ CLOUD.last = new Date(d0(snap)); setSync('ok'); } else setSync('ready');
+        }, function(){ setSync('ready'); });
+      });
+    });
+  }).catch(function(){ setSync('noacc'); });
+}
+function d0(snap){ var d = snap.data() || {}; return d.updatedAt || Date.now(); }
+
+/* ---------- кабинет преподавателя ---------- */
+var T = {db:null, results:[], grades:{}, open:{}, gradeTimers:{}, filter:'', del:null};
+function enableTeacher(db){
+  T.db = db;
+  if (!TASKS.some(function(t){ return t.id === 'teacher'; })) TASKS.push({id:'teacher', n:'★', t:'Результаты группы'});
+  renderNav();
+  $('#tLead').textContent = db ? 'Ответы студентов приходят сюда автоматически. Баллы автопроверки пересчитываются по их ответам; задания 5 и 7 оцените сами.' : 'Хранилище результатов сейчас недоступно. Обновите страницу позже.';
+  $('#tBody').hidden = !db;
+  if (!db) return;
+  db.collection('results').onSnapshot(function(snap){
+    T.results = snap.docs.map(function(d){ var x = d.data() || {}; return {id:d.id, d:x}; });
+    if (S.active === 'teacher') renderTeacher();
+  }, function(){ $('#tLead').textContent = 'Не удалось загрузить результаты. Обновите страницу.'; });
+  db.collection('grades').onSnapshot(function(snap){
+    var g = {}; snap.docs.forEach(function(d){ g[d.id] = d.data() || {}; });
+    T.grades = g;
+    if (S.active === 'teacher') renderTeacher();
+  }, function(){});
+  if ((location.hash || '') === '#teacher' || S.active === 'teacher') go('teacher', true);
+}
+function withState(st, fn){ var old = S; S = st; try { return fn(); } finally { S = old; } }
+function scoresFor(d){
+  var st = {v:clean(d.v), t1:clean(d.t1), sim:clean(d.sim), attempts:clean(d.attempts), checked:{}, timer:{left:7200}};
+  return withState(st, function(){
+    var r = {t1:scoreT1(), t2:scoreT2(), t3:scoreT3(), t4:scoreT4(), t6:scoreT6()};
+    r.auto = r.t1 + r.t2 + r.t3 + r.t4 + r.t6;
+    r.t5filled = fillCount(t5Keys()); r.t7filled = fillCount(t7Keys());
+    return r;
+  });
+}
+function gradeOf(id){ return T.grades[id] || {}; }
+function numOrNull(x){ var n = num(x); return isFinite(n) ? n : null; }
+function rowsData(){
+  return T.results.map(function(r){
+    var d = r.d, sc = scoresFor(d), g = gradeOf(r.id);
+    var t5 = numOrNull(g.t5), t7 = numOrNull(g.t7);
+    var total = sc.auto + (t5 || 0) + (t7 || 0);
+    return {id:r.id, d:d, sc:sc, t5:t5, t7:t7, total:total, graded:t5 != null && t7 != null};
+  }).sort(function(a, b){ return (a.d.group || '').localeCompare(b.d.group || '', 'ru') || (a.d.name || '').localeCompare(b.d.name || '', 'ru'); });
+}
+function fmtDate(iso){ if (!iso) return '—'; var d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleString('ru-RU', {day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit'}); }
+function renderTeacher(){
+  if (!CLOUD.owner){ $('#tBody').hidden = true; return; }
+  if (!T.db) return;
+  var all = rowsData(), f = T.filter.toLowerCase();
+  var rows = all.filter(function(x){ return !f || ((x.d.name || '') + ' ' + (x.d.group || '')).toLowerCase().indexOf(f) >= 0; });
+  var sub = all.filter(function(x){ return x.d.submitted; }).length;
+  var avg = all.length ? Math.round(all.reduce(function(s, x){ return s + x.sc.auto; }, 0) / all.length * 10) / 10 : 0;
+  var wait = all.filter(function(x){ return x.d.submitted && !x.graded; }).length;
+  $('#tTiles').innerHTML =
+    '<div class="tile"><div class="tile-l">Студентов</div><div class="tile-v">' + all.length + '</div></div>' +
+    '<div class="tile"><div class="tile-l">Сдали работу</div><div class="tile-v">' + sub + '</div></div>' +
+    '<div class="tile"><div class="tile-l">Средний балл автопроверки</div><div class="tile-v">' + String(avg).replace('.', ',') + '<span class="tile-u"> / 68</span></div></div>' +
+    '<div class="tile"><div class="tile-l">Ждут вашей оценки</div><div class="tile-v">' + wait + '</div></div>';
+  var act = document.activeElement;
+  if (act && act.dataset && act.dataset.grade){ T.pending = true; return; }
+  T.pending = false;
+  if (!rows.length){
+    $('#tRows').innerHTML = '<tr><td colspan="12" class="empty">' + (all.length ? 'Никто не найден по этому запросу.' : 'Пока никто не прислал ответы. Результаты появятся здесь, как только студенты начнут работу по вашей ссылке.') + '</td></tr>';
+  } else {
+    $('#tRows').innerHTML = rows.map(function(x){
+      var d = x.d, s = x.sc, g = gradeOf(x.id);
+      var status = d.submitted ? '<span class="chip good">Сдано</span>' : '<span class="chip">В работе</span>';
+      var mark = x.graded ? grade(x.total) : '—';
+      return '<tr data-id="' + esc(x.id) + '">' +
+        '<td><b>' + esc(d.name || 'Без имени') + '</b><span class="sub">' + esc(d.group || '—') + ' · <span data-acc="' + esc(x.id) + '"></span></span><button type="button" class="linkbtn" data-open="' + esc(x.id) + '">Ответы</button></td>' +
+        '<td class="num">' + esc(d.variant || '—') + '</td>' +
+        '<td class="num">' + s.t1 + '</td><td class="num">' + s.t2 + '</td><td class="num">' + s.t3 + '</td><td class="num">' + s.t4 + '</td><td class="num">' + s.t6 + '</td>' +
+        '<td class="num"><b>' + s.auto + '</b></td>' +
+        '<td class="num"><input class="gin" type="text" inputmode="numeric" data-grade="' + esc(x.id) + '|t5" value="' + (g.t5 != null ? esc(g.t5) : '') + '" aria-label="Баллы за задание 5"><span class="sub">заполнено ' + s.t5filled + '/20</span></td>' +
+        '<td class="num"><input class="gin" type="text" inputmode="numeric" data-grade="' + esc(x.id) + '|t7" value="' + (g.t7 != null ? esc(g.t7) : '') + '" aria-label="Баллы за задание 7"><span class="sub">ответов ' + s.t7filled + '/5</span></td>' +
+        '<td class="num"><b>' + x.total + '</b><span class="sub">' + mark + '</span></td>' +
+        '<td>' + status + '<span class="sub">' + fmtDate(d.updatedAt) + '</span></td></tr>';
+    }).join('');
+  }
+  renderDetails(all);
+  resolveNames(all.map(function(x){ return x.id; }));
+}
+function resolveNames(ids){
+  if (!CLOUD.user || !ids.length) return;
+  CLOUD.user.profiles(ids).then(function(ps){
+    $$('[data-acc]').forEach(function(el){ var p = ps[el.dataset.acc]; el.textContent = 'аккаунт: ' + ((p && p.name) || 'не определён'); });
+  }, function(){});
+}
+function answerList(title, rows){ return '<h4>' + title + '</h4><dl class="ans">' + rows.map(function(r){ return '<dt>' + esc(r[0]) + '</dt><dd>' + (esc(r[1]) || '—') + '</dd>'; }).join('') + '</dl>'; }
+function renderDetails(all){
+  $('#tDetails').innerHTML = all.filter(function(x){ return T.open[x.id]; }).map(function(x){
+    var d = x.d, v = d.v || {}, g = gradeOf(x.id);
+    var t5 = []; T5_GROUPS.forEach(function(gr){ gr.f.forEach(function(f){ t5.push([f[1], v[f[0]] || '']); }); });
+    var t7 = T7_FIELDS.map(function(f){ return [f[1], v[f[0]] || '']; });
+    var t3 = t3Summary(+d.variant || 1, d.sim || {});
+    var att = d.attempts || {};
+    return '<article class="det" id="det-' + esc(x.id) + '"><div class="det-h"><h3>' + esc(d.name || 'Без имени') + ', ' + esc(d.group || '—') + ', вариант ' + esc(d.variant || '—') + '</h3>' +
+      '<button type="button" class="btn small" data-close="' + esc(x.id) + '">Свернуть</button></div>' +
+      '<p class="hint">Время работы: ' + fmtTime(d.timeUsed || 0) + ' · число проверок: задание 1 — ' + (att.t1 || 0) + ', 2 — ' + (att.t2 || 0) + ', 3 — ' + (att.t3 || 0) + ', 4 — ' + (att.t4 || 0) + ', 6 — ' + (att.t6 || 0) + (d.submitted ? ' · сдано ' + fmtDate(d.submittedAt) : '') + '</p>' +
+      answerList('Задание 3: группы и разрешения', t3) + answerList('Задание 5: исследование компьютера', t5) + answerList('Задание 7: контрольные вопросы', t7) +
+      '<div class="field"><label for="cm-' + esc(x.id) + '">Комментарий преподавателя (виден только вам)</label><textarea id="cm-' + esc(x.id) + '" data-grade="' + esc(x.id) + '|comment">' + esc(g.comment || '') + '</textarea></div>' +
+      '<div class="q-row"><button type="button" class="btn small" data-del="' + esc(x.id) + '">' + (T.del === x.id ? 'Точно удалить ответы студента?' : 'Удалить результат') + '</button>' + (T.del === x.id ? '<button type="button" class="btn small" data-delno="1">Отмена</button>' : '') + '</div>' +
+      '</article>';
+  }).join('');
+}
+function saveGrade(id){
+  var g = clean(T.grades[id]);
+  g.updatedAt = new Date().toISOString();
+  T.db.doc('grades/' + id).set(g).catch(function(){ $('#csvMsg').textContent = 'Не удалось сохранить оценку. Проверьте связь и повторите.'; });
+}
+document.addEventListener('input', function(e){
+  var el = e.target, key = el.dataset && el.dataset.grade;
+  if (key && T.db){
+    var p = key.split('|'), id = p[0], field = p[1];
+    var g = T.grades[id] = clean(T.grades[id]);
+    if (field === 'comment') g.comment = el.value.slice(0, 2000);
+    else { var n = numOrNull(el.value), max = field === 't5' ? 20 : 12; g[field] = n == null ? null : Math.max(0, Math.min(max, n)); }
+    clearTimeout(T.gradeTimers[id]);
+    T.gradeTimers[id] = setTimeout(function(){ saveGrade(id); }, 900);
+    return;
+  }
+  if (el.id === 'tFilter'){ T.filter = el.value; renderTeacher(); }
+});
+document.addEventListener('focusout', function(e){
+  var el = e.target;
+  if (!(el.dataset && el.dataset.grade) || !T.pending) return;
+  setTimeout(function(){
+    var a = document.activeElement;
+    if (S.active === 'teacher' && !(a && a.dataset && a.dataset.grade)) renderTeacher();
+  }, 0);
+});
+document.addEventListener('click', function(e){
+  var b = e.target.closest('[data-open],[data-close],[data-del],[data-delno]');
+  if (!b || !T.db) return;
+  if (b.dataset.open){ T.open[b.dataset.open] = true; renderTeacher(); var a = document.getElementById('det-' + b.dataset.open); if (a) a.scrollIntoView({behavior:'smooth', block:'start'}); return; }
+  if (b.dataset.close){ delete T.open[b.dataset.close]; renderTeacher(); return; }
+  if (b.dataset.delno){ T.del = null; renderTeacher(); return; }
+  if (b.dataset.del){
+    var id = b.dataset.del;
+    if (T.del !== id){ T.del = id; renderTeacher(); return; }
+    T.del = null; delete T.open[id];
+    T.db.doc('results/' + id).delete().then(function(){ return T.db.doc('grades/' + id).delete(); }).catch(function(){ $('#csvMsg').textContent = 'Не удалось удалить. Повторите позже.'; });
+  }
+});
+function csvCell(x){ var s = String(x == null ? '' : x); return /[";\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
+function buildCsv(){
+  var head = ['Студент','Группа','Вариант','З1','З2','З3','З4','З6','Автопроверка','З5','З7','Итого','Оценка','Сдано','Обновлено','Время работы'];
+  var lines = [head.join(';')];
+  rowsData().forEach(function(x){
+    var d = x.d, s = x.sc;
+    lines.push([d.name || '', d.group || '', d.variant || '', s.t1, s.t2, s.t3, s.t4, s.t6, s.auto, x.t5 == null ? '' : x.t5, x.t7 == null ? '' : x.t7, x.total, x.graded ? grade(x.total).replace(/[«»]/g, '') : '', d.submitted ? 'да' : 'нет', fmtDate(d.updatedAt), fmtTime(d.timeUsed || 0)].map(csvCell).join(';'));
+  });
+  return '﻿' + lines.join('\r\n');
+}
+$('#csvBtn').addEventListener('click', function(){
+  var csv = buildCsv(), msg = $('#csvMsg'), ta = $('#csvText');
+  function fallback(){ ta.hidden = false; ta.value = csv.slice(1); ta.focus(); ta.select(); msg.textContent = 'Скачивание недоступно: таблица выделена ниже, скопируйте её (Ctrl + C).'; }
+  var c = window.claude;
+  if (!c || typeof c.use !== 'function'){ fallback(); return; }
+  c.use('downloads').then(function(dl){
+    if (!dl){ fallback(); return; }
+    dl.save({filename:'Результаты_пользователи_и_группы.csv', data:csv}).then(function(){ msg.textContent = 'Таблица сохранена.'; }, function(err){ if (err && err.code === 'declined') msg.textContent = ''; else fallback(); });
+  }, fallback);
+});
+
+/* ---------- запуск ---------- */
+function onVariant(){ S.checked.t2 = false; S.checked.t3 = false; S.checked.t4 = false; renderT2(); renderT3(); renderT4(); updateBar(); }
+function renderAll(){
+  fillValues(document);
+  if (!S.v.student_variant) $('#student_variant').value = '1';
+  renderT1(); renderT2(); renderT3(); renderT4(); renderT5(); renderT6(); renderT7();
+  updateBar(); tick();
+}
+renderAll();
+var h = (location.hash || '').replace('#', '');
+var start = h && document.getElementById(h) ? h : (S.active || 'intro');
+if (start === 'teacher' && h !== 'teacher') start = 'intro';
+go(start, true);
+setSync('wait');
+initCloud();
+})();
+</script>
+
+</body>
+</html>
