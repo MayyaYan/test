@@ -4,9 +4,6 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Лаборатория установки Windows 11</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 /* Учебная лаборатория: лента этапов сверху, слева задание и теория, ниже — симулятор. Уровни сложности растут от этапа к этапу. */
 :root {
@@ -25,9 +22,9 @@
   --warn: #9a5b06;
   --warn-soft: #fdf2df;
   --def-soft: #f2f4f8;
-  --font-body: "Golos Text", "Segoe UI", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", Consolas, monospace;
-  --font-win: "Segoe UI Variable Text", "Segoe UI", "Golos Text", system-ui, sans-serif;
+  --font-body: "Segoe UI", Arial, system-ui, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
+  --font-win: "Segoe UI Variable Text", "Segoe UI", Arial, system-ui, sans-serif;
   --header-h: 58px;
   color-scheme: light;
 }
@@ -53,6 +50,15 @@ code { font-size: .88em; background: var(--def-soft); padding: .1em .35em; borde
 kbd { font-size: .8em; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; padding: .05em .45em; background: var(--surface); white-space: nowrap; }
 a { color: var(--accent); }
 
+  /* ---------- Автономная учебная среда ---------- */
+.training-banner { max-width: 1180px; margin: 18px auto 0; padding: 13px 18px;
+  background: #e4f4ec; border: 2px solid #88cfaa; border-radius: 13px;
+  color: #163f2c; font-size: 17px; line-height: 1.45; }
+.training-banner strong { font-weight: 800; }
+.training-banner em { font-style: normal; font-weight: 700; }
+.sim-tag { display: inline-block; padding: 3px 10px; border-radius: 100px; color: #125e4a;
+  background: #d8f2e8; font-size: 13px; font-weight: 750; }
+@media (max-width: 640px) { .training-banner { margin: 10px 12px 0; font-size: 16px; } }
 /* ---------- Шапка и лента этапов ---------- */
 .top { position: sticky; top: 0; z-index: 40; background: var(--surface); border-bottom: 1px solid var(--line); }
 .top-row { height: var(--header-h); display: flex; align-items: center; gap: 16px; padding: 0 20px; }
@@ -339,6 +345,10 @@ details.card summary::-webkit-details-marker { display: none; }
   </div>
   <nav class="steps" id="steps" aria-label="Этапы работы"></nav>
 </header>
+<div class="training-banner" role="note"><strong>Работа только внутри тренажёра.</strong>
+Все 7 этапов, ISO-образ, виртуальная машина, окна Windows, драйверы и консоль <em>смоделированы в этой странице</em>.
+Не нужно открывать сайты, скачивать программы, устанавливать Windows/VirtualBox, вводить личные пароли или выполнять команды на реальном ПК.
+Данные и результаты сохраняются локально в браузере.</div>
 <main id="main"></main>
 <div class="toast" id="toast" role="status"></div>
 <script>
@@ -1769,7 +1779,7 @@ details.card summary::-webkit-details-marker { display: none; }
       this.installed.push({ name: p.name, id: p.id, ver: p.ver, avail: '' });
       var pf = this.drives.C.children['program files'];
       pf.children[low(p.name)] = mkDir(p.name);
-      return res('Найдено ' + p.name + ' [' + p.id + '] Версия ' + p.ver + '\n' + agree + '\nСкачивание https://cdn.example/' + p.id + '-' + p.ver + '-x64.exe\n  ██████████████████████████████  ' + p.size + ' / ' + p.size + '\nХэш установщика успешно проверен\nЗапуск установки пакета...\nУспешно установлено');
+      return res('Найдено ' + p.name + ' [' + p.id + '] Версия ' + p.ver + '\n' + agree + '\nМоделирование установки из встроенного каталога тренажёра: ' + p.id + '-' + p.ver + '-x64.exe\n  ██████████████████████████████  ' + p.size + ' / ' + p.size + '\nХэш установщика успешно проверен\nЗапуск установки пакета...\nУспешно установлено');
     }
     if (sub === 'list' || sub === 'ls') {
       var inst = this.installed.concat([{ name: 'Microsoft Edge', id: 'Microsoft.Edge', ver: '130.0.2849.80', avail: '' }]);
@@ -1922,7 +1932,7 @@ details.card summary::-webkit-details-marker { display: none; }
     var main = $('#main'), r = rec(s.id);
     main.innerHTML =
       '<div class="kicker"><b>Этап ' + s.num + ' из ' + STAGES.length + '</b><span>' + lvlHtml(s.level) + ' Уровень: ' + LEVELS[s.level] + '</span></div>' +
-      '<h1>' + esc(s.title) + '</h1><p class="lead">' + s.lead + '</p>' +
+      '<h1>' + esc(s.title) + '</h1><div class="sim-tag">Встроенная симуляция · без внешних программ и сайтов</div><p class="lead">' + s.lead + '</p>' +
       '<div class="grid2"><details class="card" open><summary>Теория</summary><div class="th">' + s.theory + '</div></details>' +
       '<section class="card mission" aria-label="Задание"><h2>Задание</h2><div class="ms">' + s.mission.replace(/<li>([\s\S]*?)<\/li>/g, '<li><span>$1</span></li>') + '</div></section></div>' +
       '<div class="status"><h2>Тренажёр</h2><span class="pill" id="errPill">Ошибок: 0</span>' + (r.done ? '<span class="pill ok">Лучший результат: ' + r.stars + ' ★</span>' : '') + '<button class="btn small" id="restart" type="button">Начать этап заново</button></div>' +
@@ -1964,7 +1974,7 @@ details.card summary::-webkit-details-marker { display: none; }
       return '<tr><td>' + s.num + '</td><td>' + esc(s.title) + '</td><td>' + LEVELS[s.level] + '</td><td>' + (r.done ? starsHtml(r.stars) : '<span class="pill">не пройден</span>') + '</td><td>' + (r.done ? r.mistakes : '—') + '</td><td>' + esc(r.summary || '') + '</td></tr>';
     }).join('');
     var d = new Date(), date = ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear();
-    var text = 'Практическая работа «Установка и настройка Windows 11»\nТренажёр: Лаборатория установки Windows 11\nСтудент: ' + (store.name || '—') + '\nДата: ' + date + '\n\n' +
+    var text = 'Практическая работа «Установка и настройка Windows 11»\nАвтономный браузерный тренажёр (без реальной установки)\nСтудент: ' + (store.name || '—') + '\nДата: ' + date + '\n\n' +
       STAGES.map(function (s) { var r = rec(s.id); return 'Этап ' + s.num + '. ' + s.title + ' (уровень: ' + LEVELS[s.level] + ') — ' + (r.done ? r.stars + ' из 3 звёзд, ошибок: ' + r.mistakes + '. ' + (r.summary || '') : 'не пройден'); }).join('\n') +
       '\n\nИтого: пройдено этапов ' + done + ' из ' + STAGES.length + ', звёзд ' + total + ' из ' + STAGES.length * 3 + '.';
     main.innerHTML = '<div class="kicker"><b>Итог</b><span>' + date + '</span></div><h1>Отчёт о работе в тренажёре</h1>' +
@@ -2015,7 +2025,7 @@ details.card summary::-webkit-details-marker { display: none; }
      ===================================================================== */
   L.register({
     id: 's1', num: 1, level: 1, title: 'Проверка совместимости',
-    lead: 'Прежде чем устанавливать Windows 11, нужно убедиться, что компьютер — реальный или виртуальный — подходит для неё и что нужно включить в его настройках.',
+    lead: 'Проверьте пять учебных компьютеров по заданным характеристикам. Вся информация уже представлена в карточках тренажёра — ничего проверять на своём ПК не требуется.',
     theory: String.raw`
 <h3>Минимальные требования Windows 11 (версия 26H2)</h3>
 <div class="tbl-wrap"><table class="tbl"><tbody>
@@ -2027,15 +2037,15 @@ details.card summary::-webkit-details-marker { display: none; }
 <tr><td>Видео и экран</td><td>DirectX 12 и WDDM 2.0; экран от 9″, 720p</td></tr>
 <tr><td>Установка</td><td>для редакций «Домашняя» и Pro нужны Интернет и учётная запись (подробнее на этапе 5)</td></tr>
 </tbody></table></div>
-<h3>Как проверить на реальном ПК</h3>
+<h3>Что обозначают параметры в учебных карточках</h3>
 <ul>
-<li><code>msinfo32</code> → «Режим BIOS»: должно быть <b>UEFI</b>, а не «Устаревший»; «Состояние безопасной загрузки».</li>
-<li><code>tpm.msc</code> → «Версия спецификации: 2.0».</li>
-<li>«Управление дисками» → свойства диска → «Тома» → «Стиль раздела»: GPT или MBR.</li>
-<li>Приложение «Проверка работоспособности ПК» от Microsoft даёт итоговый вердикт.</li>
-<li>В виртуальной машине действуют те же требования: их задают в настройках ВМ (этап 3).</li>
+<li><b>Режим BIOS</b>: UEFI или устаревший CSM; <b>безопасная загрузка</b>: включена или выключена.</li>
+<li><b>TPM</b>: наличие и версия модуля (для Windows 11 нужна версия 2.0).</li>
+<li><b>Стиль раздела</b>: GPT или MBR; это важно при запуске в UEFI.</li>
+<li>Сведения уже приведены в пяти карточках ниже. Выберите вердикт и нужные действия прямо здесь.</li>
+<li>Параметры виртуальной машины вы измените в <b>этапе 3</b> в специально созданном интерфейсе.</li>
 </ul>
-<div class="note"><b>Подходит после настройки.</b> Если TPM и Secure Boot просто выключены, а прошивка работает в режиме совместимости (CSM), их включают в UEFI. Диск MBR переводят в GPT без потери данных командой <code>mbr2gpt /convert /allowFullOS</code>.</div>`,
+<div class="note"><b>Подходит после настройки.</b> Если TPM и Secure Boot просто выключены, а прошивка работает в режиме совместимости (CSM), их включают в UEFI. В реальных системах переход с MBR на GPT требует отдельной подготовки и резервной копии; здесь достаточно выбрать соответствующее действие в карточке.</div>`,
     mission: String.raw`<p>Перед вами пять компьютеров. Для каждого выберите вердикт: <b>«Подходит»</b> как есть, <b>«После настройки»</b> (что-то нужно включить или преобразовать) или <b>«Не подходит»</b> (мешает само железо).</p>
 <ol><li>Выберите вердикт для всех пяти компьютеров.</li><li>Если вердикт не «Подходит», отметьте все причины или нужные действия — и только их. Затем нажмите «Проверить».</li></ol>`,
     mount: function (host, ctx) {
@@ -2087,7 +2097,7 @@ details.card summary::-webkit-details-marker { display: none; }
      ===================================================================== */
   L.register({
     id: 's2', num: 2, level: 2, title: 'Установочный образ',
-    lead: 'Флешка и DVD не нужны: Windows 11 ставят с ISO-образа, подключённого к виртуальной машине, обновляют из Windows или переустанавливают «из облака». Получим официальный образ, проверим его подлинность и выберем способ для разных ситуаций.',
+    lead: 'Создайте учебный ISO в виртуальном Media Creation Tool прямо на этой странице, сравните заранее подготовленные хеши и выберите подходящий способ установки. Реальные загрузки и носители не нужны.',
     theory: String.raw`
 <h3>Способы установки без физических носителей</h3>
 <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Способ</th><th>Когда подходит</th></tr></thead><tbody>
@@ -2097,19 +2107,19 @@ details.card summary::-webkit-details-marker { display: none; }
 <tr><td><b>Вернуть компьютер в исходное состояние</b></td><td>«Параметры» → «Система» → «Восстановление» → «Загрузка из облака». Windows сама скачивает и переустанавливает себя.</td></tr>
 <tr><td><b>Установка по сети (PXE)</b></td><td>Массовая установка в организации: компьютеры загружаются с сервера развёртывания (WDS, MDT, Configuration Manager).</td></tr>
 </tbody></table></div>
-<h3>Где взять ISO-образ</h3>
+<h3>Учебный ISO-образ уже находится внутри тренажёра</h3>
 <ul>
-<li>Страница <b>microsoft.com/software-download/windows11</b>: раздел «Создание установочного носителя» (Media Creation Tool) или «Загрузка образа диска (ISO)».</li>
-<li><b>Media Creation Tool</b> не входит в Windows — это отдельная программа. На шаге выбора носителя отметьте <b>«ISO-файл»</b>. Образ занимает около 7–8 ГБ, поэтому сохраняйте его на диск, где достаточно места.</li>
+<li><b>Никуда переходить не нужно.</b> Ниже представлен встроенный <b>макет Media Creation Tool</b>: выберите параметры, виртуальный диск и завершите моделирование создания ISO.</li>
+<li>В программе-симуляторе образ считается файлом размером около 7–8 ГБ. Диски C: и D: тоже <b>учебные</b>: на вашем компьютере ничего не записывается.</li>
 </ul>
 <h3>Проверка подлинности образа</h3>
-<p>У каждого файла есть <b>контрольная сумма</b> (хеш SHA-256) — 64 шестнадцатеричных символа. Если в файле изменился хоть один байт, хеш станет совсем другим. Microsoft публикует хеши официальных образов на странице загрузки («Проверьте свою загрузку»). Команды для вычисления:</p>
+<p>У каждого файла есть <b>контрольная сумма</b> (хеш SHA-256) — 64 шестнадцатеричных символа. Если в файле изменился хоть один байт, хеш станет совсем другим. В упражнении используется <b>вымышленный контрольный хеш</b> — его значение дано в тренажёре, поэтому внешние источники не нужны. Команды, которые обычно применяют для вычисления SHA-256:</p>
 <ul><li><code>certutil -hashfile Win11.iso SHA256</code> — в командной строке;</li><li><code>Get-FileHash Win11.iso</code> — в PowerShell (по умолчанию SHA-256).</li></ul>
-<div class="warnbox">Образы из торрентов, «облегчённые сборки» и файлы из мессенджеров могут содержать вредоносные программы или быть повреждены. Используйте образ, хеш которого совпал с официальным.</div>`,
-    mission: String.raw`<ol><li>В Media Creation Tool создайте ISO-файл Windows 11 и сохраните его на диск D: (папка <code>D:\ISO</code>). Никаких флешек и DVD.</li><li>Проверьте хеши четырёх копий образа и отметьте, какие из них можно использовать.</li><li>Подберите способ установки без носителей для каждой из четырёх ситуаций.</li></ol>`,
+<div class="warnbox">Образы из торрентов, «облегчённые сборки» и файлы из мессенджеров могут содержать вредоносные программы или быть повреждены. В этом упражнении используйте только учебную копию, хеш которой совпадает с эталоном на экране. Учебные хеши не подтверждают подлинность реальной Windows.</div>`,
+    mission: String.raw`<ol><li>В <b>симуляторе Media Creation Tool ниже</b> создайте виртуальный ISO и выберите учебный диск D: (папка <code>D:\ISO</code> существует только в модели).</li><li>Встроенными кнопками «Выполнить» получите хеши четырёх учебных копий и сравните с эталоном на экране.</li><li>Здесь же подберите способ установки для четырёх ситуаций — без перехода в другие программы.</li></ol>`,
     mount: function (host, ctx) {
       var parts = [false, false, false];
-      function part(i) { parts[i] = true; ctx.mark(i); if (parts.every(Boolean)) ctx.done('Получен ISO-образ через Media Creation Tool, проверены хеши SHA-256, подобраны способы установки без носителей.'); }
+      function part(i) { parts[i] = true; ctx.mark(i); if (parts.every(Boolean)) ctx.done('В учебном симуляторе создан виртуальный ISO, сопоставлены демонстрационные хеши и выбраны способы установки.'); }
 
       /* ---- Часть 1. Media Creation Tool ---- */
       host.appendChild(el('h3', { style: 'margin:6px 0 10px' }, 'Часть 1. Media Creation Tool'));
@@ -2148,12 +2158,12 @@ details.card summary::-webkit-details-marker { display: none; }
               st.drive = c.value; scr('dl');
             } }, { t: 'Отмена' }]);
         } else if (k === 'dl') {
-          frame('Скачивание Windows 11', '<p class="mct-sub">Можно продолжать использовать компьютер.</p><div class="sbar"><span id="mb"></span></div><p id="mt" style="font-size:13.5px;color:#444">Ход выполнения: 0%</p>', '');
+          frame('Создание учебного ISO · симуляция', '<p class="mct-sub">Идёт анимация процесса. Файлы из интернета не загружаются.</p><div class="sbar"><span id="mb"></span></div><p id="mt" style="font-size:13.5px;color:#444">Ход выполнения: 0%</p>', '');
           var p = 0, t = setInterval(function () {
             p += L.reduced ? 100 : 5;
             var b = $('#mb', win), s = $('#mt', win);
             if (b) b.style.width = Math.min(100, p) + '%';
-            if (s) s.textContent = (p < 70 ? 'Скачивание Windows 11. Ход выполнения: ' : 'Создание носителя Windows 11. Ход выполнения: ') + Math.min(100, p) + '%';
+            if (s) s.textContent = (p < 70 ? 'Моделирование ISO: подготовка данных — ' : 'Моделирование ISO: создание образа — ') + Math.min(100, p) + '%';
             if (p >= 100) { clearInterval(t); scr('fin'); }
           }, 90);
         } else if (k === 'fin') {
@@ -2168,14 +2178,14 @@ details.card summary::-webkit-details-marker { display: none; }
       host.appendChild(el('h3', { style: 'margin:28px 0 6px' }, 'Часть 2. Проверка подлинности'));
       var OFF = 'B3E7A54F1C9D02E6A88F4D17C0E25B9196F3A0D47E81C26B5D9F0A3E7C14B862';
       var files = [
-        { n: 'Win11_26H2_Russian_x64.iso', from: 'скачан со страницы Microsoft', h: OFF, ok: true },
-        { n: 'Win11_26H2_Russian_x64 (1).iso', from: 'сетевая папка колледжа \\\\SRV\\Distr', h: OFF, ok: true },
-        { n: 'Win11_26H2_Russian_x64.iso', from: 'прислали в мессенджере', h: 'B3E7A54F1C9D02E6A88F4D17C0E25B9196F3A0D47E81C26B5D9F0A3E7C14B8E2', ok: false },
-        { n: 'Win11_26H2_Lite_x64_by_Ultra.iso', from: '«облегчённая сборка» с торрент-трекера', h: '4C08D9E2B7A13F65E09D2C84B1F7A63E5D20C9B48A71F3E6C05D8B2A97E41F30', ok: false }
+        { n: 'Win11_26H2_Russian_x64.iso', from: 'учебный эталон из встроенного хранилища', h: OFF, ok: true },
+        { n: 'Win11_26H2_Russian_x64 (1).iso', from: 'учебная резервная копия в симуляторе', h: OFF, ok: true },
+        { n: 'Win11_26H2_Russian_x64.iso', from: 'учебная копия с изменённым содержимым', h: 'B3E7A54F1C9D02E6A88F4D17C0E25B9196F3A0D47E81C26B5D9F0A3E7C14B8E2', ok: false },
+        { n: 'Win11_26H2_Lite_x64_by_Ultra.iso', from: 'учебная копия другой сборки', h: '4C08D9E2B7A13F65E09D2C84B1F7A63E5D20C9B48A71F3E6C05D8B2A97E41F30', ok: false }
       ];
       var cmds = [['certutil -hashfile <файл> SHA256', true], ['Get-FileHash <файл>', true], ['sfc /scannow <файл>', false], ['chkdsk <файл>', false]];
       var hs = files.map(function () { return { shown: false, v: null }; });
-      host.appendChild(el('div', { class: 'card', style: 'margin-bottom:10px' }, '<b>Официальный SHA-256</b> (страница Microsoft, «Проверьте свою загрузку», язык «Русский», x64):<div class="hash">' + OFF + '</div>'));
+      host.appendChild(el('div', { class: 'card', style: 'margin-bottom:10px' }, '<b>Эталонный SHA-256 учебного образа (вымышленное значение)</b>. Сравнивайте только с этим хешем:<div class="hash">' + OFF + '</div>'));
       var hostH = el('div', { class: 'hashes' }); host.appendChild(hostH);
       var bar2 = el('div', { style: 'margin-top:12px' }, '<button class="btn primary" type="button">Проверить ответы</button>'); host.appendChild(bar2);
       var fb2 = el('div'); host.appendChild(fb2);
@@ -2203,7 +2213,7 @@ details.card summary::-webkit-details-marker { display: none; }
         if (hs.some(function (s) { return s.v === null; })) { fb(fb2, 'info', 'Отметьте решение для каждого файла.'); return; }
         var bad = files.filter(function (f, i) { return hs[i].v !== f.ok; });
         if (bad.length) { ctx.mistake('Неверно оценены копии образа: ' + bad.length); fb(fb2, 'bad', 'Есть ошибки. Сравните хеши посимвольно — особенно последние символы. Один отличающийся символ означает, что файл другой.'); return; }
-        fb(fb2, 'ok', 'Верно. Копия из мессенджера отличается двумя символами в конце — файл повреждён или изменён. У «облегчённой сборки» хеш совсем другой: это не оригинальный образ.');
+        fb(fb2, 'ok', 'Верно. Одна учебная копия имеет изменённый хеш, другая относится к иной сборке. В реальности подлинность проверяют по достоверному эталону, а здесь — по значению на экране.');
         bar2.querySelector('button').disabled = true; part(1);
       };
 
@@ -2238,7 +2248,7 @@ details.card summary::-webkit-details-marker { display: none; }
      ===================================================================== */
   L.register({
     id: 's3', num: 3, level: 2, title: 'Настройка ВМ',
-    lead: 'Виртуальная машина — это «компьютер внутри компьютера». У неё тоже есть прошивка UEFI, TPM, безопасная загрузка, порядок загрузки и диски. Исправим настройки ВМ в VirtualBox так, чтобы Windows 11 установилась с ISO-образа.',
+    lead: 'Перед вами встроенный макет VirtualBox. Исправьте параметры виртуальной машины в нём: память, процессоры, EFI, TPM, порядок загрузки и ISO. Ничего не устанавливайте на реальном компьютере.',
     theory: String.raw`
 <ul>
 <li><b>EFI</b> в настройках VirtualBox — это прошивка UEFI. Без неё ВМ работает как компьютер со старым BIOS, а Windows 11 нужна загрузка UEFI.</li>
@@ -2253,9 +2263,8 @@ details.card summary::-webkit-details-marker { display: none; }
 <tr><td>Настроить → Носители</td><td>Оптический привод: «Выбрать файл диска…» → ISO-образ</td></tr>
 <tr><td>Файл → Инструменты → Менеджер виртуальных носителей</td><td>Изменить размер виртуального диска</td></tr>
 </tbody></table></div>
-<div class="note"><b>Мастер создания ВМ.</b> При создании новой машины укажите ISO-образ и отметьте <b>«Пропустить автоматическую установку»</b>, иначе VirtualBox сам пройдёт установку и первичную настройку. Для типа «Windows 11 (64-bit)» мастер сразу включает EFI, безопасную загрузку и TPM 2.0.</div>
-<div class="note"><b>Hyper-V</b> (Windows 11 Pro): ВМ поколения 2; «Безопасность» → безопасная загрузка (шаблон «Microsoft Windows») и доверенный платформенный модуль; «Встроенное ПО» → DVD-дисковод первым.</div>`,
-    mission: String.raw`<p>Коллега создал ВМ <b>Win11-lab</b> как «Other Windows (64-bit)» и уже ставил на неё старую систему. Исправьте настройки:</p><ol><li>Память не меньше 4096 МБ, процессоров не меньше двух.</li><li>Включите EFI, безопасную загрузку и TPM v2.0.</li><li>Подключите образ <code>Win11_26H2_Russian_x64.iso</code> к оптическому приводу и увеличьте виртуальный диск до 64 ГБ и больше.</li><li>Поставьте оптический диск в порядке загрузки выше жёсткого.</li><li>Запустите ВМ и убедитесь, что запустился установщик.</li><li>Ответьте на вопрос про автоматическую установку.</li></ol>`,
+<div class="note"><b>Только внутри тренажёра:</b> ниже находится готовая учебная виртуальная машина Win11-lab. Все переключатели изменяют лишь её модель на странице, а не настройки установленного VirtualBox или настоящего ПК.</div>`,
+    mission: String.raw`<p>Внутри тренажёра доступен макет ВМ <b>Win11-lab</b> с ошибочными настройками. Измените настройки <b>ниже на странице</b>:</p><ol><li>Память не меньше 4096 МБ, процессоров не меньше двух.</li><li>Включите EFI, безопасную загрузку и TPM v2.0.</li><li>Подключите образ <code>Win11_26H2_Russian_x64.iso</code> к оптическому приводу и увеличьте виртуальный диск до 64 ГБ и больше.</li><li>Поставьте оптический диск в порядке загрузки выше жёсткого.</li><li>Запустите ВМ и убедитесь, что запустился установщик.</li><li>Ответьте на вопрос про автоматическую установку.</li></ol>`,
     mount: function (host, ctx) {
       var ISO = 'Win11_26H2_Russian_x64.iso';
       var s = { mem: 2048, cpu: 1, tpm: 'Нет', efi: false, sb: false, iso: null, disk: 32, boot: [['Гибкий диск', true], ['Жёсткий диск', true], ['Оптический диск', true], ['Сеть', false]] };
@@ -2368,7 +2377,7 @@ details.card summary::-webkit-details-marker { display: none; }
      ===================================================================== */
   L.register({
     id: 's4', num: 4, level: 3, title: 'Чистая установка',
-    lead: 'Пройдём программу установки Windows 11 от выбора языка до первой перезагрузки. Главное испытание — разметка дисков: здесь легко стереть не тот раздел.',
+    lead: 'Встроенный установщик Windows 11 имитирует выбор языка, редакции и разделов. Он не видит ваши реальные диски: все удаления и форматирования выполняются только в учебной модели.',
     theory: String.raw`
 <ul>
 <li><b>Чистая установка</b> — установка на пустой диск: старая система, программы и файлы на системном диске удаляются. Обновление «поверх» сохраняет их, но переносит ошибки.</li>
@@ -2383,7 +2392,7 @@ details.card summary::-webkit-details-marker { display: none; }
 <tr><td>Основной</td><td>сама Windows — будущий диск C:</td></tr>
 <tr><td>Восстановление, ~700 МБ</td><td>среда восстановления Windows RE</td></tr>
 </tbody></table></div>
-<div class="warnbox">Перед удалением сверяйте номер диска и размер. Разделы на других дисках (с данными) не трогайте. Удалённый раздел из установщика не вернуть.</div>`,
+<div class="warnbox"><b>Здесь используются только вымышленные виртуальные диски.</b> В учебном установщике внимательно сверяйте номер диска и размер: ошибочное удаление приведёт к штрафу, но не затронет файлы на вашем компьютере.</div>`,
     mission: String.raw`<p>ВМ <b>Win11-lab</b> загрузилась с подключённого ISO-образа. В ней два виртуальных диска: <b>Диск 0</b> — 80 ГБ, на нём старая Windows; <b>Диск 1</b> — 50 ГБ с папкой «Учебные проекты». Сам установщик находится на виртуальном оптическом приводе и в списке дисков не показывается.</p><ol><li>Выберите язык и раскладку, вариант «Установить Windows 11» и подтвердите удаление данных.</li><li>Пропустите ввод ключа и выберите редакцию <b>Windows 11 Pro</b>.</li><li>Удалите все разделы диска 0, не трогая диск 1.</li><li>Установите Windows в незанятое пространство диска 0.</li><li>Определите назначение разделов, которые создал установщик.</li><li>Решите проблему: «Этот компьютер не соответствует требованиям к системе для Windows 11».</li></ol>`,
     mount: function (host, ctx) {
       var wrap = el('div', { class: 'setup' }); host.appendChild(wrap);
@@ -2519,7 +2528,7 @@ details.card summary::-webkit-details-marker { display: none; }
       function drawResult() {
         var parts = [['Диск 0 Раздел 1', '100 МБ', 'Системный'], ['Диск 0 Раздел 2', '16 МБ', 'MSR (зарезервировано)'], ['Диск 0 Раздел 3', '79.2 ГБ', 'Основной'], ['Диск 0 Раздел 4', '722 МБ', 'Восстановление']];
         var opts = [['', 'выберите назначение…'], ['efi', 'Загрузчик Windows (EFI)'], ['msr', 'Служебный резерв для GPT'], ['c', 'Сама Windows — диск C:'], ['re', 'Среда восстановления Windows RE']], need = ['efi', 'msr', 'c', 're'];
-        frame('Установка завершена: разделы диска 0', '<p class="sub">После перезагрузки начнётся первичная настройка (этап 5). А пока разберитесь, какие разделы создал установщик, — откройте «Управление дисками» на реальном ПК и сравните.</p><table class="dtable"><thead><tr><th>Раздел</th><th>Размер</th><th>Тип</th><th>Назначение</th></tr></thead><tbody>' +
+        frame('Установка завершена: разделы диска 0', '<p class="sub">После перезагрузки начнётся первичная настройка (этап 5). А пока разберитесь, какие разделы создал установщик, — сравните их с таблицей прямо на этой странице.</p><table class="dtable"><thead><tr><th>Раздел</th><th>Размер</th><th>Тип</th><th>Назначение</th></tr></thead><tbody>' +
           parts.map(function (p, i) { return '<tr><td>' + p[0] + '</td><td>' + p[1] + '</td><td>' + p[2] + '</td><td><select data-i="' + i + '" style="min-width:210px">' + opts.map(function (o) { return '<option value="' + o[0] + '">' + o[1] + '</option>'; }).join('') + '</select></td></tr>'; }).join('') + '</tbody></table><div id="rq"></div>',
           '<div class="r"><button class="wbtn acc" type="button" id="chk">Проверить</button></div>');
         $('#chk', dlg).onclick = function () {
@@ -2552,18 +2561,18 @@ details.card summary::-webkit-details-marker { display: none; }
      ===================================================================== */
   L.register({
     id: 's5', num: 5, level: 3, title: 'Первичная настройка',
-    lead: 'После установки Windows задаёт вопросы о регионе, сети, учётной записи и конфиденциальности. Настроим учебный компьютер по требованиям колледжа.',
+    lead: 'Настройте учебный компьютер CLASS-07 в макете OOBE прямо в браузере. Сеть, учётные записи и пароли полностью виртуальные: используйте только вымышленные данные.',
     theory: String.raw`
 <ul>
-<li>Этот этап называется <b>OOBE</b> (Out-of-Box Experience). Для «Домашней» и Pro Windows 11 требует Интернет и вход в учётную запись Microsoft.</li>
+<li>Этот этап называется <b>OOBE</b> (Out-of-Box Experience). В реальной Windows могут понадобиться Интернет и учётная запись Microsoft. <b>В этом тренажёре подключение не требуется.</b></li>
 <li>Прежние обходы — команды <code>oobe\bypassnro</code> и <code>start ms-cxh:localonly</code> — Microsoft в 2025–2026 годах удалила. Писать их в отчёт как рабочий способ нельзя.</li>
-<li>В <b>Pro</b> остался официальный путь к локальной учётной записи: «Настроить для работы или учебы» → «Параметры входа» → «Вместо этого присоединиться к домену». Компьютер при этом к домену не подключается — создаётся обычная локальная запись. Microsoft может изменить и этот путь, поэтому сверяйтесь с реальной версией.</li>
+<li>В сценарии учебной Windows 11 Pro применяется выбор «Настроить для работы или учебы» → «Параметры входа» → «Вместо этого присоединиться к домену» для создания локальной записи. Это учебная модель последовательности экранов.</li>
 <li>В организациях учётные записи создают автоматически: файлом ответов <code>autounattend.xml</code> или через Microsoft Entra ID и Intune.</li>
 <li>Имя компьютера — до 15 символов: латинские буквы, цифры и дефис, не только цифры.</li>
 </ul>
 <h3>Параметры конфиденциальности</h3>
 <p>Расположение, «Найти устройство», необязательные диагностические данные, рукописный ввод и ввод с клавиатуры, персонализированные возможности, рекламный идентификатор. Позже их меняют в «Параметры» → «Конфиденциальность и защита».</p>`,
-    mission: String.raw`<p>Требования к учебному компьютеру аудитории 7:</p><ol><li>Основная раскладка — русская, вторая — английская (США).</li><li>Имя устройства — <b>CLASS-07</b>.</li><li>Локальная учётная запись <b>student</b>, без учётной записи Microsoft.</li><li>Задан пароль и три контрольных вопроса.</li><li>Все необязательные параметры конфиденциальности выключены.</li></ol>`,
+    mission: String.raw`<p>Требования к учебному компьютеру аудитории 7:</p><ol><li>Основная раскладка — русская, вторая — английская (США).</li><li>Имя устройства — <b>CLASS-07</b>.</li><li>Локальная учётная запись <b>student</b>, без учётной записи Microsoft.</li><li>Задан <b>только вымышленный</b> учебный пароль и три условных контрольных вопроса. Настоящие пароли вводить запрещено.</li><li>Все необязательные параметры конфиденциальности выключены.</li></ol>`,
     mount: function (host, ctx) {
       var wrap = el('div', { class: 'oobe' }); host.appendChild(wrap);
       var card = el('div', { class: 'ocard' }); wrap.appendChild(card);
@@ -2721,7 +2730,7 @@ details.card summary::-webkit-details-marker { display: none; }
      ===================================================================== */
   L.register({
     id: 's6', num: 6, level: 4, title: 'Драйверы устройств',
-    lead: 'Windows в виртуальной машине установилась, но экран не подстраивается под размер окна, а в «Диспетчере устройств» есть неизвестное устройство. Найдём проблемные устройства, определим производителя по ИД оборудования и установим драйверы — тоже без флешек.',
+    lead: 'Откройте встроенный Диспетчер устройств: найдите ошибку, определите производителя по ИД оборудования и установите демонстрационный драйвер внутри модели. Внешних источников и реальной установки нет.',
     theory: String.raw`
 <ul>
 <li>«Диспетчер устройств»: <kbd>Win</kbd> + <kbd>X</kbd> → «Диспетчер устройств» или <code>devmgmt.msc</code>. Жёлтый треугольник с «!» — устройство с проблемой.</li>
@@ -2735,16 +2744,16 @@ details.card summary::-webkit-details-marker { display: none; }
 </tbody></table></div>
 <h3>Драйверы в виртуальной машине</h3>
 <ul>
-<li><b>VirtualBox</b>: драйверы виртуальных устройств входят в <b>«Дополнения гостевой ОС»</b> (Guest Additions). В окне работающей ВМ: «Устройства» → «Подключить образ диска Дополнений гостевой ОС…», затем в Проводнике на виртуальном диске запустить <code>VBoxWindowsAdditions.exe</code> и перезагрузить ВМ. Это тоже ISO-образ — флешка не нужна. Дополнения дают видеодрайвер (экран подстраивается под окно), общий буфер обмена, общие папки и интеграцию мыши.</li>
-<li><b>Hyper-V</b>: службы интеграции уже встроены в Windows 11. <b>VMware</b>: VMware Tools.</li>
+<li><b>Встроенная модель VirtualBox:</b> выберите «Дополнения гостевой ОС» в окне тренажёра. Имитация запуска <code>VBoxWindowsAdditions.exe</code> и перезагрузки происходит на странице; реальный компьютер не изменится.</li>
+<li><b>Сопоставление:</b> VirtualBox применяет Guest Additions, VMware — VMware Tools; для этой работы уже смоделированы необходимые пакеты.</li>
 </ul>
-<h3>Драйверы на реальном компьютере</h3>
-<ol><li>Центр обновления Windows → «Дополнительные параметры» → «Необязательные обновления» → «Обновления драйверов».</li><li>Сайт производителя ноутбука или материнской платы — раздел «Поддержка» для вашей модели.</li><li>Сайт производителя устройства (Intel, Realtek, NVIDIA, AMD).</li></ol>
+<h3>Источники драйверов в учебном сценарии</h3>
+<p>В диалоговом окне ниже доступны четыре <b>условных источника</b>: встроенные дополнения VirtualBox, имитация Центра обновления, имитация каталога производителя по VEN и неподходящий непроверенный пакет. Выбирайте источник в модели — браузер не скачивает драйверы.</p>
 <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Код</th><th>Значение</th></tr></thead><tbody>
 <tr><td>28</td><td>драйвер не установлен</td></tr><tr><td>10</td><td>устройство не может запуститься</td></tr><tr><td>43</td><td>устройство сообщило о сбое и остановлено</td></tr><tr><td>22</td><td>устройство отключено пользователем</td></tr><tr><td>52</td><td>не удалось проверить цифровую подпись драйвера</td></tr>
 </tbody></table></div>
 <div class="warnbox">Сборники драйверов с файлообменников и «ускорители» — частый источник вирусов и неподходящих драйверов.</div>`,
-    mission: String.raw`<p>Компьютер — виртуальная машина <b>CLASS-07</b> в VirtualBox.</p><ol><li>Найдите устройство с жёлтым «!» и посмотрите его состояние и код ошибки (вкладка «Общие»).</li><li>Найдите устройство, которое работает на стандартном драйвере Майкрософт.</li><li>Установите драйверы для обоих устройств из правильного источника.</li><li>По ИД оборудования определите производителей устройств реального компьютера аудитории (таблица под Диспетчером).</li></ol>`,
+    mission: String.raw`<p>Компьютер — виртуальная машина <b>CLASS-07</b> в VirtualBox.</p><ol><li>Найдите устройство с жёлтым «!» и посмотрите его состояние и код ошибки (вкладка «Общие»).</li><li>Найдите устройство, которое работает на стандартном драйвере Майкрософт.</li><li>Встроенным диалогом тренажёра имитируйте установку нужных драйверов для обоих устройств.</li><li>По ИД оборудования определите производителей устройств <b>учебного компьютера из набора данных</b> (таблица под Диспетчером).</li></ol>`,
     mount: function (host, ctx) {
       var dev = {
         vmm: { cat: 'Другие устройства', name: 'Базовое системное устройство', id: 'PCI\\VEN_80EE&DEV_CAFE&SUBSYS_00000000&REV_00', fixName: 'VirtualBox Guest Device', fixCat: 'Системные устройства', prob: true, loc: 'шина PCI 0, устройство 4, функция 0' },
@@ -2793,8 +2802,8 @@ details.card summary::-webkit-details-marker { display: none; }
         var body = '<p>Где взять драйвер для устройства «' + esc(cur(selKey).name) + '»?</p><div class="src">' +
           '<label><input type="radio" name="src" value="ga"><span>Меню ВМ «Устройства» → «Подключить образ диска Дополнений гостевой ОС…» и запустить VBoxWindowsAdditions.exe</span></label>' +
           '<label><input type="radio" name="src" value="wu"><span>Центр обновления Windows → «Дополнительные параметры» → «Необязательные обновления»</span></label>' +
-          '<label><input type="radio" name="src" value="vendor"><span>Сайт производителя по коду VEN: <select id="ven" style="width:auto;display:inline-block;margin-left:4px"><option value="">— выберите —</option><option>Intel</option><option>Realtek</option><option>NVIDIA</option><option>AMD</option><option>Oracle (VirtualBox)</option><option>VMware</option></select></span></label>' +
-          '<label><input type="radio" name="src" value="pack"><span>Сборник «DriverPack Ultimate 2026» с файлообменника</span></label></div><div class="oerr" id="se"></div>';
+          '<label><input type="radio" name="src" value="vendor"><span>Встроенный учебный каталог производителя по коду VEN: <select id="ven" style="width:auto;display:inline-block;margin-left:4px"><option value="">— выберите —</option><option>Intel</option><option>Realtek</option><option>NVIDIA</option><option>AMD</option><option>Oracle (VirtualBox)</option><option>VMware</option></select></span></label>' +
+          '<label><input type="radio" name="src" value="pack"><span>Непроверенный сборник драйверов (условный вариант)</span></label></div><div class="oerr" id="se"></div>';
         L.modal('Обновить драйвер', body, [{ t: 'Установить', acc: true, fn: function (b) {
           var c = b.querySelector('input[name=src]:checked'), e = b.querySelector('#se');
           if (!c) { e.textContent = 'Выберите источник.'; return false; }
@@ -2821,8 +2830,8 @@ details.card summary::-webkit-details-marker { display: none; }
       drawTree(); drawProps();
 
       /* ---- Реальный компьютер: определить производителя ---- */
-      host.appendChild(el('h3', { style: 'margin:28px 0 6px' }, 'Часть 2. Реальный компьютер аудитории'));
-      host.appendChild(el('p', { style: 'margin:0 0 10px;color:var(--muted)' }, 'На компьютере аудитории 214 после переустановки нашлись устройства без драйверов. По ИД оборудования определите производителя каждого.'));
+      host.appendChild(el('h3', { style: 'margin:28px 0 6px' }, 'Часть 2. Учебный компьютер: набор данных'));
+      host.appendChild(el('p', { style: 'margin:0 0 10px;color:var(--muted)' }, 'Ниже приведён вымышленный перечень устройств и их ИД. Определите производителя каждого непосредственно по данным в таблице тренажёра.'));
       var ids = [['Контроллер Ethernet', 'PCI\\VEN_10EC&DEV_8125&SUBSYS_86771043', 'Realtek'], ['PCI-контроллер Simple Communications', 'PCI\\VEN_8086&DEV_7AE8&SUBSYS_7AE81849', 'Intel'], ['Базовый видеоадаптер (Майкрософт)', 'PCI\\VEN_10DE&DEV_2504&SUBSYS_88171043', 'NVIDIA'], ['Базовый видеоадаптер (Майкрософт)', 'PCI\\VEN_1002&DEV_73FF&SUBSYS_E4111DA2', 'AMD'], ['Аудиоустройство на шине High Definition Audio', 'HDAUDIO\\FUNC_01&VEN_10EC&DEV_0897', 'Realtek']];
       var vendors = ['Intel', 'Realtek', 'NVIDIA', 'AMD', 'Oracle', 'VMware'];
       var tbl = el('div', { class: 'tbl-wrap' }); host.appendChild(tbl);
@@ -2849,7 +2858,7 @@ details.card summary::-webkit-details-marker { display: none; }
      ===================================================================== */
   L.register({
     id: 's7', num: 7, level: 4, title: 'Аудит и резервная копия',
-    lead: 'Финальная проверка в консоли администратора: версия системы, проблемные устройства, список драйверов, их резервная копия и активация.',
+    lead: 'Финальная проверка во встроенном симуляторе консоли администратора: версия системы, проблемные устройства, список драйверов, виртуальная резервная копия и активация. Команды не запускаются в Windows вашего ПК.',
     theory: String.raw`
 <div class="tbl-wrap"><table class="tbl"><thead><tr><th>Команда</th><th>Что делает</th></tr></thead><tbody>
 <tr><td><code>winver</code>, <code>ver</code></td><td>версия и сборка Windows (26H2 — сборка 26300)</td></tr>
@@ -2861,7 +2870,7 @@ details.card summary::-webkit-details-marker { display: none; }
 <tr><td><code>slmgr /xpr</code></td><td>состояние активации</td></tr>
 </tbody></table></div>
 <div class="warnbox"><b>WMIC больше нет.</b> Утилита <code>wmic</code> полностью удалена из поддерживаемых версий Windows 11 и не устанавливается даже как дополнительный компонент. Вместо неё — PowerShell, например <code>Get-CimInstance Win32_OperatingSystem</code>.</div>
-<div class="note">Консоль администратора: «Пуск» → введите <code>cmd</code> → <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Enter</kbd>. В заголовке окна будет «Администратор».</div>`,
+<div class="note">Консоль администратора <b>уже встроена ниже</b> и запущена в учебной модели. Не нужно открывать командную строку на своём компьютере. Папка <code>D:\DriversBackup</code> — виртуальная.</div>`,
     mission: String.raw`<p>Вы работаете в консоли администратора виртуальной машины CLASS-07.</p><ol><li>Узнайте версию и сборку Windows.</li><li>Выведите из <code>systeminfo</code> только строку с названием ОС.</li><li>Проверьте, остались ли устройства с ошибками.</li><li>Сохраните список драйверов в CSV-файл на Рабочий стол.</li><li>Создайте папку <code>D:\DriversBackup</code> и экспортируйте в неё все сторонние драйверы.</li><li>Проверьте состояние активации Windows.</li><li>Попробуйте старую команду <code>wmic os get caption</code> и выясните, почему она не работает.</li></ol>`,
     mount: function (host, ctx) {
       var hostName = 'CLASS-07';
